@@ -1,20 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, getSession } from "next-auth/react";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  ExclamationTriangleIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function SignInPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   });
+
+  // Check for success message from signup
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message) {
+      setSuccessMessage(message);
+      // Clear the message after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -22,27 +44,56 @@ export default function SignInPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    // Clear error when user starts typing
+    if (error) {
+      setError(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
 
-    setIsLoading(false);
-    // Add actual authentication logic here
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.ok) {
+        // Sign in successful - redirect to home
+        const session = await getSession();
+        if (session) {
+          router.push("/");
+          router.refresh();
+        }
+      }
+    } catch (error) {
+      console.error("Sign in error:", error);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
+    setError(null);
 
-    // Simulate Google OAuth
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsGoogleLoading(false);
-    // Add actual Google OAuth logic here
+    try {
+      await signIn("google", {
+        callbackUrl: "/",
+      });
+    } catch (error) {
+      console.error("Google sign in error:", error);
+      setError("Google sign in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -83,6 +134,26 @@ export default function SignInPage() {
           </p>
         </motion.div>
 
+        {/* Success Message */}
+        <AnimatePresence>
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="bg-green-50 border border-green-200 rounded-xl p-4"
+            >
+              <div className="flex items-center">
+                <CheckIcon className="w-5 h-5 text-green-500 mr-3" />
+                <p className="text-sm text-green-700 font-medium">
+                  {successMessage}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Sign In Form */}
         <motion.div
           className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
@@ -90,10 +161,28 @@ export default function SignInPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
+          {/* Error Alert */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+              >
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Google Sign In Button */}
           <motion.button
             onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading}
+            disabled={isGoogleLoading || isLoading}
             className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-6 cursor-pointer"
             whileHover={{ scale: 1.01, y: -1 }}
             whileTap={{ scale: 0.99 }}
@@ -296,7 +385,7 @@ export default function SignInPage() {
             >
               <motion.button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 whileHover={{ scale: 1.01, y: -1 }}
                 whileTap={{ scale: 0.99 }}
@@ -363,7 +452,7 @@ export default function SignInPage() {
                 className="flex items-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.2, delay: 0.55 + index * 0.05 }}
+                transition={{ duration: 0.2, delay: 0.85 + index * 0.05 }}
               >
                 {item.icon === "lock" && (
                   <svg

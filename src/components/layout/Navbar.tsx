@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useSession, signOut } from "next-auth/react";
 import {
   MagnifyingGlassIcon,
   HeartIcon,
@@ -9,7 +11,12 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
+  UserIcon,
+  CogIcon,
+  ShoppingCartIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import { getUserInitials } from "@/lib/utils";
 
 const categories = [
   {
@@ -59,9 +66,183 @@ const categories = [
   },
 ];
 
+interface ProfileDropdownProps {
+  user: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+  onSignOut: () => void;
+}
+
+function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const profileMenuItems = [
+    {
+      name: "My Profile",
+      href: "/profile",
+      icon: UserIcon,
+      description: "Manage your account",
+    },
+    {
+      name: "My Orders",
+      href: "/orders",
+      icon: ShoppingCartIcon,
+      description: "Track your purchases",
+    },
+    {
+      name: "Wishlist",
+      href: "/wishlist",
+      icon: HeartIcon,
+      description: "Saved items",
+    },
+    {
+      name: "Settings",
+      href: "/settings",
+      icon: CogIcon,
+      description: "Account preferences",
+    },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-3 p-2 rounded-full hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        {/* Profile Image */}
+        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={user.name || "Profile"}
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white text-sm font-semibold">
+              {getUserInitials(user.name || "User")}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Show name and chevron */}
+        <div className="hidden md:flex items-center space-x-1">
+          <span className="text-sm font-medium text-gray-700 max-w-24 truncate">
+            {user.name?.split(" ")[0] || "User"}
+          </span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Dropdown Content */}
+          <div className="absolute right-0 mt-2 w-72 origin-top-right bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
+            {/* Arrow pointer */}
+            <div className="absolute -top-1 right-6 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
+
+            {/* User Info Header */}
+            <div className="px-4 py-3 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+                  {user.image ? (
+                    <Image
+                      src={user.image}
+                      alt={user.name || "Profile"}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white font-semibold">
+                      {getUserInitials(user.name || "User")}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {user.name || "User"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              {profileMenuItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-gray-200 transition-colors">
+                    <item.icon className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {item.description}
+                    </div>
+                  </div>
+                  <ChevronDownIcon className="w-4 h-4 text-gray-400 rotate-[-90deg] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
+            </div>
+
+            {/* Sign Out */}
+            <div className="border-t border-gray-100 pt-2">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onSignOut();
+                }}
+                className="group w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150"
+              >
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-red-100 transition-colors">
+                  <ArrowRightOnRectangleIcon className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Sign Out</div>
+                  <div className="text-xs text-gray-500">
+                    Sign out of your account
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
+  const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/" });
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -190,12 +371,28 @@ export default function Navbar() {
                 0
               </span>
             </button>
-            <Link
-              href="/signin"
-              className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-            >
-              Sign In
-            </Link>
+
+            {/* Conditional Auth/Profile Section */}
+            {status === "loading" ? (
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            ) : session?.user ? (
+              <ProfileDropdown
+                user={{
+                  id: session.user.id || "",
+                  name: session.user.name,
+                  email: session.user.email,
+                  image: session.user.image,
+                }}
+                onSignOut={handleSignOut}
+              />
+            ) : (
+              <Link
+                href="/signin"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -244,9 +441,92 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {/* Mobile Actions */}
+            {/* Mobile Auth/Profile Actions */}
             <div className="border-t border-gray-200 pt-4 pb-3">
-              <div className="flex items-center px-5 space-x-4">
+              {session?.user ? (
+                <div className="px-3 space-y-3">
+                  {/* Mobile Profile Info */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+                      {session.user.image ? (
+                        <Image
+                          src={session.user.image}
+                          alt={session.user.name || "Profile"}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white text-sm font-semibold">
+                          {getUserInitials(session.user.name || "User")}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {session.user.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {session.user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mobile Profile Links */}
+                  <div className="space-y-1">
+                    <Link
+                      href="/profile"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      href="/orders"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                    <Link
+                      href="/wishlist"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Wishlist
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center px-5 space-x-4">
+                  <Link
+                    href="/signin"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+
+              {/* Mobile Actions (Wishlist, Cart) */}
+              <div className="flex items-center px-5 space-x-4 mt-4">
                 <button
                   className="text-gray-700 hover:text-gray-900 p-2"
                   aria-label="View wishlist"
@@ -262,13 +542,6 @@ export default function Navbar() {
                     0
                   </span>
                 </button>
-                <Link
-                  href="/signin"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
               </div>
             </div>
           </div>

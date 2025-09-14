@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   EyeIcon,
   EyeSlashIcon,
   CheckIcon,
   XMarkIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 interface PasswordStrength {
@@ -16,11 +18,26 @@ interface PasswordStrength {
   color: string;
 }
 
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  agreeToTerms?: string;
+  submit?: string;
+}
+
 export default function SignUpPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -31,7 +48,7 @@ export default function SignUpPage() {
     agreeToMarketing: false,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -41,10 +58,52 @@ export default function SignUpPage() {
     }));
 
     // Clear error when user starts typing
-    if (errors[name]) {
+    if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+
+    // Clear submit error when any field changes
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
+    }
   };
+
+  // Email availability check with debounce
+  useEffect(() => {
+    const checkEmailAvailability = async () => {
+      if (!formData.email || formData.email.length < 5) {
+        setEmailAvailable(null);
+        return;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setEmailAvailable(null);
+        return;
+      }
+
+      setIsCheckingEmail(true);
+      try {
+        const response = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: formData.email }),
+        });
+
+        const data = await response.json();
+        setEmailAvailable(data.available);
+      } catch (error) {
+        console.error("Email check failed:", error);
+        setEmailAvailable(null);
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(checkEmailAvailability, 800);
+    return () => clearTimeout(debounceTimer);
+  }, [formData.email]);
 
   const validatePassword = (password: string): PasswordStrength => {
     let score = 0;
@@ -75,20 +134,26 @@ export default function SignUpPage() {
   const passwordStrength = validatePassword(formData.password);
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: FormErrors = {};
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = "First name must be at least 2 characters";
     }
 
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required";
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = "Last name must be at least 2 characters";
     }
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
+    } else if (emailAvailable === false) {
+      newErrors.email = "This email is already registered";
     }
 
     if (!formData.password) {
@@ -115,12 +180,41 @@ export default function SignUpPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    setIsLoading(false);
-    // Add actual registration logic here
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Signup failed");
+      }
+
+      // Success!
+      setSubmitSuccess(true);
+
+      // Redirect to signin after 2 seconds
+      setTimeout(() => {
+        router.push(
+          "/signin?message=Account created successfully! Please sign in."
+        );
+      }, 2000);
+    } catch (error) {
+      console.error("Signup error:", error);
+      setErrors({
+        submit:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSignUp = async () => {
@@ -132,6 +226,51 @@ export default function SignUpPage() {
     setIsGoogleLoading(false);
     // Add actual Google OAuth logic here
   };
+
+  // Success animation component
+  if (submitSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full text-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <CheckIcon className="w-10 h-10 text-white" />
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-2xl font-bold text-gray-900 mb-4"
+          >
+            Account Created Successfully!
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-gray-600 mb-6"
+          >
+            Redirecting you to sign in...
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="w-8 h-8 border-2 border-gray-400 border-t-green-500 rounded-full animate-spin mx-auto"
+          />
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -188,6 +327,26 @@ export default function SignUpPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
         >
+          {/* Submit Error Alert */}
+          <AnimatePresence>
+            {errors.submit && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+              >
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
+                  <p className="text-sm text-red-700 font-medium">
+                    {errors.submit}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Google Sign Up Button */}
           <motion.button
             whileHover={{ scale: 1.01 }}
@@ -347,20 +506,61 @@ export default function SignUpPage() {
               >
                 Email address
               </label>
-              <motion.input
-                whileFocus={{ scale: 1.01 }}
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`appearance-none relative block w-full px-4 py-3 border ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
-                placeholder="john.doe@example.com"
-              />
+              <div className="relative">
+                <motion.input
+                  whileFocus={{ scale: 1.01 }}
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border ${
+                    errors.email
+                      ? "border-red-500"
+                      : emailAvailable === false
+                        ? "border-red-500"
+                        : emailAvailable === true
+                          ? "border-green-500"
+                          : "border-gray-300"
+                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                  placeholder="john.doe@example.com"
+                />
+
+                {/* Email status indicator */}
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <AnimatePresence mode="wait">
+                    {isCheckingEmail ? (
+                      <motion.div
+                        key="checking"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"
+                      />
+                    ) : emailAvailable === true ? (
+                      <motion.div
+                        key="available"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                      >
+                        <CheckIcon className="w-5 h-5 text-green-500" />
+                      </motion.div>
+                    ) : emailAvailable === false ? (
+                      <motion.div
+                        key="taken"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                      >
+                        <XMarkIcon className="w-5 h-5 text-red-500" />
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              </div>
               <AnimatePresence>
                 {errors.email && (
                   <motion.p
@@ -632,7 +832,7 @@ export default function SignUpPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || emailAvailable === false}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <AnimatePresence mode="wait">
