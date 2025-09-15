@@ -4,46 +4,41 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { motion } from "framer-motion";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   PhotoIcon,
   XMarkIcon,
   PlusIcon,
-  InformationCircleIcon,
-  CurrencyEuroIcon,
-  CubeIcon,
-  TagIcon,
+  ArrowLeftIcon,
   CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ClockIcon,
+  ScaleIcon,
+  EyeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import { formatPrice } from "@/lib/utils";
+import ProductCard from "@/components/ui/ProductCard";
 
 interface FormData {
-  // Basic Information
   name: string;
   brand: string;
   categoryId: string;
   modelNumber: string;
   description: string;
-
-  // Pricing
   price: string;
   comparePrice: string;
-
-  // Stock
   stock: string;
   lowStockAlert: string;
-
-  // Media
   images: File[];
   imagePreviews: string[];
-
-  // Specifications
   specifications: { key: string; value: string }[];
-
-  // Flags
   featured: boolean;
   isActive: boolean;
-
-  // Optional
   warranty: string;
   weight: string;
   dimensions: string;
@@ -52,11 +47,22 @@ interface FormData {
   material: string;
 }
 
-export default function AddProductForm() {
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export default function EnhancedAddProductForm() {
   const router = useRouter();
   const { data: session } = useSession();
+
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved"
+  >("idle");
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -81,31 +87,62 @@ export default function AddProductForm() {
     material: "",
   });
 
-  // In your AddProductForm, replace the hardcoded categories with:
-  interface Category {
-    id: string;
-    name: string;
-    slug: string;
-    description?: string;
-  }
-
   const [categories, setCategories] = useState<Category[]>([]);
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data.categories));
-  }, []);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string>("");
 
+  const steps = [
+    {
+      id: 1,
+      name: "Basic Information",
+      description: "Product name, brand, and description",
+    },
+    {
+      id: 2,
+      name: "Pricing & Stock",
+      description: "Set price and manage inventory",
+    },
+    {
+      id: 3,
+      name: "Media & Details",
+      description: "Add images and specifications",
+    },
+    {
+      id: 4,
+      name: "Settings & Launch",
+      description: "Configure visibility and features",
+    },
+  ];
+
+  // Load categories
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setCategories(data.categories);
+        }
+      })
+      .catch((err) => console.error("Error loading categories:", err));
+  }, []);
+
+  // Auto-save draft (simulate)
+  useEffect(() => {
+    if (formData.name || formData.brand || formData.description) {
+      setAutoSaveStatus("saving");
+      const timer = setTimeout(() => {
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 2000);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.name, formData.brand, formData.description, formData.price]);
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    // Clear API error
     if (apiError) {
       setApiError("");
     }
@@ -165,35 +202,45 @@ export default function AddProductForm() {
     }));
   };
 
-  const validateForm = () => {
+  const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = "Product name is required";
-    if (!formData.brand.trim()) newErrors.brand = "Brand is required";
-    if (!formData.categoryId) newErrors.categoryId = "Category is required";
-    if (!formData.description.trim())
-      newErrors.description = "Description is required";
-    if (!formData.price || parseFloat(formData.price) <= 0)
-      newErrors.price = "Valid price is required";
-    if (!formData.stock || parseInt(formData.stock) < 0)
-      newErrors.stock = "Valid stock quantity is required";
+    if (step === 1) {
+      if (!formData.name.trim()) newErrors.name = "Product name is required";
+      if (!formData.brand.trim()) newErrors.brand = "Brand is required";
+      if (!formData.categoryId) newErrors.categoryId = "Category is required";
+      if (!formData.description.trim())
+        newErrors.description = "Description is required";
+    }
+
+    if (step === 2) {
+      if (!formData.price || parseFloat(formData.price) <= 0)
+        newErrors.price = "Valid price is required";
+      if (!formData.stock || parseInt(formData.stock) < 0)
+        newErrors.stock = "Valid stock quantity is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Upload images to your storage service (implement based on your choice)
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(Math.min(currentStep + 1, steps.length));
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(Math.max(currentStep - 1, 1));
+  };
+
   const uploadImages = async (images: File[]): Promise<string[]> => {
-    // TODO: Implement actual image upload (Cloudinary, AWS S3, etc.)
-    // For now, we'll create placeholder URLs
     return images.map((img) => `/uploads/${Date.now()}-${img.name}`);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      setCurrentStep(1); // Go back to first step if there are errors
+  const handleSubmit = async () => {
+    if (!validateStep(1) || !validateStep(2)) {
+      setCurrentStep(1);
       return;
     }
 
@@ -206,11 +253,9 @@ export default function AddProductForm() {
     setApiError("");
 
     try {
-      // Upload images first (if any)
       const uploadedImageUrls =
         formData.images.length > 0 ? await uploadImages(formData.images) : [];
 
-      // Prepare specifications object
       const specificationsObj = formData.specifications
         .filter((spec) => spec.key.trim() && spec.value.trim())
         .reduce(
@@ -221,13 +266,11 @@ export default function AddProductForm() {
           {} as Record<string, string>
         );
 
-      // Prepare tags array
       const tagsArray = formData.tags
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0);
 
-      // Prepare API payload
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
@@ -255,12 +298,9 @@ export default function AddProductForm() {
         material: formData.material.trim() || undefined,
       };
 
-      // Submit to API
       const response = await fetch("/api/vendor/products", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -270,7 +310,6 @@ export default function AddProductForm() {
         throw new Error(result.error || "Failed to create product");
       }
 
-      // Success - redirect to products page
       router.push("/vendor/products?success=Product created successfully");
     } catch (error) {
       console.error("Error creating product:", error);
@@ -293,643 +332,893 @@ export default function AddProductForm() {
     return 0;
   };
 
-  const steps = [
-    { id: 1, name: "Basic Info", icon: InformationCircleIcon },
-    { id: 2, name: "Pricing & Stock", icon: CurrencyEuroIcon },
-    { id: 3, name: "Media & Specs", icon: CubeIcon },
-    { id: 4, name: "Settings & Tags", icon: TagIcon },
-  ];
+  // Convert form data to ProductCard format for preview
+  const getProductCardData = () => {
+    return {
+      id: "preview",
+      name: formData.name || "Product Name",
+      brand: formData.brand || undefined,
+      price: parseFloat(formData.price) || 0,
+      originalPrice: formData.comparePrice
+        ? parseFloat(formData.comparePrice)
+        : undefined,
+      image: formData.imagePreviews[0] || "/api/placeholder/300/300",
+      images: formData.imagePreviews,
+      isNew: false,
+      isFeatured: formData.featured,
+      category: categories.find((c) => c.id === formData.categoryId)?.name,
+      rating: 4.5,
+      reviewCount: 0,
+      slug: "preview",
+      description: formData.description || undefined,
+    };
+  };
+
+  const getCompletionPercentage = () => {
+    const requiredFields = [
+      formData.name,
+      formData.brand,
+      formData.categoryId,
+      formData.description,
+      formData.price,
+      formData.stock,
+    ];
+    const completedFields = requiredFields.filter(
+      (field) => field && field.toString().trim()
+    ).length;
+    return Math.round((completedFields / requiredFields.length) * 100);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Add New Product
-        </h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Create a new product listing for your store
-        </p>
-      </div>
-
-      {/* API Error */}
-      {apiError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{apiError}</p>
-        </div>
-      )}
-
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${
-                  currentStep >= step.id
-                    ? "bg-black border-black text-white"
-                    : "border-gray-300 text-gray-500"
-                }`}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/vendor/products"
+                className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors"
               >
-                {currentStep > step.id ? (
-                  <CheckCircleIcon className="w-6 h-6" />
-                ) : (
-                  <step.icon className="w-5 h-5" />
+                <ArrowLeftIcon className="w-4 h-4 mr-1" />
+                Back to Products
+              </Link>
+              <div className="h-4 w-px bg-gray-300" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Add New Product
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Create a new product listing for your store
+                </p>
+              </div>
+            </div>
+
+            {/* Auto-save Status */}
+            <div className="flex items-center space-x-4">
+              <AnimatePresence>
+                {autoSaveStatus !== "idle" && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className={`flex items-center text-sm ${
+                      autoSaveStatus === "saving"
+                        ? "text-blue-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {autoSaveStatus === "saving" ? (
+                      <>
+                        <ClockIcon className="w-4 h-4 mr-1 animate-spin" />
+                        Saving draft...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        Draft saved
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="text-sm text-gray-500">
+                {getCompletionPercentage()}% Complete
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-6">
+            <div className="bg-gray-200 rounded-full h-2">
+              <motion.div
+                className="bg-black rounded-full h-2"
+                initial={{ width: 0 }}
+                animate={{ width: `${(currentStep / steps.length) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <div className="flex justify-between mt-2">
+              {steps.map((step, index) => (
+                <button
+                  key={step.id}
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`text-xs ${
+                    currentStep >= step.id
+                      ? "text-black font-medium"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {step.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* API Error */}
+        {apiError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl"
+          >
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 mr-2" />
+              <p className="text-red-600 text-sm font-medium">{apiError}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Live Preview */}
+          <div className="lg:col-span-1">
+            <motion.div
+              className="bg-white rounded-xl border border-gray-200 p-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Live Preview
+              </h3>
+
+              <div className="max-w-sm">
+                <ProductCard
+                  product={getProductCardData()}
+                  variant="default"
+                  showQuickActions={false}
+                  showAddToCart={false}
+                />
+              </div>
+
+              {/* Preview Stats */}
+              <div className="mt-6 space-y-3 pt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Completion</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {getCompletionPercentage()}%
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Images</span>
+                  <span className="text-sm text-gray-900">
+                    {formData.imagePreviews.length} uploaded
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Specifications</span>
+                  <span className="text-sm text-gray-900">
+                    {
+                      formData.specifications.filter((s) => s.key && s.value)
+                        .length
+                    }{" "}
+                    added
+                  </span>
+                </div>
+
+                {calculateDiscount() > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Discount</span>
+                    <span className="text-sm text-green-600 font-medium">
+                      {calculateDiscount()}% off
+                    </span>
+                  </div>
                 )}
               </div>
-              <span
-                className={`ml-2 text-sm font-medium ${
-                  currentStep >= step.id ? "text-gray-900" : "text-gray-500"
-                }`}
-              >
-                {step.name}
-              </span>
-              {index < steps.length - 1 && (
-                <div
-                  className={`w-12 h-0.5 mx-4 ${
-                    currentStep > step.id ? "bg-black" : "bg-gray-300"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+            </motion.div>
+          </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Step 1: Basic Information */}
-            {currentStep >= 1 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-lg border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Basic Information
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Product Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        handleInputChange("name", e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                        errors.name ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="e.g. Wireless Gaming Headset Pro"
-                    />
-                    {errors.name && (
-                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Brand *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.brand}
-                      onChange={(e) =>
-                        handleInputChange("brand", e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                        errors.brand ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="e.g. Sony, Apple, Samsung"
-                    />
-                    {errors.brand && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.brand}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category *
-                    </label>
-                    <select
-                      value={formData.categoryId}
-                      onChange={(e) =>
-                        handleInputChange("categoryId", e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                        errors.categoryId ? "border-red-500" : "border-gray-300"
-                      }`}
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.categoryId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.categoryId}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Model Number / SKU
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.modelNumber}
-                      onChange={(e) =>
-                        handleInputChange("modelNumber", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="e.g. WH-1000XM5"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      handleInputChange("description", e.target.value)
-                    }
-                    rows={4}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                      errors.description ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Describe your product features, benefits, and specifications..."
-                  />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.description}
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 2: Pricing & Stock */}
-            {currentStep >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-lg border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Pricing & Stock
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price (€) *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) =>
-                        handleInputChange("price", e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                        errors.price ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="299.99"
-                    />
-                    {errors.price && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.price}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Compare Price (€)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.comparePrice}
-                      onChange={(e) =>
-                        handleInputChange("comparePrice", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="399.99"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Original price for showing discount
+          {/* Right Column - Form Steps */}
+          <div className="lg:col-span-2">
+            <AnimatePresence mode="wait">
+              {/* Step 1: Basic Information */}
+              {currentStep === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-xl border border-gray-200 p-8"
+                >
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Basic Information
+                    </h3>
+                    <p className="text-gray-600 mt-1">
+                      Tell us about your product
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Discount
-                    </label>
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
-                      {calculateDiscount()}% off
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Product Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) =>
+                            handleInputChange("name", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                            errors.name ? "border-red-500" : "border-gray-300"
+                          }`}
+                          placeholder="e.g. Wireless Gaming Headset Pro"
+                        />
+                        {errors.name && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.name}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Brand *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.brand}
+                          onChange={(e) =>
+                            handleInputChange("brand", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                            errors.brand ? "border-red-500" : "border-gray-300"
+                          }`}
+                          placeholder="e.g. Sony, Apple, Samsung"
+                        />
+                        {errors.brand && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.brand}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Category *
+                        </label>
+                        <select
+                          value={formData.categoryId}
+                          onChange={(e) =>
+                            handleInputChange("categoryId", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                            errors.categoryId
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          <option value="">Select a category</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.categoryId && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.categoryId}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Model Number / SKU
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.modelNumber}
+                          onChange={(e) =>
+                            handleInputChange("modelNumber", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="e.g. WH-1000XM5"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description *
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
+                        rows={4}
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                          errors.description
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="Describe your product features, benefits, and specifications..."
+                      />
+                      {errors.description && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.description}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
+              )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stock Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.stock}
-                      onChange={(e) =>
-                        handleInputChange("stock", e.target.value)
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent ${
-                        errors.stock ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="50"
-                    />
-                    {errors.stock && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.stock}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Low Stock Alert
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.lowStockAlert}
-                      onChange={(e) =>
-                        handleInputChange("lowStockAlert", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="10"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Alert when stock falls below this number
+              {/* Step 2: Pricing & Stock */}
+              {currentStep === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-xl border border-gray-200 p-8"
+                >
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Pricing & Stock
+                    </h3>
+                    <p className="text-gray-600 mt-1">
+                      Set your pricing and inventory levels
                     </p>
                   </div>
-                </div>
-              </motion.div>
-            )}
 
-            {/* Step 3: Media & Specifications */}
-            {currentStep >= 3 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-lg border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Media & Specifications
-                </h2>
-
-                {/* Image Upload */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Product Images
-                  </label>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {formData.imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Product ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Price (€) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.price}
+                          onChange={(e) =>
+                            handleInputChange("price", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                            errors.price ? "border-red-500" : "border-gray-300"
+                          }`}
+                          placeholder="299.99"
                         />
+                        {errors.price && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.price}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Compare Price (€)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.comparePrice}
+                          onChange={(e) =>
+                            handleInputChange("comparePrice", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="399.99"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Original price for showing discount
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Discount
+                        </label>
+                        <div className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900">
+                          {calculateDiscount()}% off
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Stock Quantity *
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.stock}
+                          onChange={(e) =>
+                            handleInputChange("stock", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
+                            errors.stock ? "border-red-500" : "border-gray-300"
+                          }`}
+                          placeholder="50"
+                        />
+                        {errors.stock && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.stock}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Low Stock Alert
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.lowStockAlert}
+                          onChange={(e) =>
+                            handleInputChange("lowStockAlert", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="10"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Alert when stock falls below this number
+                        </p>
+                      </div>
+                    </div>
+
+                    {calculateDiscount() > 0 && (
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                        <div className="flex items-center">
+                          <CheckCircleIcon className="w-5 h-5 text-green-600 mr-2" />
+                          <span className="text-sm font-medium text-green-800">
+                            {calculateDiscount()}% discount applied - Great for
+                            attracting customers!
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Media & Details */}
+              {currentStep === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-xl border border-gray-200 p-8"
+                >
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Media & Details
+                    </h3>
+                    <p className="text-gray-600 mt-1">
+                      Add images and technical specifications
+                    </p>
+                  </div>
+
+                  <div className="space-y-8">
+                    {/* Product Images */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-4">
+                        Product Images
+                      </label>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {formData.imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-xl border border-gray-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <XMarkIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <PhotoIcon className="w-8 h-8 text-gray-400" />
+                          <span className="text-sm text-gray-500 mt-1">
+                            Add Images
+                          </span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Specifications */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-4">
+                        Technical Specifications
+                      </label>
+
+                      <div className="space-y-3">
+                        {formData.specifications.map((spec, index) => (
+                          <div key={index} className="grid grid-cols-5 gap-3">
+                            <div className="col-span-2">
+                              <input
+                                type="text"
+                                value={spec.key}
+                                onChange={(e) =>
+                                  updateSpecification(
+                                    index,
+                                    "key",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                                placeholder="Feature name"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <input
+                                type="text"
+                                value={spec.value}
+                                onChange={(e) =>
+                                  updateSpecification(
+                                    index,
+                                    "value",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                                placeholder="Feature value"
+                              />
+                            </div>
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => removeSpecification(index)}
+                                className="w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                              >
+                                <XMarkIcon className="w-4 h-4 mx-auto" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={addSpecification}
+                          className="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
                         >
-                          <XMarkIcon className="w-4 h-4" />
+                          <PlusIcon className="w-4 h-4 mr-1" />
+                          Add Specification
                         </button>
                       </div>
-                    ))}
-
-                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                      <PhotoIcon className="w-6 h-6 text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-1">
-                        Add Image
-                      </span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
+              )}
 
-                {/* Specifications */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Technical Specifications
-                  </label>
+              {/* Step 4: Settings & Launch */}
+              {currentStep === 4 && (
+                <motion.div
+                  key="step4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-xl border border-gray-200 p-8"
+                >
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Settings & Launch
+                    </h3>
+                    <p className="text-gray-600 mt-1">
+                      Configure visibility and additional details
+                    </p>
+                  </div>
 
-                  {formData.specifications.map((spec, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2"
-                    >
-                      <div className="md:col-span-2">
-                        <input
-                          type="text"
-                          value={spec.key}
-                          onChange={(e) =>
-                            updateSpecification(index, "key", e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                          placeholder="e.g. RAM, Storage, Battery"
-                        />
+                  <div className="space-y-8">
+                    {/* Quick Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Product Visibility
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formData.isActive
+                                ? "Visible to customers"
+                                : "Hidden from customers"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleInputChange("isActive", !formData.isActive)
+                            }
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                              formData.isActive ? "bg-black" : "bg-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                formData.isActive
+                                  ? "translate-x-6"
+                                  : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
-                      <div className="md:col-span-2">
+
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Featured Product
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formData.featured
+                                ? "Highlighted in listings"
+                                : "Regular listing"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleInputChange("featured", !formData.featured)
+                            }
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                              formData.featured
+                                ? "bg-yellow-500"
+                                : "bg-gray-200"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                formData.featured
+                                  ? "translate-x-6"
+                                  : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Color
+                        </label>
                         <input
                           type="text"
-                          value={spec.value}
+                          value={formData.color}
                           onChange={(e) =>
-                            updateSpecification(index, "value", e.target.value)
+                            handleInputChange("color", e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                          placeholder="e.g. 16GB, 512GB SSD, 10 hours"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="Black"
                         />
                       </div>
                       <div>
-                        <button
-                          type="button"
-                          onClick={() => removeSpecification(index)}
-                          className="w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Material
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.material}
+                          onChange={(e) =>
+                            handleInputChange("material", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="Aluminum"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Weight (kg)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.weight}
+                          onChange={(e) =>
+                            handleInputChange("weight", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                          placeholder="1.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Warranty (years)
+                        </label>
+                        <select
+                          value={formData.warranty}
+                          onChange={(e) =>
+                            handleInputChange("warranty", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                         >
-                          <XMarkIcon className="w-4 h-4 mx-auto" />
-                        </button>
+                          <option value="0">No Warranty</option>
+                          <option value="1">1 Year</option>
+                          <option value="2">2 Years</option>
+                          <option value="3">3 Years</option>
+                        </select>
                       </div>
                     </div>
-                  ))}
 
-                  <button
-                    type="button"
-                    onClick={addSpecification}
-                    className="flex items-center text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    <PlusIcon className="w-4 h-4 mr-1" />
-                    Add Specification
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 4: Settings & Tags */}
-            {currentStep >= 4 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-lg border border-gray-200 p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Settings & Additional Info
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Warranty (years)
-                    </label>
-                    <select
-                      value={formData.warranty}
-                      onChange={(e) =>
-                        handleInputChange("warranty", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    >
-                      <option value="1">1 Year</option>
-                      <option value="2">2 Years</option>
-                      <option value="3">3 Years</option>
-                      <option value="0">No Warranty</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Weight (kg)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.weight}
-                      onChange={(e) =>
-                        handleInputChange("weight", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="1.5 kg"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Color
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.color}
-                      onChange={(e) =>
-                        handleInputChange("color", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="e.g. Black, Silver, Blue"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Material
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.material}
-                      onChange={(e) =>
-                        handleInputChange("material", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="e.g. Aluminum, Plastic, Fabric"
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dimensions (L x W x H cm)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.dimensions}
-                    onChange={(e) =>
-                      handleInputChange("dimensions", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="e.g. 25 x 15 x 8"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tags}
-                    onChange={(e) => handleInputChange("tags", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="wireless, gaming, bluetooth, noise-canceling"
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      checked={formData.featured}
-                      onChange={(e) =>
-                        handleInputChange("featured", e.target.checked)
-                      }
-                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="featured"
-                      className="ml-2 text-sm text-gray-700"
-                    >
-                      Featured Product
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) =>
-                        handleInputChange("isActive", e.target.checked)
-                      }
-                      className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="isActive"
-                      className="ml-2 text-sm text-gray-700"
-                    >
-                      Active (visible to customers)
-                    </label>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6">
-              {/* Step Navigation */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">
-                  Form Progress
-                </h3>
-                <div className="space-y-2">
-                  {steps.map((step) => (
-                    <button
-                      key={step.id}
-                      type="button"
-                      onClick={() => setCurrentStep(step.id)}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                        currentStep === step.id
-                          ? "bg-black text-white"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      {step.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product Preview */}
-              {formData.name && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="font-medium text-gray-900 mb-3">Preview</h3>
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <span className="font-medium">Name:</span> {formData.name}
-                    </p>
-                    <p>
-                      <span className="font-medium">Brand:</span>{" "}
-                      {formData.brand}
-                    </p>
-                    <p>
-                      <span className="font-medium">Price:</span> €
-                      {formData.price}
-                    </p>
-                    <p>
-                      <span className="font-medium">Stock:</span>{" "}
-                      {formData.stock}
-                    </p>
-                    {calculateDiscount() > 0 && (
-                      <p>
-                        <span className="font-medium">Discount:</span>{" "}
-                        {calculateDiscount()}% off
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating Product...
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dimensions (L x W x H cm)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.dimensions}
+                        onChange={(e) =>
+                          handleInputChange("dimensions", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                        placeholder="25 x 15 x 8"
+                      />
                     </div>
-                  ) : (
-                    "Create Product"
-                  )}
-                </button>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tags (comma separated)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.tags}
+                        onChange={(e) =>
+                          handleInputChange("tags", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                        placeholder="wireless, gaming, bluetooth"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Step Navigation */}
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeftIcon className="w-4 h-4 mr-1" />
+                Previous
+              </button>
+
+              <span className="text-sm text-gray-500">
+                Step {currentStep} of {steps.length}
+              </span>
+
+              {currentStep < steps.length ? (
                 <button
                   type="button"
-                  onClick={() => router.back()}
-                  className="w-full border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  onClick={nextStep}
+                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
-                  Cancel
+                  Next
+                  <ChevronRightIcon className="w-4 h-4 ml-1" />
                 </button>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Creating Product...
+                    </>
+                  ) : (
+                    <>
+                      <ScaleIcon className="w-4 h-4 mr-1" />
+                      Create Product
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
-      </form>
+
+        {/* Bottom Summary */}
+        <motion.div
+          className="mt-8 bg-white rounded-xl border border-gray-200 p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/vendor/products"
+                className="text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </Link>
+              <div className="h-4 w-px bg-gray-300" />
+              <span className="text-sm text-gray-500">
+                Draft auto-saves as you type
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="text-sm text-gray-500">
+                {formData.name
+                  ? `"${formData.name.slice(0, 30)}${formData.name.length > 30 ? "..." : ""}"`
+                  : "Untitled Product"}
+              </div>
+
+              {currentStep === steps.length && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Creating Product...
+                    </>
+                  ) : (
+                    <>
+                      <ScaleIcon className="w-4 h-4 mr-2" />
+                      Create Product
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

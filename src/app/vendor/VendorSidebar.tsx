@@ -24,7 +24,7 @@ const navigation = [
   { name: "Products", href: "/vendor/products", icon: CubeIcon },
   { name: "Add Product", href: "/vendor/products/add", icon: PlusIcon },
   { name: "Orders", href: "/vendor/orders", icon: ShoppingBagIcon },
-  { name: "Analytics", href: "/vendor/analytics", icon: ChartBarIcon },
+  { name: "Insights", href: "/vendor/insights", icon: ChartBarIcon },
   { name: "Customers", href: "/vendor/customers", icon: UsersIcon },
   { name: "Wallet", href: "/vendor/wallet", icon: CurrencyEuroIcon },
   { name: "Settings", href: "/vendor/settings", icon: Cog6ToothIcon },

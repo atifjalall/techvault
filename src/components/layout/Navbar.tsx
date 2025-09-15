@@ -15,6 +15,7 @@ import {
   CogIcon,
   ShoppingCartIcon,
   ArrowRightOnRectangleIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { getUserInitials } from "@/lib/utils";
 
@@ -72,6 +73,7 @@ interface ProfileDropdownProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: string;
   };
   onSignOut: () => void;
 }
@@ -79,7 +81,17 @@ interface ProfileDropdownProps {
 function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const profileMenuItems = [
+  // Define menu item type
+  interface MenuItem {
+    name: string;
+    href: string;
+    icon: React.ElementType;
+    description: string;
+    isVendor?: boolean;
+  }
+
+  // Base profile menu items
+  const baseProfileMenuItems: MenuItem[] = [
     {
       name: "My Profile",
       href: "/profile",
@@ -105,6 +117,21 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
       description: "Account preferences",
     },
   ];
+
+  // Add vendor dashboard if user is a vendor
+  const profileMenuItems: MenuItem[] =
+    user.role === "VENDOR"
+      ? [
+          {
+            name: "Vendor Dashboard",
+            href: "/vendor/dashboard",
+            icon: BuildingStorefrontIcon,
+            description: "Manage your store",
+            isVendor: true,
+          },
+          ...baseProfileMenuItems,
+        ]
+      : baseProfileMenuItems;
 
   return (
     <div className="relative">
@@ -181,6 +208,11 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
                     {user.name || "User"}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  {user.role === "VENDOR" && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                      Vendor
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -191,11 +223,27 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
+                  className={`group flex items-center px-4 py-3 text-sm transition-colors duration-150 ${
+                    item.isVendor
+                      ? "text-blue-700 hover:bg-blue-50 hover:text-blue-900 border-b border-gray-100"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
                   onClick={() => setIsOpen(false)}
                 >
-                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-gray-200 transition-colors">
-                    <item.icon className="w-4 h-4 text-gray-600 group-hover:text-gray-700" />
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors ${
+                      item.isVendor
+                        ? "bg-blue-100 group-hover:bg-blue-200"
+                        : "bg-gray-100 group-hover:bg-gray-200"
+                    }`}
+                  >
+                    <item.icon
+                      className={`w-4 h-4 transition-colors ${
+                        item.isVendor
+                          ? "text-blue-600 group-hover:text-blue-700"
+                          : "text-gray-600 group-hover:text-gray-700"
+                      }`}
+                    />
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{item.name}</div>
@@ -409,6 +457,7 @@ export default function Navbar() {
                   name: session.user.name,
                   email: session.user.email,
                   image: session.user.image,
+                  role: session.user.role,
                 }}
                 onSignOut={handleSignOut}
               />
@@ -496,11 +545,27 @@ export default function Navbar() {
                       <p className="text-xs text-gray-500">
                         {session.user.email}
                       </p>
+                      {session.user.role === "VENDOR" && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                          Vendor
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Mobile Profile Links */}
                   <div className="space-y-1">
+                    {/* Vendor Dashboard for mobile */}
+                    {session.user.role === "VENDOR" && (
+                      <Link
+                        href="/vendor/dashboard"
+                        className="flex items-center px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md font-medium"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
+                        Vendor Dashboard
+                      </Link>
+                    )}
                     <Link
                       href="/profile"
                       className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
