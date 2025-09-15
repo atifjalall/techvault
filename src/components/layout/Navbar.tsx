@@ -235,10 +235,29 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
   );
 }
 
+// Smart Badge Component for Cart/Wishlist counters
+interface SmartBadgeProps {
+  count: number;
+}
+
+function SmartBadge({ count }: SmartBadgeProps) {
+  if (count === 0) return null;
+
+  return (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+
+  // TODO: Replace with actual cart/wishlist state management
+  const [cartItemCount] = useState(0); // This should come from your cart state
+  const [wishlistItemCount] = useState(0); // This should come from your wishlist state
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -362,15 +381,23 @@ export default function Navbar() {
 
           {/* Right side icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <button className="text-gray-700 hover:text-gray-900 p-2">
+            {/* Wishlist Button */}
+            <Link
+              href="/wishlist"
+              className="text-gray-700 hover:text-gray-900 p-2 relative transition-colors"
+            >
               <HeartIcon className="h-6 w-6" />
-            </button>
-            <button className="text-gray-700 hover:text-gray-900 p-2 relative">
+              <SmartBadge count={wishlistItemCount} />
+            </Link>
+
+            {/* Cart Button */}
+            <Link
+              href="/cart"
+              className="text-gray-700 hover:text-gray-900 p-2 relative transition-colors"
+            >
               <ShoppingBagIcon className="h-6 w-6" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                0
-              </span>
-            </button>
+              <SmartBadge count={cartItemCount} />
+            </Link>
 
             {/* Conditional Auth/Profile Section */}
             {status === "loading" ? (
@@ -527,21 +554,24 @@ export default function Navbar() {
 
               {/* Mobile Actions (Wishlist, Cart) */}
               <div className="flex items-center px-5 space-x-4 mt-4">
-                <button
-                  className="text-gray-700 hover:text-gray-900 p-2"
+                <Link
+                  href="/wishlist"
+                  className="text-gray-700 hover:text-gray-900 p-2 relative"
                   aria-label="View wishlist"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <HeartIcon className="h-6 w-6" />
-                </button>
-                <button
+                  <SmartBadge count={wishlistItemCount} />
+                </Link>
+                <Link
+                  href="/cart"
                   className="text-gray-700 hover:text-gray-900 p-2 relative"
                   aria-label="View shopping cart"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <ShoppingBagIcon className="h-6 w-6" />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    0
-                  </span>
-                </button>
+                  <SmartBadge count={cartItemCount} />
+                </Link>
               </div>
             </div>
           </div>

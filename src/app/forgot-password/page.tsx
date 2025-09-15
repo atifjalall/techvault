@@ -11,10 +11,18 @@ import {
   EyeSlashIcon,
   CheckIcon,
   XMarkIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
+import { signIn } from "next-auth/react";
 
 type Step = "email" | "verification" | "password";
+
+interface PasswordStrength {
+  score: number;
+  feedback: string[];
+  color: string;
+}
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -35,7 +43,7 @@ export default function ForgotPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [codeError, setCodeError] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -82,17 +90,65 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  const validatePassword = (password: string): PasswordStrength => {
+    let score = 0;
+    const feedback: string[] = [];
+
+    if (password.length >= 8) score++;
+    else feedback.push("At least 8 characters");
+
+    if (/[A-Z]/.test(password)) score++;
+    else feedback.push("One uppercase letter");
+
+    if (/[a-z]/.test(password)) score++;
+    else feedback.push("One lowercase letter");
+
+    if (/\d/.test(password)) score++;
+    else feedback.push("One number");
+
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
+    else feedback.push("One special character");
+
+    let color = "bg-red-500";
+    if (score >= 3) color = "bg-yellow-500";
+    if (score >= 4) color = "bg-green-500";
+
+    return { score, feedback, color };
+  };
+
+  const passwordStrength = validatePassword(newPassword);
+
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    setIsLoading(false);
-    setCurrentStep("verification");
-    setTimer(120); // 2 minutes (120 seconds)
-    showToastNotification("Verification code sent to your email!");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send reset code");
+      }
+
+      setCurrentStep("verification");
+      setTimer(600); // 10 minutes
+      showToastNotification("Reset code sent to your email!");
+
+      // Auto-focus first input
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCodeChange = (index: number, value: string) => {
@@ -105,6 +161,7 @@ export default function ForgotPasswordPage() {
     newCode[index] = value;
     setVerificationCode(newCode);
     setCodeError(false);
+    setError(null);
 
     // Auto-focus next input
     if (value && index < 5) {
@@ -138,64 +195,149 @@ export default function ForgotPasswordPage() {
 
   const handleCodeVerification = async (code: string) => {
     setIsLoading(true);
+    setError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch("/api/auth/verify-reset-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
 
-    if (code === "111111") {
-      setIsLoading(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid code");
+      }
+
       setCurrentStep("password");
       showToastNotification("Code verified successfully!");
-    } else {
-      setIsLoading(false);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Invalid code");
       setCodeError(true);
-      showToastNotification("Invalid code. Please try again.");
       // Clear and reset inputs with animation
       setTimeout(() => {
         setVerificationCode(["", "", "", "", "", ""]);
         setCodeError(false);
         inputRefs.current[0]?.focus();
       }, 1000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     // Validate passwords
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
+    if (passwordStrength.score < 3) {
+      setError("Password is too weak");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
 
-    setPasswordError("");
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          code: verificationCode.join(""),
+          newPassword,
+        }),
+      });
 
-    setIsLoading(false);
-    showToastNotification("Password reset successfully!");
+      const data = await response.json();
 
-    // Redirect to home after 2 seconds
-    setTimeout(() => {
-      router.push("/");
-    }, 2000);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      console.log("✅ Password reset successful, auto-login:", data.autoLogin);
+
+      if (data.autoLogin && data.user) {
+        // Auto-login the user with new password
+        showToastNotification("Password reset successfully! Signing you in...");
+
+        // Wait 1 second to show the toast, then sign in
+        setTimeout(async () => {
+          try {
+            const result = await signIn("credentials", {
+              email: email,
+              password: newPassword,
+              redirect: false,
+            });
+
+            if (result?.ok) {
+              // Successful login - redirect to home
+              window.location.href = "/";
+            } else {
+              // Fallback to signin page if auto-login fails
+              router.push(
+                "/signin?message=Password reset successfully! Please sign in with your new password."
+              );
+            }
+          } catch (error) {
+            console.error("Auto-login failed:", error);
+            // Fallback to signin page
+            router.push(
+              "/signin?message=Password reset successfully! Please sign in with your new password."
+            );
+          }
+        }, 1500);
+      } else {
+        // Fallback if auto-login not supported
+        showToastNotification("Password reset successfully!");
+        setTimeout(() => {
+          router.push(
+            "/signin?message=Password reset successfully! Please sign in with your new password."
+          );
+        }, 2000);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResendCode = async () => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setTimer(120); // Reset to 2 minutes
-    setVerificationCode(["", "", "", "", "", ""]);
-    inputRefs.current[0]?.focus();
-    showToastNotification("New verification code sent!");
+    setError(null);
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to resend code");
+      }
+
+      setTimer(600); // Reset to 10 minutes
+      setVerificationCode(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
+      showToastNotification(
+        "If an account exists, a new reset code has been sent!"
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Failed to resend code"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const ProgressBar = () => (
@@ -265,6 +407,24 @@ export default function ForgotPasswordPage() {
             Back to Sign In
           </Link>
 
+          {/* Error Alert */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+              >
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Progress Bar */}
           <ProgressBar />
 
@@ -305,7 +465,6 @@ export default function ForgotPasswordPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                         placeholder="Enter your email address"
-                        title="Enter your email address"
                       />
                       <EnvelopeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
@@ -346,7 +505,7 @@ export default function ForgotPasswordPage() {
                   {/* Code Input Boxes */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-4">
-                      Verification Code (Try: 111111)
+                      Verification Code (Test: 111111)
                     </label>
                     <div className="flex justify-center space-x-3 mb-4">
                       {verificationCode.map((digit, index) => (
@@ -369,8 +528,6 @@ export default function ForgotPasswordPage() {
                           }`}
                           inputMode="numeric"
                           pattern="\d*"
-                          aria-label={`Verification code digit ${index + 1}`}
-                          title={`Enter digit ${index + 1} of verification code`}
                           placeholder="0"
                           animate={codeError ? { x: [-5, 5, -5, 5, 0] } : {}}
                           transition={{ duration: 0.4 }}
@@ -399,26 +556,6 @@ export default function ForgotPasswordPage() {
                       </button>
                     )}
                   </div>
-
-                  {codeError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-center"
-                    >
-                      <motion.p
-                        className="text-sm text-red-600 font-medium flex items-center justify-center"
-                        initial={{ scale: 0.95 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <XMarkIcon className="w-4 h-4 mr-1" />
-                        Invalid code. Please try again.
-                      </motion.p>
-                    </motion.div>
-                  )}
                 </div>
               </motion.div>
             )}
@@ -457,14 +594,12 @@ export default function ForgotPasswordPage() {
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="w-full pl-12 pr-12 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                         placeholder="Enter new password"
-                        title="Enter your new password"
                       />
                       <LockClosedIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        title={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? (
                           <EyeSlashIcon className="w-5 h-5" />
@@ -473,6 +608,54 @@ export default function ForgotPasswordPage() {
                         )}
                       </button>
                     </div>
+
+                    {/* Password Strength Indicator */}
+                    <AnimatePresence>
+                      {newPassword && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2"
+                        >
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{
+                                  width: `${(passwordStrength.score / 5) * 100}%`,
+                                }}
+                                transition={{ duration: 0.3 }}
+                                className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-gray-600">
+                              {passwordStrength.score < 3
+                                ? "Weak"
+                                : passwordStrength.score < 4
+                                  ? "Good"
+                                  : "Strong"}
+                            </span>
+                          </div>
+                          {passwordStrength.feedback.length > 0 && (
+                            <div className="space-y-1">
+                              {passwordStrength.feedback.map((item, index) => (
+                                <motion.div
+                                  key={index}
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className="flex items-center text-xs text-gray-500"
+                                >
+                                  <XMarkIcon className="h-3 w-3 text-red-500 mr-1" />
+                                  {item}
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Confirm Password */}
@@ -493,7 +676,6 @@ export default function ForgotPasswordPage() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full pl-12 pr-12 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
                         placeholder="Confirm new password"
-                        title="Confirm your new password"
                       />
                       <LockClosedIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <button
@@ -502,11 +684,6 @@ export default function ForgotPasswordPage() {
                           setShowConfirmPassword(!showConfirmPassword)
                         }
                         className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        title={
-                          showConfirmPassword
-                            ? "Hide password"
-                            : "Show password"
-                        }
                       >
                         {showConfirmPassword ? (
                           <EyeSlashIcon className="w-5 h-5" />
@@ -514,41 +691,26 @@ export default function ForgotPasswordPage() {
                           <EyeIcon className="w-5 h-5" />
                         )}
                       </button>
+                      <AnimatePresence>
+                        {newPassword &&
+                          confirmPassword &&
+                          newPassword === confirmPassword && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0 }}
+                              className="absolute inset-y-0 right-10 flex items-center"
+                            >
+                              <CheckIcon className="h-5 w-5 text-green-500" />
+                            </motion.div>
+                          )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
-                  {passwordError && (
-                    <AnimatePresence>
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                      >
-                        <motion.div
-                          className="inline-flex items-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
-                          initial={{ scale: 0.9 }}
-                          animate={{ scale: 1 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                        >
-                          <motion.div
-                            initial={{ rotate: 0 }}
-                            animate={{ rotate: [0, -10, 10, -10, 0] }}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                          >
-                            <XMarkIcon className="w-5 h-5 text-red-500 mr-2" />
-                          </motion.div>
-                          <p className="text-sm text-red-700 font-medium">
-                            {passwordError}
-                          </p>
-                        </motion.div>
-                      </motion.div>
-                    </AnimatePresence>
-                  )}
-
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || passwordStrength.score < 3}
                     className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50"
                   >
                     {isLoading ? (

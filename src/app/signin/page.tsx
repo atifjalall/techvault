@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, getSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -12,8 +12,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function SignInPage() {
-  const router = useRouter();
+// Separate component that uses useSearchParams
+function SignInForm() {
   const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +28,7 @@ export default function SignInPage() {
     rememberMe: false,
   });
 
-  // Check for success message from signup
+  // Check for success message from signup or password reset
   useEffect(() => {
     const message = searchParams.get("message");
     if (message) {
@@ -64,14 +64,10 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError("Invalid email or password");
       } else if (result?.ok) {
-        // Sign in successful - redirect to home
-        const session = await getSession();
-        if (session) {
-          router.push("/");
-          router.refresh();
-        }
+        // Success - redirect to home
+        window.location.href = "/";
       }
     } catch (error) {
       console.error("Sign in error:", error);
@@ -500,5 +496,89 @@ export default function SignInPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+// Skeleton loading fallback component
+function SignInLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="text-center">
+          <div className="h-10 bg-gray-300 rounded-lg w-48 mx-auto mb-2"></div>
+          <div className="w-20 h-1 bg-gray-300 mx-auto mb-8"></div>
+          <div className="h-9 bg-gray-200 rounded-lg w-56 mx-auto mb-2"></div>
+          <div className="h-5 bg-gray-200 rounded w-72 mx-auto"></div>
+        </div>
+
+        {/* Form Container Skeleton */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {/* Google Button Skeleton */}
+          <div className="h-12 bg-gray-200 rounded-xl mb-6"></div>
+
+          {/* Divider Skeleton */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center">
+              <div className="h-4 bg-white px-4 w-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+
+          {/* Form Fields Skeleton */}
+          <div className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <div className="h-5 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-12 bg-gray-100 rounded-xl"></div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <div className="h-5 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-12 bg-gray-100 rounded-xl"></div>
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+            </div>
+
+            {/* Sign In Button */}
+            <div className="h-12 bg-gray-300 rounded-xl"></div>
+          </div>
+        </div>
+
+        {/* Sign Up Link Skeleton */}
+        <div className="text-center">
+          <div className="h-5 bg-gray-200 rounded w-64 mx-auto"></div>
+        </div>
+
+        {/* Trust Indicators Skeleton */}
+        <div className="flex items-center justify-center space-x-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center space-x-1">
+              <div className="w-4 h-4 bg-gray-200 rounded"></div>
+              <div className="h-3 bg-gray-200 rounded w-16"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<SignInLoading />}>
+      <SignInForm />
+    </Suspense>
   );
 }
