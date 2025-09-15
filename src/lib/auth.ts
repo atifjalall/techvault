@@ -5,7 +5,6 @@ import { compare } from "bcryptjs";
 import { db } from "./db";
 
 export const authOptions: NextAuthOptions = {
-  // Remove adapter - this is causing the error
   session: {
     strategy: "jwt",
   },
@@ -27,6 +26,14 @@ export const authOptions: NextAuthOptions = {
         try {
           const user = await db.user.findUnique({
             where: { email: credentials.email.toLowerCase() },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              password: true,
+              role: true, // Include role in the query
+            },
           });
 
           if (!user || !user.password) {
@@ -43,6 +50,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             image: user.image,
+            role: user.role, // Include role in return
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -63,6 +71,8 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
         token.image = user.image ?? undefined;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token.role = (user as any).role ?? "CUSTOMER"; // Add role to token
       }
 
       // Handle Google OAuth
@@ -70,6 +80,10 @@ export const authOptions: NextAuthOptions = {
         try {
           const existingUser = await db.user.findUnique({
             where: { email: user.email! },
+            select: {
+              id: true,
+              role: true, // Get role for existing user
+            },
           });
 
           if (!existingUser) {
@@ -79,14 +93,32 @@ export const authOptions: NextAuthOptions = {
                 name: user.name,
                 image: user.image,
                 isVerified: true,
+                role: "CUSTOMER", // Default role for new Google users
               },
             });
             token.id = newUser.id;
+            token.role = newUser.role;
           } else {
             token.id = existingUser.id;
+            token.role = existingUser.role; // Set role from existing user
           }
         } catch (error) {
           console.error("Google auth error:", error);
+        }
+      }
+
+      // Always fetch fresh role data for existing tokens (optional, for role updates)
+      if (token.id && !user) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+          }
+        } catch (error) {
+          console.error("Role fetch error:", error);
         }
       }
 
@@ -99,6 +131,14 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.image = token.image as string;
+
+        // Ensure only valid role values are assigned
+        const role = token.role;
+        if (role === "CUSTOMER" || role === "VENDOR" || role === "ADMIN") {
+          session.user.role = role;
+        } else {
+          session.user.role = "CUSTOMER"; // fallback default
+        }
       }
       return session;
     },
