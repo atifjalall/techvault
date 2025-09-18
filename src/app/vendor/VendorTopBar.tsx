@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import {
-  MagnifyingGlassIcon,
   BellIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
@@ -14,6 +13,11 @@ import {
   UserIcon,
   HomeIcon,
   Bars3Icon,
+  XMarkIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +36,31 @@ interface VendorTopBarProps {
   title?: string;
   breadcrumbs?: { name: string; href?: string }[];
 }
+
+interface Notification {
+  id: string;
+  type: "order" | "product" | "system" | "payment";
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+// Skeleton Loading Component
+const NotificationSkeleton = () => (
+  <div className="px-4 py-3 border-b border-gray-100 animate-pulse">
+    <div className="flex items-start space-x-3">
+      <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
+      <div className="flex-1 min-w-0">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      </div>
+      <div className="w-2 h-2 bg-gray-200 rounded-full flex-shrink-0"></div>
+    </div>
+  </div>
+);
 
 // Generate breadcrumbs from pathname
 const generateBreadcrumbs = (pathname: string) => {
@@ -53,21 +82,60 @@ const generateBreadcrumbs = (pathname: string) => {
     // Add current page
     if (currentPage !== "dashboard") {
       breadcrumbs.push({
-          name: currentPage === "add"
-              ? "Add New"
-              : currentPage.charAt(0).toUpperCase() + currentPage.slice(1),
-          href: ""
+        name:
+          currentPage === "add"
+            ? "Add New"
+            : currentPage.charAt(0).toUpperCase() + currentPage.slice(1),
+        href: "",
       });
     }
   } else if (segments.length === 2 && segments[1] !== "dashboard") {
     breadcrumbs.push({
-        name: segments[1].charAt(0).toUpperCase() + segments[1].slice(1),
-        href: ""
+      name: segments[1].charAt(0).toUpperCase() + segments[1].slice(1),
+      href: "",
     });
   }
 
   return breadcrumbs;
 };
+
+// Mock notification data - replace with actual API call
+const mockNotifications: Notification[] = [
+  {
+    id: "1",
+    type: "order",
+    title: "New Order Received",
+    message: "Order #12345 has been placed by John Doe",
+    isRead: false,
+    createdAt: "2025-01-15T10:30:00Z",
+    actionUrl: "/vendor/orders/12345",
+  },
+  {
+    id: "2",
+    type: "product",
+    title: "Low Stock Alert",
+    message: "iPhone 15 Pro is running low on stock (3 remaining)",
+    isRead: false,
+    createdAt: "2025-01-15T09:15:00Z",
+    actionUrl: "/vendor/products",
+  },
+  {
+    id: "3",
+    type: "payment",
+    title: "Payment Received",
+    message: "Payment of €899.99 has been processed successfully",
+    isRead: true,
+    createdAt: "2025-01-14T16:45:00Z",
+  },
+  {
+    id: "4",
+    type: "system",
+    title: "System Maintenance",
+    message: "Scheduled maintenance will occur tonight from 2-4 AM",
+    isRead: true,
+    createdAt: "2025-01-14T12:00:00Z",
+  },
+];
 
 export default function VendorTopBar({
   onMobileMenuToggle,
@@ -76,10 +144,27 @@ export default function VendorTopBar({
 }: VendorTopBarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   const defaultBreadcrumbs = generateBreadcrumbs(pathname);
   const finalBreadcrumbs = breadcrumbs || defaultBreadcrumbs;
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setIsLoadingNotifications(true);
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setNotifications(mockNotifications);
+      setIsLoadingNotifications(false);
+    };
+
+    if (notificationOpen) {
+      fetchNotifications();
+    }
+  }, [notificationOpen]);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -93,6 +178,52 @@ export default function VendorTopBar({
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "order":
+        return <ShoppingBagIcon className="h-5 w-5 text-blue-500" />;
+      case "product":
+        return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
+      case "payment":
+        return <CheckIcon className="h-5 w-5 text-green-500" />;
+      case "system":
+        return <InformationCircleIcon className="h-5 w-5 text-purple-500" />;
+      default:
+        return <BellIcon className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
+
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.id === notificationId ? { ...notif, isRead: true } : notif
+      )
+    );
+    // Here you would make an API call to mark as read
+  };
+
+  const markAllAsRead = async () => {
+    setNotifications((prev) =>
+      prev.map((notif) => ({ ...notif, isRead: true }))
+    );
+    // Here you would make an API call to mark all as read
+  };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -141,41 +272,133 @@ export default function VendorTopBar({
             </div>
           </div>
 
-          {/* Center section - Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <motion.div
-                animate={{
-                  scale: searchFocused ? 1.02 : 1,
-                }}
-                transition={{ duration: 0.2 }}
-                className="relative"
-              >
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search products, orders..."
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                />
-              </motion.div>
-            </div>
-          </div>
-
           {/* Right section */}
           <div className="flex items-center space-x-3">
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative p-2 hover:bg-gray-100 rounded-lg"
+            <DropdownMenu
+              open={notificationOpen}
+              onOpenChange={setNotificationOpen}
             >
-              <BellIcon className="h-5 w-5 text-gray-600" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                3
-              </Badge>
-            </Button>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <BellIcon className="h-5 w-5 text-gray-600" />
+                  {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className="w-80 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-0 max-h-96 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <BellIcon className="h-5 w-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">
+                      Notifications
+                    </h3>
+                    {unreadCount > 0 && (
+                      <Badge className="bg-red-100 text-red-800 text-xs">
+                        {unreadCount} new
+                      </Badge>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={markAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-700 p-1"
+                    >
+                      Mark all read
+                    </Button>
+                  )}
+                </div>
+
+                {/* Notifications List */}
+                <div className="max-h-64 overflow-y-auto">
+                  {isLoadingNotifications ? (
+                    // Skeleton loading
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <NotificationSkeleton key={i} />
+                    ))
+                  ) : notifications.length === 0 ? (
+                    // Empty state
+                    <div className="p-8 text-center">
+                      <BellIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">
+                        No notifications yet
+                      </p>
+                    </div>
+                  ) : (
+                    // Notifications
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          !notification.isRead ? "bg-blue-50" : ""
+                        }`}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markAsRead(notification.id);
+                          }
+                          if (notification.actionUrl) {
+                            // Navigate to action URL
+                            window.location.href = notification.actionUrl;
+                          }
+                        }}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm font-medium ${
+                                !notification.isRead
+                                  ? "text-gray-900"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatTimeAgo(notification.createdAt)}
+                            </p>
+                          </div>
+                          {!notification.isRead && (
+                            <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Footer */}
+                {notifications.length > 0 && (
+                  <div className="p-3 border-t border-gray-100 bg-gray-50">
+                    <Link
+                      href="/vendor/notifications"
+                      className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      View all notifications
+                    </Link>
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* User Menu */}
             <DropdownMenu>
@@ -274,18 +497,6 @@ export default function VendorTopBar({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile search bar (appears below main bar on small screens) */}
-      <div className="md:hidden px-4 pb-3 border-t border-gray-100">
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-          />
         </div>
       </div>
     </header>

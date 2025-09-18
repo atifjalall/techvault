@@ -12,6 +12,7 @@ import {
   UsersIcon,
   XMarkIcon,
   PlusIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 
 // Removed Settings from navigation since it's now in the top bar
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Insights", href: "/vendor/insights", icon: ChartBarIcon },
   { name: "Customers", href: "/vendor/customers", icon: UsersIcon },
   { name: "Wallet", href: "/vendor/wallet", icon: CurrencyEuroIcon },
+  { name: "Notifications", href: "/vendor/notifications", icon: BellIcon },
 ];
 
 interface VendorSidebarProps {
