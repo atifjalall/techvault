@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { signIn } from "next-auth/react";
+import Button from "@/components/ui/Button";
 
 type Step = "email" | "verification" | "password";
 
@@ -77,16 +78,16 @@ export default function ForgotPasswordPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getStepNumber = (step: Step): number => {
+  const getStepProgress = (step: Step): number => {
     switch (step) {
       case "email":
-        return 1;
+        return 33;
       case "verification":
-        return 2;
+        return 66;
       case "password":
-        return 3;
+        return 100;
       default:
-        return 1;
+        return 0;
     }
   };
 
@@ -109,9 +110,9 @@ export default function ForgotPasswordPage() {
     if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
     else feedback.push("One special character");
 
-    let color = "bg-red-500";
-    if (score >= 3) color = "bg-yellow-500";
-    if (score >= 4) color = "bg-green-500";
+    let color = "bg-red-400";
+    if (score >= 3) color = "bg-amber-400";
+    if (score >= 4) color = "bg-emerald-400";
 
     return { score, feedback, color };
   };
@@ -340,70 +341,69 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const ProgressBar = () => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        {[1, 2, 3].map((step) => (
-          <div key={step} className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                step < getStepNumber(currentStep)
-                  ? "bg-green-500 text-white"
-                  : step === getStepNumber(currentStep)
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-500"
-              }`}
-            >
-              {step < getStepNumber(currentStep) ? (
-                <CheckIcon className="w-4 h-4" />
-              ) : (
-                step
-              )}
-            </div>
-            {step < 3 && (
-              <div
-                className={`w-16 sm:w-24 h-1 mx-2 transition-all duration-300 ${
-                  step < getStepNumber(currentStep)
-                    ? "bg-green-500"
-                    : "bg-gray-200"
-                }`}
-              />
-            )}
-          </div>
-        ))}
+  // Linear Progress Bar Component
+  const ProgressBar = () => {
+    const progress = getStepProgress(currentStep);
+
+    return (
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-slate-700">
+            {currentStep === "email" && "Enter Email"}
+            {currentStep === "verification" && "Verify Code"}
+            {currentStep === "password" && "Set New Password"}
+          </span>
+          <span className="text-xs text-slate-500">
+            Step{" "}
+            {currentStep === "email"
+              ? "1"
+              : currentStep === "verification"
+                ? "2"
+                : "3"}{" "}
+            of 3
+          </span>
+        </div>
+        <div className="w-full bg-slate-200/50 rounded-full h-2">
+          <div
+            className="h-2 bg-gradient-to-r from-slate-900 to-slate-700 rounded-full transition-all duration-500 ease-in-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
-      <div className="flex justify-between text-xs text-gray-600">
-        <span>Email</span>
-        <span>Verify</span>
-        <span>Password</span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
       <motion.div
-        className="max-w-md w-full space-y-8"
+        className="max-w-md w-full"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
         {/* Header */}
-        <div className="text-center">
+        <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">TechVault</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              TechVault
+            </h1>
           </Link>
-          <div className="w-20 h-1 bg-black mx-auto mb-8"></div>
+          <motion.div
+            className="w-16 h-0.5 bg-slate-900 mx-auto mb-6"
+            initial={{ width: 0 }}
+            animate={{ width: 64 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          />
         </div>
 
         {/* Main Form Container */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+        <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6">
           {/* Back Button */}
           <Link
             href="/signin"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors mb-6"
+            className="inline-flex items-center text-xs text-slate-600 hover:text-slate-900 transition-colors mb-4"
           >
-            <ArrowLeftIcon className="w-4 h-4 mr-2" />
+            <ArrowLeftIcon className="w-3.5 h-3.5 mr-1.5" />
             Back to Sign In
           </Link>
 
@@ -415,11 +415,11 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+                className="mb-4 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3"
               >
                 <div className="flex items-center">
-                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
-                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2" />
+                  <p className="text-xs text-red-700 font-medium">{error}</p>
                 </div>
               </motion.div>
             )}
@@ -438,19 +438,19 @@ export default function ForgotPasswordPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
                   Reset Password
                 </h2>
-                <p className="text-gray-600 mb-6">
-                  Enter your email address and we&apos;ll send you a
-                  verification code
+                <p className="text-sm text-slate-600 mb-4">
+                  Enter your email address and we&apos;ll send you a verification
+                  code
                 </p>
 
-                <form onSubmit={handleEmailSubmit} className="space-y-6">
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
                   <div>
                     <label
                       htmlFor="email"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
+                      className="block text-xs font-medium text-slate-700 mb-1.5"
                     >
                       Email address
                     </label>
@@ -463,24 +463,25 @@ export default function ForgotPasswordPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                        className="w-full pl-10 pr-3 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
                         placeholder="Enter your email address"
                       />
-                      <EnvelopeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      "Send Verification Code"
-                    )}
-                  </button>
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      variant="default"
+                      size="md"
+                      fullWidth
+                      isLoading={isLoading}
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5"
+                    >
+                      {isLoading ? "Sending..." : "Send Verification Code"}
+                    </Button>
+                  </div>
                 </form>
               </motion.div>
             )}
@@ -493,21 +494,21 @@ export default function ForgotPasswordPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
                   Enter Verification Code
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm text-slate-600 mb-4">
                   We&apos;ve sent a 6-digit code to{" "}
-                  <span className="font-medium text-gray-900">{email}</span>
+                  <span className="font-medium text-slate-900">{email}</span>
                 </p>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {/* Code Input Boxes */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-4">
+                    <label className="block text-xs font-medium text-slate-700 mb-3">
                       Verification Code (Test: 111111)
                     </label>
-                    <div className="flex justify-center space-x-3 mb-4">
+                    <div className="flex justify-center space-x-2 mb-3">
                       {verificationCode.map((digit, index) => (
                         <motion.input
                           key={index}
@@ -521,10 +522,10 @@ export default function ForgotPasswordPage() {
                             handleCodeChange(index, e.target.value)
                           }
                           onKeyDown={(e) => handleCodeKeyDown(index, e)}
-                          className={`w-12 h-12 text-center text-lg font-mono font-bold border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200 ${
+                          className={`w-10 h-10 text-center text-sm font-mono font-bold border-2 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all duration-200 ${
                             codeError
-                              ? "border-red-500 bg-red-50 text-red-600"
-                              : "border-gray-300 text-gray-900 focus:border-transparent"
+                              ? "border-red-400/70 bg-red-50/50 text-red-600"
+                              : "border-slate-300/70 text-slate-900 focus:border-transparent"
                           }`}
                           inputMode="numeric"
                           pattern="\d*"
@@ -539,9 +540,9 @@ export default function ForgotPasswordPage() {
                   {/* Timer/Resend */}
                   <div className="text-center">
                     {timer > 0 ? (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs text-slate-600">
                         Resend code in{" "}
-                        <span className="font-mono font-semibold text-gray-900">
+                        <span className="font-mono font-semibold text-slate-900">
                           {formatTime(timer)}
                         </span>
                       </p>
@@ -550,7 +551,7 @@ export default function ForgotPasswordPage() {
                         type="button"
                         onClick={handleResendCode}
                         disabled={isLoading}
-                        className="text-sm font-medium text-black hover:text-gray-700 transition-colors disabled:opacity-50"
+                        className="text-xs font-medium text-slate-900 hover:text-slate-700 transition-colors disabled:opacity-50"
                       >
                         Resend verification code
                       </button>
@@ -568,19 +569,19 @@ export default function ForgotPasswordPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">
                   Set New Password
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm text-slate-600 mb-4">
                   Create a strong password for your account
                 </p>
 
-                <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
                   {/* New Password */}
                   <div>
                     <label
                       htmlFor="newPassword"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
+                      className="block text-xs font-medium text-slate-700 mb-1.5"
                     >
                       New Password
                     </label>
@@ -592,19 +593,19 @@ export default function ForgotPasswordPage() {
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full pl-12 pr-12 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
                         placeholder="Enter new password"
                       />
-                      <LockClosedIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
                         {showPassword ? (
-                          <EyeSlashIcon className="w-5 h-5" />
+                          <EyeSlashIcon className="w-4 h-4" />
                         ) : (
-                          <EyeIcon className="w-5 h-5" />
+                          <EyeIcon className="w-4 h-4" />
                         )}
                       </button>
                     </div>
@@ -618,18 +619,18 @@ export default function ForgotPasswordPage() {
                           exit={{ opacity: 0, height: 0 }}
                           className="mt-2"
                         >
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div className="flex items-center space-x-2 mb-1.5">
+                            <div className="flex-1 bg-slate-200/50 rounded-full h-1.5">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{
                                   width: `${(passwordStrength.score / 5) * 100}%`,
                                 }}
                                 transition={{ duration: 0.3 }}
-                                className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength.color}`}
                               />
                             </div>
-                            <span className="text-xs font-medium text-gray-600">
+                            <span className="text-xs font-medium text-slate-600">
                               {passwordStrength.score < 3
                                 ? "Weak"
                                 : passwordStrength.score < 4
@@ -638,19 +639,21 @@ export default function ForgotPasswordPage() {
                             </span>
                           </div>
                           {passwordStrength.feedback.length > 0 && (
-                            <div className="space-y-1">
-                              {passwordStrength.feedback.map((item, index) => (
-                                <motion.div
-                                  key={index}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: index * 0.1 }}
-                                  className="flex items-center text-xs text-gray-500"
-                                >
-                                  <XMarkIcon className="h-3 w-3 text-red-500 mr-1" />
-                                  {item}
-                                </motion.div>
-                              ))}
+                            <div className="space-y-0.5">
+                              {passwordStrength.feedback
+                                .slice(0, 3)
+                                .map((item, index) => (
+                                  <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="flex items-center text-xs text-slate-500"
+                                  >
+                                    <XMarkIcon className="h-3 w-3 text-red-400 mr-1" />
+                                    {item}
+                                  </motion.div>
+                                ))}
                             </div>
                           )}
                         </motion.div>
@@ -662,7 +665,7 @@ export default function ForgotPasswordPage() {
                   <div>
                     <label
                       htmlFor="confirmPassword"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
+                      className="block text-xs font-medium text-slate-700 mb-1.5"
                     >
                       Confirm Password
                     </label>
@@ -674,21 +677,21 @@ export default function ForgotPasswordPage() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-12 pr-12 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200"
+                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
                         placeholder="Confirm new password"
                       />
-                      <LockClosedIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <button
                         type="button"
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
                         {showConfirmPassword ? (
-                          <EyeSlashIcon className="w-5 h-5" />
+                          <EyeSlashIcon className="w-4 h-4" />
                         ) : (
-                          <EyeIcon className="w-5 h-5" />
+                          <EyeIcon className="w-4 h-4" />
                         )}
                       </button>
                       <AnimatePresence>
@@ -699,26 +702,28 @@ export default function ForgotPasswordPage() {
                               initial={{ opacity: 0, scale: 0 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0 }}
-                              className="absolute inset-y-0 right-10 flex items-center"
+                              className="absolute inset-y-0 right-8 flex items-center"
                             >
-                              <CheckIcon className="h-5 w-5 text-green-500" />
+                              <CheckIcon className="h-4 w-4 text-emerald-500" />
                             </motion.div>
                           )}
                       </AnimatePresence>
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading || passwordStrength.score < 3}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      "Reset Password"
-                    )}
-                  </button>
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      variant="default"
+                      size="md"
+                      fullWidth
+                      isLoading={isLoading}
+                      disabled={isLoading || passwordStrength.score < 3}
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5"
+                    >
+                      {isLoading ? "Resetting..." : "Reset Password"}
+                    </Button>
+                  </div>
                 </form>
               </motion.div>
             )}
@@ -726,12 +731,12 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Help Text */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
+        <div className="text-center mt-6">
+          <p className="text-sm text-slate-600">
             Remember your password?{" "}
             <Link
               href="/signin"
-              className="font-medium text-black hover:text-gray-700 transition-colors"
+              className="font-medium text-slate-900 hover:text-slate-700 transition-colors"
             >
               Sign in here
             </Link>
@@ -749,9 +754,9 @@ export default function ForgotPasswordPage() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
           >
-            <div className="bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-3 max-w-sm">
-              <CheckIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-sm font-medium">{toastMessage}</p>
+            <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center space-x-2 max-w-sm">
+              <CheckIcon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <p className="text-xs font-medium">{toastMessage}</p>
             </div>
           </motion.div>
         )}

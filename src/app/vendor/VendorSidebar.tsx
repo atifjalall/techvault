@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,16 +8,13 @@ import {
   ShoppingBagIcon,
   CubeIcon,
   CurrencyEuroIcon,
-  Cog6ToothIcon,
   ChartBarIcon,
   UsersIcon,
-  Bars3Icon,
   XMarkIcon,
-  ArrowRightOnRectangleIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { signOut, useSession } from "next-auth/react";
 
+// Removed Settings from navigation since it's now in the top bar
 const navigation = [
   { name: "Dashboard", href: "/vendor/dashboard", icon: HomeIcon },
   { name: "Products", href: "/vendor/products", icon: CubeIcon },
@@ -27,24 +23,21 @@ const navigation = [
   { name: "Insights", href: "/vendor/insights", icon: ChartBarIcon },
   { name: "Customers", href: "/vendor/customers", icon: UsersIcon },
   { name: "Wallet", href: "/vendor/wallet", icon: CurrencyEuroIcon },
-  { name: "Settings", href: "/vendor/settings", icon: Cog6ToothIcon },
 ];
 
 interface VendorSidebarProps {
-  children: React.ReactNode;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
 }
 
-export default function VendorSidebar({ children }: VendorSidebarProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function VendorSidebar({
+  sidebarOpen,
+  setSidebarOpen,
+}: VendorSidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" });
-  };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <>
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -74,8 +67,6 @@ export default function VendorSidebar({ children }: VendorSidebarProps) {
             <SidebarContent
               navigation={navigation}
               pathname={pathname}
-              session={session}
-              onSignOut={handleSignOut}
               onClose={() => setSidebarOpen(false)}
               isMobile={true}
             />
@@ -88,43 +79,16 @@ export default function VendorSidebar({ children }: VendorSidebarProps) {
         <SidebarContent
           navigation={navigation}
           pathname={pathname}
-          session={session}
-          onSignOut={handleSignOut}
           isMobile={false}
         />
       </div>
-
-      {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-            <h1 className="text-lg font-semibold text-gray-900">
-              TechVault Vendor
-            </h1>
-            <div className="w-10" /> {/* Spacer for centering */}
-          </div>
-        </div>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    </div>
+    </>
   );
 }
 
 interface SidebarContentProps {
   navigation: typeof navigation;
   pathname: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  session: any;
-  onSignOut: () => void;
   onClose?: () => void;
   isMobile?: boolean;
 }
@@ -132,8 +96,6 @@ interface SidebarContentProps {
 function SidebarContent({
   navigation,
   pathname,
-  session,
-  onSignOut,
   onClose,
   isMobile = false,
 }: SidebarContentProps) {
@@ -154,60 +116,59 @@ function SidebarContent({
         )}
       </div>
 
-      {/* User info */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center text-sm font-semibold">
-              {session?.user?.name?.charAt(0) || "V"}
-            </div>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-900">
-              {session?.user?.name || "Vendor"}
-            </p>
-            <p className="text-xs text-gray-500">Vendor Account</p>
-          </div>
-        </div>
-      </div>
+      {/* Clean spacer */}
+      <div className="h-4"></div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-6 py-4 space-y-2">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link
+            <motion.div
               key={item.name}
-              href={item.href}
-              onClick={isMobile ? onClose : undefined}
-              className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                isActive
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              }`}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
             >
-              <item.icon
-                className={`mr-3 h-5 w-5 transition-colors ${
+              <Link
+                href={item.href}
+                onClick={isMobile ? onClose : undefined}
+                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
                   isActive
-                    ? "text-gray-900"
-                    : "text-gray-400 group-hover:text-gray-600"
+                    ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
-              />
-              {item.name}
-            </Link>
+              >
+                <item.icon
+                  className={`mr-3 h-5 w-5 transition-colors ${
+                    isActive
+                      ? "text-blue-600"
+                      : "text-gray-400 group-hover:text-gray-600"
+                  }`}
+                />
+                {item.name}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="ml-auto w-2 h-2 bg-blue-600 rounded-full"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </Link>
+            </motion.div>
           );
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="p-4 border-t border-gray-200">
-        <button
-          onClick={onSignOut}
-          className="group flex w-full items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:text-gray-900 hover:bg-gray-50 transition-colors"
-        >
-          <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-          Sign out
-        </button>
+      {/* Minimal Footer */}
+      <div className="p-6 border-t border-gray-100">
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <p className="text-xs text-gray-500 font-medium">System Online</p>
+          </div>
+        </div>
       </div>
     </div>
   );

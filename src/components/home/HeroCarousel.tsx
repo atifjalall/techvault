@@ -105,20 +105,22 @@ export default function HeroCarousel() {
             {/* Left Content */}
             <div className="space-y-8 animate-fade-in">
               <div className="space-y-4">
-                <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-3xl lg:text-5xl font-bold text-gray-900 leading-tight">
                   {slide.title}
                 </h1>
-                <p className="text-lg lg:text-xl text-gray-600 font-medium">
+                <p className="text-base lg:text-lg text-gray-600 font-medium">
                   {slide.subtitle}
                 </p>
-                <p className="text-gray-500 max-w-md">{slide.description}</p>
+                <p className="text-sm text-gray-500 max-w-md">
+                  {slide.description}
+                </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-black text-white px-8 py-3 rounded-md font-medium hover:bg-gray-800 transition-colors">
+                <button className="bg-black text-white px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer">
                   {slide.ctaPrimary}
                 </button>
-                <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors">
+                <button className="bg-white border border-gray-300 text-gray-700 px-6 py-2.5 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer">
                   {slide.ctaSecondary}
                 </button>
               </div>
@@ -131,7 +133,7 @@ export default function HeroCarousel() {
                 <div className="w-96 h-96 bg-gray-200 rounded-2xl flex items-center justify-center mb-8">
                   <div className="text-gray-400 text-center">
                     <div className="w-32 h-32 bg-gray-300 rounded-lg mx-auto mb-4"></div>
-                    <p className="text-sm">Product Image</p>
+                    <p className="text-xs">Product Image</p>
                   </div>
                 </div>
 
@@ -140,14 +142,14 @@ export default function HeroCarousel() {
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 text-sm">
                         {slide.product.name}
                       </h3>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-lg font-bold text-gray-900">
+                        <span className="text-base font-bold text-gray-900">
                           {formatPrice(slide.product.price)}
                         </span>
-                        <span className="text-sm text-gray-500 line-through">
+                        <span className="text-xs text-gray-500 line-through">
                           {formatPrice(slide.product.originalPrice)}
                         </span>
                       </div>
@@ -164,7 +166,7 @@ export default function HeroCarousel() {
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all z-10"
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all z-10 cursor-pointer"
         aria-label="Previous slide"
       >
         <ChevronLeftIcon className="h-6 w-6 text-gray-700" />
@@ -172,7 +174,7 @@ export default function HeroCarousel() {
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all z-10"
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all z-10 cursor-pointer"
         aria-label="Next slide"
       >
         <ChevronRightIcon className="h-6 w-6 text-gray-700" />

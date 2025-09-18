@@ -41,10 +41,27 @@ model User {
   emailVerified     DateTime?
   image             String?
   password          String?
+  phone             String?              // NEW - Phone number
+  bio               String?              // NEW - Business description
   isVerified        Boolean   @default(false)
   verificationToken String?
   resetToken        String?
   resetTokenExpiry  DateTime?
+  
+  // NEW - Security settings
+  twoFactorEnabled    Boolean   @default(false)
+  phoneVerified       Boolean   @default(false)
+  lastPasswordChange  DateTime? @default(now())
+  
+  // NEW - Business address as JSON
+  businessAddress     Json?     // { street, city, postalCode, country }
+  
+  // NEW - Notification preferences as JSON  
+  notificationSettings Json?    // { orderAlerts, marketingEmails, productUpdates, payoutNotifications }
+  
+  // NEW - Privacy settings as JSON
+  privacySettings     Json?     // { profileVisibility, showEmail, showPhone }
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deleteAt          DateTime?
@@ -98,16 +115,16 @@ model Product {
   comparePrice   Decimal? @db.Decimal(10, 2)
   images         String[]
   brand          String?
-  modelNumber    String? // NEW: Product model/SKU
+  modelNumber    String? // Product model/SKU
   specifications Json? // Technical specs as key-value pairs
   stock          Int      @default(0)
-  lowStockAlert  Int      @default(10) // NEW: Alert threshold
+  lowStockAlert  Int      @default(10) // Alert threshold
   isActive       Boolean  @default(true)
   featured       Boolean  @default(false)
   categoryId     String
   vendorId       String?
 
-  // NEW: Additional product details
+  // Additional product details
   warranty   String? // Warranty period (e.g., "2 years")
   weight     String? // Product weight (e.g., "1.5 kg")
   dimensions String? // Product dimensions (e.g., "25 x 15 x 8 cm")
@@ -190,15 +207,22 @@ model Review {
   @@unique([userId, productId])
 }
 
-// Vendor-specific
+// Vendor-specific models
 model VendorSettings {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  storeName String?
-  banner    String?
-  logo      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  storeName    String?
+  banner       String?
+  logo         String?
+  
+  // NEW - Business information
+  businessName String?  // Legal business name
+  businessType String?  // Business category (Electronics Retail, Online Store, etc.)
+  taxId        String?  // VAT/Tax ID number (e.g., DE123456789)
+  website      String?  // Business website URL
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   vendor User @relation(fields: [userId], references: [id])
 }

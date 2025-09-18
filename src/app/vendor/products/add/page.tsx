@@ -14,15 +14,38 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  ScaleIcon,
-  EyeIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  StarIcon,
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/outline";
-import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+
+// UI Components
+import { Button } from "@/components/ui/buttonSidebar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import { formatPrice } from "@/lib/utils";
-import ProductCard from "@/components/ui/ProductCard";
 
 interface FormData {
   name: string;
@@ -54,7 +77,7 @@ interface Category {
   description?: string;
 }
 
-export default function EnhancedAddProductForm() {
+export default function VendorAddProductPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -90,26 +113,20 @@ export default function EnhancedAddProductForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string>("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const steps = [
     {
       id: 1,
-      name: "Basic Information",
+      name: "Basic Info",
       description: "Product name, brand, and description",
     },
-    {
-      id: 2,
-      name: "Pricing & Stock",
-      description: "Set price and manage inventory",
-    },
-    {
-      id: 3,
-      name: "Media & Details",
-      description: "Add images and specifications",
-    },
+    { id: 2, name: "Pricing", description: "Set price and manage inventory" },
+    { id: 3, name: "Media", description: "Add images and specifications" },
     {
       id: 4,
-      name: "Settings & Launch",
+      name: "Settings",
       description: "Configure visibility and features",
     },
   ];
@@ -126,7 +143,7 @@ export default function EnhancedAddProductForm() {
       .catch((err) => console.error("Error loading categories:", err));
   }, []);
 
-  // Auto-save draft (simulate)
+  // Auto-save simulation
   useEffect(() => {
     if (formData.name || formData.brand || formData.description) {
       setAutoSaveStatus("saving");
@@ -234,8 +251,30 @@ export default function EnhancedAddProductForm() {
     setCurrentStep(Math.max(currentStep - 1, 1));
   };
 
-  const uploadImages = async (images: File[]): Promise<string[]> => {
-    return images.map((img) => `/uploads/${Date.now()}-${img.name}`);
+  const calculateDiscount = () => {
+    if (formData.price && formData.comparePrice) {
+      const price = parseFloat(formData.price);
+      const comparePrice = parseFloat(formData.comparePrice);
+      if (comparePrice > price) {
+        return Math.round(((comparePrice - price) / comparePrice) * 100);
+      }
+    }
+    return 0;
+  };
+
+  const getCompletionPercentage = () => {
+    const requiredFields = [
+      formData.name,
+      formData.brand,
+      formData.categoryId,
+      formData.description,
+      formData.price,
+      formData.stock,
+    ];
+    const completedFields = requiredFields.filter(
+      (field) => field && field.toString().trim()
+    ).length;
+    return Math.round((completedFields / requiredFields.length) * 100);
   };
 
   const handleSubmit = async () => {
@@ -246,6 +285,7 @@ export default function EnhancedAddProductForm() {
 
     if (!session?.user) {
       setApiError("You must be logged in to create products");
+      setShowErrorModal(true);
       return;
     }
 
@@ -253,8 +293,11 @@ export default function EnhancedAddProductForm() {
     setApiError("");
 
     try {
+      // Simulate image upload
       const uploadedImageUrls =
-        formData.images.length > 0 ? await uploadImages(formData.images) : [];
+        formData.images.length > 0
+          ? formData.images.map((img) => `/products/${Date.now()}-${img.name}`)
+          : [];
 
       const specificationsObj = formData.specifications
         .filter((spec) => spec.key.trim() && spec.value.trim())
@@ -310,92 +353,36 @@ export default function EnhancedAddProductForm() {
         throw new Error(result.error || "Failed to create product");
       }
 
-      router.push("/vendor/products?success=Product created successfully");
+      setShowSuccessModal(true);
+      // Reset form after successful creation
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        router.push("/vendor/products");
+      }, 2000);
     } catch (error) {
       console.error("Error creating product:", error);
       setApiError(
         error instanceof Error ? error.message : "Failed to create product"
       );
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const calculateDiscount = () => {
-    if (formData.price && formData.comparePrice) {
-      const price = parseFloat(formData.price);
-      const comparePrice = parseFloat(formData.comparePrice);
-      if (comparePrice > price) {
-        return Math.round(((comparePrice - price) / comparePrice) * 100);
-      }
-    }
-    return 0;
-  };
-
-  // Convert form data to ProductCard format for preview
-  const getProductCardData = () => {
-    return {
-      id: "preview",
-      name: formData.name || "Product Name",
-      brand: formData.brand || undefined,
-      price: parseFloat(formData.price) || 0,
-      originalPrice: formData.comparePrice
-        ? parseFloat(formData.comparePrice)
-        : undefined,
-      image: formData.imagePreviews[0] || "/api/placeholder/300/300",
-      images: formData.imagePreviews,
-      isNew: false,
-      isFeatured: formData.featured,
-      category: categories.find((c) => c.id === formData.categoryId)?.name,
-      rating: 4.5,
-      reviewCount: 0,
-      slug: "preview",
-      description: formData.description || undefined,
-    };
-  };
-
-  const getCompletionPercentage = () => {
-    const requiredFields = [
-      formData.name,
-      formData.brand,
-      formData.categoryId,
-      formData.description,
-      formData.price,
-      formData.stock,
-    ];
-    const completedFields = requiredFields.filter(
-      (field) => field && field.toString().trim()
-    ).length;
-    return Math.round((completedFields / requiredFields.length) * 100);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <motion.div
-          className="mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+    <div className="p-6 space-y-6">
+      {/* Header with Glassmorphism */}
+      <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+        <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/vendor/products"
-                className="inline-flex items-center text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeftIcon className="w-4 h-4 mr-1" />
-                Back to Products
-              </Link>
-              <div className="h-4 w-px bg-gray-300" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Add New Product
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Create a new product listing for your store
-                </p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Add New Product
+              </h1>
+              <p className="text-sm text-gray-600">
+                Create a new product listing for your store
+              </p>
             </div>
 
             {/* Auto-save Status */}
@@ -414,446 +401,489 @@ export default function EnhancedAddProductForm() {
                   >
                     {autoSaveStatus === "saving" ? (
                       <>
-                        <ClockIcon className="w-4 h-4 mr-1 animate-spin" />
+                        <ClockIcon className="w-4 h-4 mr-2 animate-spin" />
                         Saving draft...
                       </>
                     ) : (
                       <>
-                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        <CheckCircleIcon className="w-4 h-4 mr-2" />
                         Draft saved
                       </>
                     )}
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              <div className="text-sm text-gray-500">
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700">
                 {getCompletionPercentage()}% Complete
-              </div>
+              </Badge>
             </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar - Blue Glassmorphism */}
           <div className="mt-6">
-            <div className="bg-gray-200 rounded-full h-2">
+            <div className="bg-white/30 backdrop-blur-sm rounded-full h-3 overflow-hidden">
               <motion.div
-                className="bg-black rounded-full h-2"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${(currentStep / steps.length) * 100}%` }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               />
             </div>
-            <div className="flex justify-between mt-2">
+            <div className="flex justify-between mt-3">
               {steps.map((step, index) => (
-                <button
+                <Button
                   key={step.id}
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentStep(step.id)}
                   className={`text-xs ${
                     currentStep >= step.id
-                      ? "text-black font-medium"
+                      ? "text-blue-600 font-medium"
                       : "text-gray-500"
                   }`}
                 >
                   {step.name}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
-        </motion.div>
+        </CardContent>
+      </Card>
 
-        {/* API Error */}
-        {apiError && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl"
-          >
+      {/* API Error */}
+      {apiError && (
+        <Card className="bg-red-50/80 backdrop-blur-md border-red-200">
+          <CardContent className="p-4">
             <div className="flex items-center">
               <ExclamationTriangleIcon className="w-5 h-5 text-red-600 mr-2" />
               <p className="text-red-600 text-sm font-medium">{apiError}</p>
             </div>
-          </motion.div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Live Preview */}
-          <div className="lg:col-span-1">
-            <motion.div
-              className="bg-white rounded-xl border border-gray-200 p-6"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Live Preview
-              </h3>
+      {/* Main Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Preview Sidebar */}
+        <Card className="lg:col-span-1 bg-white/70 backdrop-blur-md border border-white/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Live Preview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Original ProductCard Live Preview */}
+            <div className="max-w-sm">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                {/* Product Image */}
+                <div className="relative aspect-square bg-gray-100">
+                  {formData.imagePreviews.length > 0 ? (
+                    <img
+                      src={formData.imagePreviews[0]}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <PhotoIcon className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )}
 
-              <div className="max-w-sm">
-                <ProductCard
-                  product={getProductCardData()}
-                  variant="default"
-                  showQuickActions={false}
-                  showAddToCart={false}
-                />
-              </div>
+                  {/* Featured Badge */}
+                  {formData.featured && (
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-blue-600 text-white text-xs">
+                        Featured
+                      </Badge>
+                    </div>
+                  )}
 
-              {/* Preview Stats */}
-              <div className="mt-6 space-y-3 pt-6 border-t border-gray-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Completion</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {getCompletionPercentage()}%
-                  </span>
+                  {/* Discount Badge */}
+                  {calculateDiscount() > 0 && (
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-red-500 text-white text-xs">
+                        -{calculateDiscount()}%
+                      </Badge>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Images</span>
-                  <span className="text-sm text-gray-900">
-                    {formData.imagePreviews.length} uploaded
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Specifications</span>
-                  <span className="text-sm text-gray-900">
-                    {
-                      formData.specifications.filter((s) => s.key && s.value)
-                        .length
-                    }{" "}
-                    added
-                  </span>
-                </div>
-
-                {calculateDiscount() > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Discount</span>
-                    <span className="text-sm text-green-600 font-medium">
-                      {calculateDiscount()}% off
-                    </span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Column - Form Steps */}
-          <div className="lg:col-span-2">
-            <AnimatePresence mode="wait">
-              {/* Step 1: Basic Information */}
-              {currentStep === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl border border-gray-200 p-8"
-                >
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Basic Information
+                {/* Product Info */}
+                <div className="p-4">
+                  <div className="mb-2">
+                    <h3 className="font-semibold text-gray-900 text-sm truncate">
+                      {formData.name || "Product Name"}
                     </h3>
-                    <p className="text-gray-600 mt-1">
-                      Tell us about your product
+                    <p className="text-xs text-gray-500">
+                      {formData.brand || "Brand"}
                     </p>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Name *
-                        </label>
-                        <input
-                          type="text"
+                  {/* Price */}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-lg font-bold text-blue-600">
+                      {formData.price
+                        ? formatPrice(parseFloat(formData.price))
+                        : "€0.00"}
+                    </span>
+                    {formData.comparePrice && calculateDiscount() > 0 && (
+                      <span className="text-sm text-gray-500 line-through">
+                        {formatPrice(parseFloat(formData.comparePrice))}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  {formData.categoryId && (
+                    <p className="text-xs text-gray-600 mb-3">
+                      {categories.find((c) => c.id === formData.categoryId)
+                        ?.name || "Category"}
+                    </p>
+                  )}
+
+                  {/* Rating Placeholder */}
+                  <div className="flex items-center space-x-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-3 h-3 bg-gray-200 rounded-full"
+                      ></div>
+                    ))}
+                    <span className="text-xs text-gray-500 ml-1">
+                      (0 reviews)
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <Button
+                      size="sm"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      disabled
+                    >
+                      Add to Cart
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-gray-600 border-gray-200"
+                      disabled
+                    >
+                      Add to Wishlist
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Images</span>
+                <span className="font-medium">
+                  {formData.imagePreviews.length}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Specifications</span>
+                <span className="font-medium">
+                  {
+                    formData.specifications.filter((s) => s.key && s.value)
+                      .length
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Status</span>
+                <Badge
+                  variant={formData.isActive ? "default" : "secondary"}
+                  className="text-xs"
+                >
+                  {formData.isActive ? "Active" : "Draft"}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Form Steps */}
+        <div className="lg:col-span-2">
+          <AnimatePresence mode="wait">
+            {/* Step 1: Basic Information */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Tell us about your product
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Product Name *</Label>
+                        <Input
+                          id="name"
                           value={formData.name}
                           onChange={(e) =>
                             handleInputChange("name", e.target.value)
                           }
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                            errors.name ? "border-red-500" : "border-gray-300"
-                          }`}
                           placeholder="e.g. Wireless Gaming Headset Pro"
+                          className={errors.name ? "border-red-500" : ""}
                         />
                         {errors.name && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.name}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.name}</p>
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Brand *
-                        </label>
-                        <input
-                          type="text"
+                      <div className="space-y-2">
+                        <Label htmlFor="brand">Brand *</Label>
+                        <Input
+                          id="brand"
                           value={formData.brand}
                           onChange={(e) =>
                             handleInputChange("brand", e.target.value)
                           }
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                            errors.brand ? "border-red-500" : "border-gray-300"
-                          }`}
                           placeholder="e.g. Sony, Apple, Samsung"
+                          className={errors.brand ? "border-red-500" : ""}
                         />
                         {errors.brand && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.brand}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.brand}</p>
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Category *
-                        </label>
-                        <select
-                          value={formData.categoryId}
-                          onChange={(e) =>
-                            handleInputChange("categoryId", e.target.value)
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category *</Label>
+                        <Select
+                          value={formData.categoryId || "select"}
+                          onValueChange={(value) =>
+                            handleInputChange(
+                              "categoryId",
+                              value === "select" ? "" : value
+                            )
                           }
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                            errors.categoryId
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }`}
                         >
-                          <option value="">Select a category</option>
-                          {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger
+                            className={
+                              errors.categoryId ? "border-red-500" : ""
+                            }
+                          >
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">
+                              Select a category
+                            </SelectItem>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         {errors.categoryId && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-red-500 text-sm">
                             {errors.categoryId}
                           </p>
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Model Number / SKU
-                        </label>
-                        <input
-                          type="text"
+                      <div className="space-y-2">
+                        <Label htmlFor="modelNumber">Model Number / SKU</Label>
+                        <Input
+                          id="modelNumber"
                           value={formData.modelNumber}
                           onChange={(e) =>
                             handleInputChange("modelNumber", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="e.g. WH-1000XM5"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description *
-                      </label>
-                      <textarea
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description *</Label>
+                      <Textarea
+                        id="description"
                         value={formData.description}
                         onChange={(e) =>
                           handleInputChange("description", e.target.value)
                         }
                         rows={4}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                          errors.description
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
                         placeholder="Describe your product features, benefits, and specifications..."
+                        className={errors.description ? "border-red-500" : ""}
                       />
                       {errors.description && (
-                        <p className="text-red-500 text-sm mt-1">
+                        <p className="text-red-500 text-sm">
                           {errors.description}
                         </p>
                       )}
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-              {/* Step 2: Pricing & Stock */}
-              {currentStep === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl border border-gray-200 p-8"
-                >
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Pricing & Stock
-                    </h3>
-                    <p className="text-gray-600 mt-1">
+            {/* Step 2: Pricing & Stock */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Pricing & Stock</CardTitle>
+                    <p className="text-sm text-gray-600">
                       Set your pricing and inventory levels
                     </p>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price (€) *
-                        </label>
-                        <input
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price (€) *</Label>
+                        <Input
+                          id="price"
                           type="number"
                           step="0.01"
                           value={formData.price}
                           onChange={(e) =>
                             handleInputChange("price", e.target.value)
                           }
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                            errors.price ? "border-red-500" : "border-gray-300"
-                          }`}
                           placeholder="299.99"
+                          className={errors.price ? "border-red-500" : ""}
                         />
                         {errors.price && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.price}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.price}</p>
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Compare Price (€)
-                        </label>
-                        <input
+                      <div className="space-y-2">
+                        <Label htmlFor="comparePrice">Compare Price (€)</Label>
+                        <Input
+                          id="comparePrice"
                           type="number"
                           step="0.01"
                           value={formData.comparePrice}
                           onChange={(e) =>
                             handleInputChange("comparePrice", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="399.99"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500">
                           Original price for showing discount
                         </p>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Discount
-                        </label>
-                        <div className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900">
+                      <div className="space-y-2">
+                        <Label>Discount</Label>
+                        <div className="px-3 py-2 bg-blue-50 border rounded-md text-sm text-blue-700 font-medium">
                           {calculateDiscount()}% off
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Stock Quantity *
-                        </label>
-                        <input
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stock">Stock Quantity *</Label>
+                        <Input
+                          id="stock"
                           type="number"
                           value={formData.stock}
                           onChange={(e) =>
                             handleInputChange("stock", e.target.value)
                           }
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all ${
-                            errors.stock ? "border-red-500" : "border-gray-300"
-                          }`}
                           placeholder="50"
+                          className={errors.stock ? "border-red-500" : ""}
                         />
                         {errors.stock && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.stock}
-                          </p>
+                          <p className="text-red-500 text-sm">{errors.stock}</p>
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Low Stock Alert
-                        </label>
-                        <input
+                      <div className="space-y-2">
+                        <Label htmlFor="lowStockAlert">Low Stock Alert</Label>
+                        <Input
+                          id="lowStockAlert"
                           type="number"
                           value={formData.lowStockAlert}
                           onChange={(e) =>
                             handleInputChange("lowStockAlert", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="10"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500">
                           Alert when stock falls below this number
                         </p>
                       </div>
                     </div>
 
                     {calculateDiscount() > 0 && (
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                      <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-lg p-4">
                         <div className="flex items-center">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 mr-2" />
-                          <span className="text-sm font-medium text-green-800">
+                          <CheckCircleIcon className="w-5 h-5 text-blue-600 mr-2" />
+                          <span className="text-sm font-medium text-blue-800">
                             {calculateDiscount()}% discount applied - Great for
                             attracting customers!
                           </span>
                         </div>
                       </div>
                     )}
-                  </div>
-                </motion.div>
-              )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-              {/* Step 3: Media & Details */}
-              {currentStep === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl border border-gray-200 p-8"
-                >
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Media & Details
-                    </h3>
-                    <p className="text-gray-600 mt-1">
+            {/* Step 3: Media & Details */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Media & Details</CardTitle>
+                    <p className="text-sm text-gray-600">
                       Add images and technical specifications
                     </p>
-                  </div>
-
-                  <div className="space-y-8">
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                     {/* Product Images */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
-                        Product Images
-                      </label>
-
+                    <div className="space-y-4">
+                      <Label>Product Images</Label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {formData.imagePreviews.map((preview, index) => (
                           <div key={index} className="relative group">
                             <img
                               src={preview}
                               alt={`Product ${index + 1}`}
-                              className="w-full h-32 object-cover rounded-xl border border-gray-300"
+                              className="w-full h-24 object-cover rounded-lg border"
                             />
-                            <button
+                            <Button
                               type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
                               onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
+                              <XMarkIcon className="w-3 h-3" />
+                            </Button>
                           </div>
                         ))}
 
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                          <PhotoIcon className="w-8 h-8 text-gray-400" />
-                          <span className="text-sm text-gray-500 mt-1">
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
+                          <CloudArrowUpIcon className="w-6 h-6 text-gray-400" />
+                          <span className="text-xs text-gray-500 mt-1">
                             Add Images
                           </span>
                           <input
@@ -868,17 +898,13 @@ export default function EnhancedAddProductForm() {
                     </div>
 
                     {/* Specifications */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
-                        Technical Specifications
-                      </label>
-
+                    <div className="space-y-4">
+                      <Label>Technical Specifications</Label>
                       <div className="space-y-3">
                         {formData.specifications.map((spec, index) => (
                           <div key={index} className="grid grid-cols-5 gap-3">
                             <div className="col-span-2">
-                              <input
-                                type="text"
+                              <Input
                                 value={spec.key}
                                 onChange={(e) =>
                                   updateSpecification(
@@ -887,13 +913,11 @@ export default function EnhancedAddProductForm() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                 placeholder="Feature name"
                               />
                             </div>
                             <div className="col-span-2">
-                              <input
-                                type="text"
+                              <Input
                                 value={spec.value}
                                 onChange={(e) =>
                                   updateSpecification(
@@ -902,323 +926,353 @@ export default function EnhancedAddProductForm() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                 placeholder="Feature value"
                               />
                             </div>
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => removeSpecification(index)}
-                                className="w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                              >
-                                <XMarkIcon className="w-4 h-4 mx-auto" />
-                              </button>
-                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSpecification(index)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <XMarkIcon className="w-4 h-4" />
+                            </Button>
                           </div>
                         ))}
 
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={addSpecification}
-                          className="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
                         >
-                          <PlusIcon className="w-4 h-4 mr-1" />
+                          <PlusIcon className="w-4 h-4 mr-2" />
                           Add Specification
-                        </button>
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-              {/* Step 4: Settings & Launch */}
-              {currentStep === 4 && (
-                <motion.div
-                  key="step4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-xl border border-gray-200 p-8"
-                >
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      Settings & Launch
-                    </h3>
-                    <p className="text-gray-600 mt-1">
+            {/* Step 4: Settings */}
+            {currentStep === 4 && (
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader>
+                    <CardTitle>Settings & Launch</CardTitle>
+                    <p className="text-sm text-gray-600">
                       Configure visibility and additional details
                     </p>
-                  </div>
-
-                  <div className="space-y-8">
-                    {/* Quick Settings */}
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Quick Settings with Glass Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-gray-50 rounded-xl p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900">
-                              Product Visibility
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formData.isActive
-                                ? "Visible to customers"
-                                : "Hidden from customers"}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleInputChange("isActive", !formData.isActive)
-                            }
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                              formData.isActive ? "bg-black" : "bg-gray-200"
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                formData.isActive
-                                  ? "translate-x-6"
-                                  : "translate-x-1"
-                              }`}
+                      <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Product Visibility
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formData.isActive
+                                  ? "Visible to customers"
+                                  : "Hidden from customers"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={formData.isActive}
+                              onCheckedChange={(checked) =>
+                                handleInputChange("isActive", checked)
+                              }
                             />
-                          </button>
-                        </div>
-                      </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                      <div className="bg-gray-50 rounded-xl p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900">
-                              Featured Product
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formData.featured
-                                ? "Highlighted in listings"
-                                : "Regular listing"}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleInputChange("featured", !formData.featured)
-                            }
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                              formData.featured
-                                ? "bg-yellow-500"
-                                : "bg-gray-200"
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                formData.featured
-                                  ? "translate-x-6"
-                                  : "translate-x-1"
-                              }`}
+                      <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Featured Product
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formData.featured
+                                  ? "Highlighted in listings"
+                                  : "Regular listing"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={formData.featured}
+                              onCheckedChange={(checked) =>
+                                handleInputChange("featured", checked)
+                              }
                             />
-                          </button>
-                        </div>
-                      </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
 
                     {/* Additional Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Color
-                        </label>
-                        <input
-                          type="text"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="color">Color</Label>
+                        <Input
+                          id="color"
                           value={formData.color}
                           onChange={(e) =>
                             handleInputChange("color", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="Black"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Material
-                        </label>
-                        <input
-                          type="text"
+                      <div className="space-y-2">
+                        <Label htmlFor="material">Material</Label>
+                        <Input
+                          id="material"
                           value={formData.material}
                           onChange={(e) =>
                             handleInputChange("material", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="Aluminum"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Weight (kg)
-                        </label>
-                        <input
-                          type="text"
+                      <div className="space-y-2">
+                        <Label htmlFor="weight">Weight (kg)</Label>
+                        <Input
+                          id="weight"
                           value={formData.weight}
                           onChange={(e) =>
                             handleInputChange("weight", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                           placeholder="1.5"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Warranty (years)
-                        </label>
-                        <select
+                      <div className="space-y-2">
+                        <Label htmlFor="warranty">Warranty (years)</Label>
+                        <Select
                           value={formData.warranty}
-                          onChange={(e) =>
-                            handleInputChange("warranty", e.target.value)
+                          onValueChange={(value) =>
+                            handleInputChange("warranty", value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                         >
-                          <option value="0">No Warranty</option>
-                          <option value="1">1 Year</option>
-                          <option value="2">2 Years</option>
-                          <option value="3">3 Years</option>
-                        </select>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">No Warranty</SelectItem>
+                            <SelectItem value="1">1 Year</SelectItem>
+                            <SelectItem value="2">2 Years</SelectItem>
+                            <SelectItem value="3">3 Years</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="dimensions">
                         Dimensions (L x W x H cm)
-                      </label>
-                      <input
-                        type="text"
+                      </Label>
+                      <Input
+                        id="dimensions"
                         value={formData.dimensions}
                         onChange={(e) =>
                           handleInputChange("dimensions", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                         placeholder="25 x 15 x 8"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tags (comma separated)
-                      </label>
-                      <input
-                        type="text"
+                    <div className="space-y-2">
+                      <Label htmlFor="tags">Tags (comma separated)</Label>
+                      <Input
+                        id="tags"
                         value={formData.tags}
                         onChange={(e) =>
                           handleInputChange("tags", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                         placeholder="wireless, gaming, bluetooth"
                       />
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Step Navigation */}
-            <div className="mt-8 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                Previous
-              </button>
-
-              <span className="text-sm text-gray-500">
-                Step {currentStep} of {steps.length}
-              </span>
-
-              {currentStep < steps.length ? (
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+          {/* Step Navigation */}
+          <Card className="mt-6 bg-white/70 backdrop-blur-md border border-white/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
                 >
-                  Next
-                  <ChevronRightIcon className="w-4 h-4 ml-1" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating Product...
-                    </>
-                  ) : (
-                    <>
-                      <ScaleIcon className="w-4 h-4 mr-1" />
-                      Create Product
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
+                  <ChevronLeftIcon className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                  Step {currentStep} of {steps.length}
+                </Badge>
+
+                {currentStep < steps.length ? (
+                  <Button
+                    onClick={nextStep}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Next
+                    <ChevronRightIcon className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Creating Product...
+                      </>
+                    ) : (
+                      <>
+                        <CloudArrowUpIcon className="w-4 h-4 mr-2" />
+                        Create Product
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      </div>
 
-        {/* Bottom Summary */}
-        <motion.div
-          className="mt-8 bg-white rounded-xl border border-gray-200 p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
+      {/* Bottom Actions */}
+      <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/vendor/products"
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Cancel
-              </Link>
-              <div className="h-4 w-px bg-gray-300" />
+              <Button variant="ghost" asChild>
+                <Link
+                  href="/vendor/products"
+                  className="text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </Link>
+              </Button>
+              <Separator orientation="vertical" className="h-4" />
               <span className="text-sm text-gray-500">
                 Draft auto-saves as you type
               </span>
             </div>
 
             <div className="flex items-center space-x-3">
-              <div className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500">
                 {formData.name
                   ? `"${formData.name.slice(0, 30)}${formData.name.length > 30 ? "..." : ""}"`
                   : "Untitled Product"}
-              </div>
+              </span>
 
               {currentStep === steps.length && (
-                <button
-                  type="button"
+                <Button
                   onClick={handleSubmit}
                   disabled={isLoading}
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating Product...
+                      Creating...
                     </>
                   ) : (
                     <>
-                      <ScaleIcon className="w-4 h-4 mr-2" />
+                      <CloudArrowUpIcon className="w-4 h-4 mr-2" />
                       Create Product
                     </>
                   )}
-                </button>
+                </Button>
               )}
             </div>
           </div>
-        </motion.div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="bg-white/90 backdrop-blur-md border border-green-200">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-green-800">
+              <CheckCircleIcon className="w-5 h-5 mr-2" />
+              Product Created Successfully!
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Your product has been created and is now available in your product
+              listing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setShowSuccessModal(false);
+                router.push("/vendor/products");
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Go to Products
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="bg-white/90 backdrop-blur-md border border-red-200">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-800">
+              <ExclamationTriangleIcon className="w-5 h-5 mr-2" />
+              Failed to Create Product
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              {apiError ||
+                "An error occurred while creating your product. Please try again."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowErrorModal(false)}
+              className="border-gray-300"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowErrorModal(false);
+                handleSubmit();
+              }}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Try Again
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

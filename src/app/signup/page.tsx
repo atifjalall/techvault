@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   EyeIcon,
@@ -11,6 +12,7 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import Button from "@/components/ui/Button";
 
 interface PasswordStrength {
   score: number;
@@ -57,12 +59,10 @@ export default function SignUpPage() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error when user starts typing
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
-    // Clear submit error when any field changes
     if (errors.submit) {
       setErrors((prev) => ({ ...prev, submit: "" }));
     }
@@ -76,7 +76,6 @@ export default function SignUpPage() {
         return;
       }
 
-      // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         setEmailAvailable(null);
@@ -124,9 +123,9 @@ export default function SignUpPage() {
     if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
     else feedback.push("One special character");
 
-    let color = "bg-red-500";
-    if (score >= 3) color = "bg-yellow-500";
-    if (score >= 4) color = "bg-green-500";
+    let color = "bg-red-400";
+    if (score >= 3) color = "bg-amber-400";
+    if (score >= 4) color = "bg-emerald-400";
 
     return { score, feedback, color };
   };
@@ -195,10 +194,8 @@ export default function SignUpPage() {
         throw new Error(data.error || "Signup failed");
       }
 
-      // Success!
       setSubmitSuccess(true);
 
-      // Redirect to signin after 2 seconds
       setTimeout(() => {
         router.push(
           "/signin?message=Account created successfully! Please sign in."
@@ -219,45 +216,50 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
+    setErrors({});
 
-    // Simulate Google OAuth
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsGoogleLoading(false);
-    // Add actual Google OAuth logic here
+    try {
+      await signIn("google", { callbackUrl: "/" });
+    } catch (err) {
+      console.error("Google sign up error:", err);
+      setErrors({
+        submit: "Google sign up failed. Please try again.",
+      });
+      setIsGoogleLoading(false);
+    }
   };
 
-  // Success animation component
+  // Success animation
   if (submitSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="max-w-md w-full text-center"
+          className="max-w-sm w-full text-center"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6"
+            className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"
           >
-            <CheckIcon className="w-10 h-10 text-white" />
+            <CheckIcon className="w-8 h-8 text-white" />
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-2xl font-bold text-gray-900 mb-4"
+            className="text-xl font-semibold text-slate-900 mb-2"
           >
-            Account Created Successfully!
+            Account Created!
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-gray-600 mb-6"
+            className="text-sm text-slate-600 mb-6"
           >
             Redirecting you to sign in...
           </motion.p>
@@ -265,7 +267,7 @@ export default function SignUpPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="w-8 h-8 border-2 border-gray-400 border-t-green-500 rounded-full animate-spin mx-auto"
+            className="w-6 h-6 border-2 border-slate-300 border-t-emerald-500 rounded-full animate-spin mx-auto"
           />
         </motion.div>
       </div>
@@ -273,50 +275,50 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-md w-full space-y-8"
+        className="max-w-md w-full"
       >
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-center"
+          className="text-center mb-8"
         >
           <Link href="/" className="inline-block cursor-pointer">
             <motion.h1
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
-              className="text-4xl font-bold text-gray-900 mb-2"
+              className="text-2xl font-bold text-slate-900 mb-2"
             >
               TechVault
             </motion.h1>
           </Link>
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: 80 }}
+            animate={{ width: 60 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="h-1 bg-black mx-auto mb-8"
+            className="h-0.5 bg-slate-900 mx-auto mb-6"
           />
           <motion.h2
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-3xl font-bold text-gray-900 mb-2"
+            className="text-xl font-semibold text-slate-900 mb-1"
           >
-            Create your account
+            Create Account
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="text-gray-600"
+            className="text-sm text-slate-600"
           >
-            Join thousands of tech enthusiasts and start shopping
+            Join thousands of tech enthusiasts
           </motion.p>
         </motion.div>
 
@@ -325,7 +327,7 @@ export default function SignUpPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8"
+          className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6"
         >
           {/* Submit Error Alert */}
           <AnimatePresence>
@@ -335,11 +337,11 @@ export default function SignUpPage() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+                className="mb-4 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3"
               >
                 <div className="flex items-center">
-                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
-                  <p className="text-sm text-red-700 font-medium">
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2" />
+                  <p className="text-xs text-red-700 font-medium">
                     {errors.submit}
                   </p>
                 </div>
@@ -349,30 +351,28 @@ export default function SignUpPage() {
 
           {/* Google Sign Up Button */}
           <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
             onClick={handleGoogleSignUp}
-            disabled={isGoogleLoading}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-6 cursor-pointer"
+            disabled={isGoogleLoading || isLoading}
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-slate-300/70 rounded-xl text-xs font-medium text-slate-700 bg-white/50 backdrop-blur-sm hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-4 cursor-pointer"
+            whileHover={{ scale: 1.01, y: -1 }}
+            whileTap={{ scale: 0.99 }}
           >
             <AnimatePresence mode="wait">
               {isGoogleLoading ? (
                 <motion.div
-                  key="loading"
+                  className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"
                 />
               ) : (
                 <motion.div
-                  key="content"
+                  className="flex items-center"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center"
                 >
-                  <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -397,36 +397,36 @@ export default function SignUpPage() {
           </motion.button>
 
           {/* Divider */}
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-slate-200/50" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 font-medium">
-                Or create account with email
+            <div className="relative flex justify-center">
+              <span className="px-3 bg-white/70 text-xs text-slate-500 font-medium">
+                Or create with email
               </span>
             </div>
           </div>
 
-          {/* Registration Form */}
+          {/* Form */}
           <motion.form
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             onSubmit={handleSubmit}
-            className="space-y-5"
+            className="space-y-4"
           >
             {/* Name Fields */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="grid grid-cols-2 gap-4"
+              className="grid grid-cols-2 gap-3"
             >
               <div>
                 <label
                   htmlFor="firstName"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-xs font-medium text-slate-700 mb-1.5"
                 >
                   First name
                 </label>
@@ -439,9 +439,11 @@ export default function SignUpPage() {
                   required
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-4 py-3 border ${
-                    errors.firstName ? "border-red-500" : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                  className={`w-full px-3 py-2 border ${
+                    errors.firstName
+                      ? "border-red-400/70"
+                      : "border-slate-300/70"
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
                   placeholder="John"
                 />
                 <AnimatePresence>
@@ -450,7 +452,7 @@ export default function SignUpPage() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 text-sm text-red-600"
+                      className="mt-1 text-xs text-red-600"
                     >
                       {errors.firstName}
                     </motion.p>
@@ -461,7 +463,7 @@ export default function SignUpPage() {
               <div>
                 <label
                   htmlFor="lastName"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-xs font-medium text-slate-700 mb-1.5"
                 >
                   Last name
                 </label>
@@ -474,9 +476,11 @@ export default function SignUpPage() {
                   required
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-4 py-3 border ${
-                    errors.lastName ? "border-red-500" : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                  className={`w-full px-3 py-2 border ${
+                    errors.lastName
+                      ? "border-red-400/70"
+                      : "border-slate-300/70"
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
                   placeholder="Doe"
                 />
                 <AnimatePresence>
@@ -485,7 +489,7 @@ export default function SignUpPage() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="mt-1 text-sm text-red-600"
+                      className="mt-1 text-xs text-red-600"
                     >
                       {errors.lastName}
                     </motion.p>
@@ -502,7 +506,7 @@ export default function SignUpPage() {
             >
               <label
                 htmlFor="email"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 Email address
               </label>
@@ -516,19 +520,18 @@ export default function SignUpPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border ${
+                  className={`w-full px-3 py-2 pr-10 border ${
                     errors.email
-                      ? "border-red-500"
+                      ? "border-red-400/70"
                       : emailAvailable === false
-                        ? "border-red-500"
+                        ? "border-red-400/70"
                         : emailAvailable === true
-                          ? "border-green-500"
-                          : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                          ? "border-emerald-400/70"
+                          : "border-slate-300/70"
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
                   placeholder="john.doe@example.com"
                 />
 
-                {/* Email status indicator */}
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <AnimatePresence mode="wait">
                     {isCheckingEmail ? (
@@ -537,7 +540,7 @@ export default function SignUpPage() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"
+                        className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"
                       />
                     ) : emailAvailable === true ? (
                       <motion.div
@@ -546,7 +549,7 @@ export default function SignUpPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                       >
-                        <CheckIcon className="w-5 h-5 text-green-500" />
+                        <CheckIcon className="w-4 h-4 text-emerald-500" />
                       </motion.div>
                     ) : emailAvailable === false ? (
                       <motion.div
@@ -555,7 +558,7 @@ export default function SignUpPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                       >
-                        <XMarkIcon className="w-5 h-5 text-red-500" />
+                        <XMarkIcon className="w-4 h-4 text-red-500" />
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
@@ -567,7 +570,7 @@ export default function SignUpPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-xs text-red-600"
                   >
                     {errors.email}
                   </motion.p>
@@ -583,7 +586,7 @@ export default function SignUpPage() {
             >
               <label
                 htmlFor="password"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 Password
               </label>
@@ -597,9 +600,11 @@ export default function SignUpPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                  className={`w-full px-3 py-2 pr-10 border ${
+                    errors.password
+                      ? "border-red-400/70"
+                      : "border-slate-300/70"
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
                   placeholder="Create a strong password"
                 />
                 <motion.button
@@ -610,9 +615,9 @@ export default function SignUpPage() {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeSlashIcon className="h-4 w-4 text-slate-400 hover:text-slate-600" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeIcon className="h-4 w-4 text-slate-400 hover:text-slate-600" />
                   )}
                 </motion.button>
               </div>
@@ -626,18 +631,18 @@ export default function SignUpPage() {
                     exit={{ opacity: 0, height: 0 }}
                     className="mt-2"
                   >
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex items-center space-x-2 mb-1.5">
+                      <div className="flex-1 bg-slate-200/50 rounded-full h-1.5">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{
                             width: `${(passwordStrength.score / 5) * 100}%`,
                           }}
                           transition={{ duration: 0.3 }}
-                          className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength.color}`}
                         />
                       </div>
-                      <span className="text-xs font-medium text-gray-600">
+                      <span className="text-xs font-medium text-slate-600">
                         {passwordStrength.score < 3
                           ? "Weak"
                           : passwordStrength.score < 4
@@ -646,19 +651,21 @@ export default function SignUpPage() {
                       </span>
                     </div>
                     {passwordStrength.feedback.length > 0 && (
-                      <div className="space-y-1">
-                        {passwordStrength.feedback.map((item, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="flex items-center text-xs text-gray-500"
-                          >
-                            <XMarkIcon className="h-3 w-3 text-red-500 mr-1" />
-                            {item}
-                          </motion.div>
-                        ))}
+                      <div className="space-y-0.5">
+                        {passwordStrength.feedback
+                          .slice(0, 3)
+                          .map((item, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="flex items-center text-xs text-slate-500"
+                            >
+                              <XMarkIcon className="h-3 w-3 text-red-400 mr-1" />
+                              {item}
+                            </motion.div>
+                          ))}
                       </div>
                     )}
                   </motion.div>
@@ -671,7 +678,7 @@ export default function SignUpPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-xs text-red-600"
                   >
                     {errors.password}
                   </motion.p>
@@ -687,7 +694,7 @@ export default function SignUpPage() {
             >
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-xs font-medium text-slate-700 mb-1.5"
               >
                 Confirm password
               </label>
@@ -701,11 +708,11 @@ export default function SignUpPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-4 py-3 pr-12 border ${
+                  className={`w-full px-3 py-2 pr-10 border ${
                     errors.confirmPassword
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                      ? "border-red-400/70"
+                      : "border-slate-300/70"
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
                   placeholder="Confirm your password"
                 />
                 <motion.button
@@ -716,9 +723,9 @@ export default function SignUpPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeSlashIcon className="h-4 w-4 text-slate-400 hover:text-slate-600" />
                   ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeIcon className="h-4 w-4 text-slate-400 hover:text-slate-600" />
                   )}
                 </motion.button>
                 <AnimatePresence>
@@ -729,9 +736,9 @@ export default function SignUpPage() {
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0 }}
-                        className="absolute inset-y-0 right-10 flex items-center"
+                        className="absolute inset-y-0 right-8 flex items-center"
                       >
-                        <CheckIcon className="h-5 w-5 text-green-500" />
+                        <CheckIcon className="h-4 w-4 text-emerald-500" />
                       </motion.div>
                     )}
                 </AnimatePresence>
@@ -742,7 +749,7 @@ export default function SignUpPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-xs text-red-600"
                   >
                     {errors.confirmPassword}
                   </motion.p>
@@ -755,7 +762,7 @@ export default function SignUpPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
-              className="space-y-4"
+              className="space-y-3"
             >
               <div className="flex items-start">
                 <motion.input
@@ -766,23 +773,23 @@ export default function SignUpPage() {
                   type="checkbox"
                   checked={formData.agreeToTerms}
                   onChange={handleInputChange}
-                  className="mt-0.5 h-4 w-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer"
+                  className="mt-0.5 h-3.5 w-3.5 text-slate-900 focus:ring-slate-500/20 border-slate-300 rounded cursor-pointer"
                 />
                 <label
                   htmlFor="agreeToTerms"
-                  className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer"
+                  className="ml-2.5 text-xs text-slate-700 leading-4 cursor-pointer"
                 >
                   I agree to the{" "}
                   <Link
                     href="/terms"
-                    className="font-medium text-black hover:text-gray-700 underline cursor-pointer"
+                    className="font-medium text-slate-900 hover:text-slate-700 underline cursor-pointer"
                   >
-                    Terms and Conditions
+                    Terms
                   </Link>{" "}
                   and{" "}
                   <Link
                     href="/privacy"
-                    className="font-medium text-black hover:text-gray-700 underline cursor-pointer"
+                    className="font-medium text-slate-900 hover:text-slate-700 underline cursor-pointer"
                   >
                     Privacy Policy
                   </Link>
@@ -794,7 +801,7 @@ export default function SignUpPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="text-sm text-red-600"
+                    className="text-xs text-red-600"
                   >
                     {errors.agreeToTerms}
                   </motion.p>
@@ -810,13 +817,13 @@ export default function SignUpPage() {
                   type="checkbox"
                   checked={formData.agreeToMarketing}
                   onChange={handleInputChange}
-                  className="mt-0.5 h-4 w-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer"
+                  className="mt-0.5 h-3.5 w-3.5 text-slate-900 focus:ring-slate-500/20 border-slate-300 rounded cursor-pointer"
                 />
                 <label
                   htmlFor="agreeToMarketing"
-                  className="ml-3 text-sm text-gray-700 leading-5 cursor-pointer"
+                  className="ml-2.5 text-xs text-slate-600 leading-4 cursor-pointer"
                 >
-                  I want to receive marketing communications and exclusive deals
+                  Send me marketing communications and exclusive deals
                   (optional)
                 </label>
               </div>
@@ -827,35 +834,19 @@ export default function SignUpPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.9 }}
+              className="pt-2"
             >
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <Button
                 type="submit"
+                variant="default"
+                size="md"
+                fullWidth
+                isLoading={isLoading}
                 disabled={isLoading || emailAvailable === false}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
               >
-                <AnimatePresence mode="wait">
-                  {isLoading ? (
-                    <motion.div
-                      key="loading"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
-                    />
-                  ) : (
-                    <motion.span
-                      key="text"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      Create account
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
+                {isLoading ? "Creating account..." : "Create account"}
+              </Button>
             </motion.div>
           </motion.form>
         </motion.div>
@@ -865,13 +856,13 @@ export default function SignUpPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.0 }}
-          className="text-center"
+          className="text-center mt-6"
         >
-          <p className="text-gray-600">
+          <p className="text-sm text-slate-600">
             Already have an account?{" "}
             <Link
               href="/signin"
-              className="font-medium text-black hover:text-gray-700 transition-colors cursor-pointer"
+              className="font-medium text-slate-900 hover:text-slate-700 transition-colors cursor-pointer"
             >
               Sign in here
             </Link>
@@ -883,9 +874,9 @@ export default function SignUpPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.1 }}
-          className="text-center space-y-4"
+          className="text-center mt-6"
         >
-          <div className="flex items-center justify-center space-x-6 text-xs text-gray-500">
+          <div className="flex items-center justify-center space-x-6 text-xs text-slate-500">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -893,7 +884,7 @@ export default function SignUpPage() {
               className="flex items-center"
             >
               <svg
-                className="w-4 h-4 text-green-500 mr-1"
+                className="w-3.5 h-3.5 text-emerald-500 mr-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -903,7 +894,7 @@ export default function SignUpPage() {
                   clipRule="evenodd"
                 />
               </svg>
-              Secure Registration
+              Secure
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -912,7 +903,7 @@ export default function SignUpPage() {
               className="flex items-center"
             >
               <svg
-                className="w-4 h-4 text-green-500 mr-1"
+                className="w-3.5 h-3.5 text-emerald-500 mr-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -931,7 +922,7 @@ export default function SignUpPage() {
               className="flex items-center"
             >
               <svg
-                className="w-4 h-4 text-green-500 mr-1"
+                className="w-3.5 h-3.5 text-emerald-500 mr-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -941,7 +932,7 @@ export default function SignUpPage() {
                   clipRule="evenodd"
                 />
               </svg>
-              No Spam Promise
+              No Spam
             </motion.div>
           </div>
         </motion.div>

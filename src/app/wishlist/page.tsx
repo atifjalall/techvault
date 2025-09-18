@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   HeartIcon,
   ShoppingBagIcon,
-  TrashIcon,
   ArrowLeftIcon,
   ShareIcon,
   FunnelIcon,
+  ChevronUpDownIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import Navbar from "@/components/layout/Navbar";
@@ -99,6 +100,78 @@ interface WishlistItem {
   dateAdded: string;
 }
 
+// Dropdown Component
+function SimpleDropdown({
+  options,
+  value,
+  onChange,
+  placeholder = "Select...",
+  className = "",
+}: {
+  options: { label: string; value: string }[] | string[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const optionsArray =
+    typeof options[0] === "string"
+      ? (options as string[]).map((opt) => ({ label: opt, value: opt }))
+      : (options as { label: string; value: string }[]);
+
+  const selectedOption = optionsArray.find((opt) => opt.value === value);
+
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-left shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
+      >
+        <span className="block truncate">
+          {selectedOption?.label || placeholder}
+        </span>
+        <span className="absolute inset-y-0 right-0 flex items-center pr-2">
+          <ChevronUpDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </span>
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute z-20 mt-1 w-full bg-white shadow-lg border border-gray-200 rounded-lg py-1 max-h-60 overflow-auto">
+            {optionsArray.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className="relative w-full px-3 py-2 text-left text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 flex items-center justify-between"
+              >
+                <span className="block truncate">{option.label}</span>
+                {value === option.value && (
+                  <CheckIcon className="h-4 w-4 text-gray-900" />
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function WishlistPage() {
   const [wishlistItems, setWishlistItems] =
     useState<WishlistItem[]>(mockWishlistItems);
@@ -110,6 +183,19 @@ export default function WishlistPage() {
   const categories = [
     "all",
     ...Array.from(new Set(wishlistItems.map((item) => item.category))),
+  ];
+
+  const categoryOptions = categories.map((category) => ({
+    label: category === "all" ? "All Categories" : category,
+    value: category,
+  }));
+
+  const sortOptions = [
+    { label: "Newest First", value: "newest" },
+    { label: "Oldest First", value: "oldest" },
+    { label: "Price: Low to High", value: "price-low" },
+    { label: "Price: High to Low", value: "price-high" },
+    { label: "Name A-Z", value: "name" },
   ];
 
   // Filter and sort items
@@ -222,7 +308,7 @@ export default function WishlistPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
                 <ShareIcon className="w-4 h-4 mr-2" />
                 Share List
               </button>
@@ -230,7 +316,7 @@ export default function WishlistPage() {
               {wishlistItems.some((item) => item.inStock) && (
                 <button
                   onClick={moveAllToCart}
-                  className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors cursor-pointer"
                 >
                   <ShoppingBagIcon className="w-4 h-4 mr-2" />
                   Add All to Cart
@@ -249,17 +335,12 @@ export default function WishlistPage() {
               <span className="text-sm font-medium text-gray-700">
                 Category:
               </span>
-              <select
+              <SimpleDropdown
+                options={categoryOptions}
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category === "all" ? "All Categories" : category}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCategory}
+                className="w-40"
+              />
             </div>
 
             {/* Sort */}
@@ -267,17 +348,12 @@ export default function WishlistPage() {
               <span className="text-sm font-medium text-gray-700">
                 Sort by:
               </span>
-              <select
+              <SimpleDropdown
+                options={sortOptions}
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="name">Name A-Z</option>
-              </select>
+                onChange={setSortBy}
+                className="w-48"
+              />
             </div>
           </div>
         </div>

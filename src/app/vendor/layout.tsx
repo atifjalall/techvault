@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import VendorSidebar from "./VendorSidebar";
+import VendorTopBar from "./VendorTopBar";
 
 interface VendorLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface VendorLayoutProps {
 export default function VendorLayout({ children }: VendorLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Protect all vendor routes
   useEffect(() => {
@@ -36,5 +38,24 @@ export default function VendorLayout({ children }: VendorLayoutProps) {
     return null;
   }
 
-  return <VendorSidebar>{children}</VendorSidebar>;
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <VendorSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Top Navigation Bar */}
+        <VendorTopBar onMobileMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="h-full">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
 }

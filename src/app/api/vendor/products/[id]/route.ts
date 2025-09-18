@@ -7,10 +7,11 @@ import { prisma } from "@/lib/prisma";
 // GET /api/vendor/products/[id] - Get single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +19,7 @@ export async function GET(
 
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: id,
         vendorId: session.user.id, // Ensure user owns this product
       },
       include: {
@@ -58,10 +59,11 @@ export async function GET(
 // PATCH /api/vendor/products/[id] - Update product
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -72,7 +74,7 @@ export async function PATCH(
     // Verify user owns this product
     const existingProduct = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: id,
         vendorId: session.user.id,
       },
     });
@@ -124,7 +126,7 @@ export async function PATCH(
       const existingSlug = await prisma.product.findFirst({
         where: {
           slug: updateData.slug,
-          id: { not: params.id },
+          id: { not: id },
         },
       });
 
@@ -134,7 +136,7 @@ export async function PATCH(
     }
 
     const updatedProduct = await prisma.product.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         category: {
@@ -163,10 +165,11 @@ export async function PATCH(
 // DELETE /api/vendor/products/[id] - Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { id } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -175,7 +178,7 @@ export async function DELETE(
     // Verify user owns this product
     const existingProduct = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        id: id,
         vendorId: session.user.id,
       },
     });
@@ -187,16 +190,16 @@ export async function DELETE(
     // Delete related records first (if needed)
     // Note: Adjust based on your schema's cascade settings
     await prisma.cartItem.deleteMany({
-      where: { productId: params.id },
+      where: { productId: id },
     });
 
     await prisma.review.deleteMany({
-      where: { productId: params.id },
+      where: { productId: id },
     });
 
     // Delete the product
     await prisma.product.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({

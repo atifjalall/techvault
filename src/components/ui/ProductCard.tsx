@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  HeartIcon,
-  ShoppingBagIcon,
-  EyeIcon,
-} from "@heroicons/react/24/outline";
+import { HeartIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { formatPrice } from "@/lib/utils";
 
@@ -73,25 +69,22 @@ export default function ProductCard({
     // Add actual wishlist logic here
   };
 
-  const handleQuickView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Add quick view modal logic here
-  };
-
   const cardClasses = {
     default:
-      "group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200",
+      "group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 hover:border-white/30 hover:-translate-y-1",
     compact:
-      "group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-gray-200",
+      "group relative bg-white/75 backdrop-blur-sm rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 border border-white/20 hover:border-white/30 hover:-translate-y-0.5",
     featured:
-      "group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200",
+      "group relative bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-md rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/30 hover:border-white/40 hover:-translate-y-2",
   };
 
   const imageClasses = {
-    default: "relative aspect-square bg-gray-50 overflow-hidden",
-    compact: "relative aspect-square bg-gray-50 overflow-hidden",
-    featured: "relative aspect-[4/3] bg-gray-50 overflow-hidden",
+    default:
+      "relative aspect-square bg-gradient-to-br from-gray-50/80 to-gray-100/60 backdrop-blur-sm overflow-hidden",
+    compact:
+      "relative aspect-square bg-gradient-to-br from-gray-50/80 to-gray-100/60 backdrop-blur-sm overflow-hidden",
+    featured:
+      "relative aspect-[4/3] bg-gradient-to-br from-gray-50/90 to-gray-100/70 backdrop-blur-md overflow-hidden",
   };
 
   return (
@@ -99,64 +92,55 @@ export default function ProductCard({
       <Link href={productUrl} className="block">
         {/* Product Image */}
         <div className={imageClasses[variant]}>
-          {/* Top Badges Row */}
-          <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-start">
-            {/* Left side badges */}
-            <div className="flex flex-col gap-1">
-              {product.isNew && (
-                <span className="bg-black text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                  NEW
-                </span>
-              )}
-              {product.isFeatured && (
-                <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                  FEATURED
-                </span>
-              )}
-            </div>
-
-            {/* Right side - Discount badge */}
-            {discountPercentage > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                -{discountPercentage}%
+          {/* Left side badges */}
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+            {product.isNew && (
+              <span className="bg-black text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                NEW
+              </span>
+            )}
+            {product.isFeatured && (
+              <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                FEATURED
               </span>
             )}
           </div>
 
-          {/* Quick Actions - Positioned on right side */}
-          {showQuickActions && (
-            <div className="absolute top-12 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0 z-20">
+          {/* Top right elements */}
+          <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+            {/* Discount badge */}
+            {discountPercentage > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+                -{discountPercentage}%
+              </span>
+            )}
+
+            {/* Heart icon */}
+            {showQuickActions && (
               <button
                 onClick={handleWishlistToggle}
-                className="p-2.5 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl border border-gray-100 transition-all duration-200 hover:scale-110"
+                className="p-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl border border-white/30 transition-all duration-300 hover:scale-110 hover:bg-white/95 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
                 title={
                   isWishlisted ? "Remove from wishlist" : "Add to wishlist"
                 }
               >
                 {isWishlisted ? (
-                  <HeartIconSolid className="h-4 w-4 text-red-500" />
+                  <HeartIconSolid className="h-3.5 w-3.5 text-red-500" />
                 ) : (
-                  <HeartIcon className="h-4 w-4 text-gray-600 hover:text-red-500" />
+                  <HeartIcon className="h-3.5 w-3.5 text-gray-600 hover:text-red-500" />
                 )}
               </button>
-              <button
-                onClick={handleQuickView}
-                className="p-2.5 bg-white/95 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl border border-gray-100 transition-all duration-200 hover:scale-110"
-                title="Quick view"
-              >
-                <EyeIcon className="h-4 w-4 text-gray-600 hover:text-blue-500" />
-              </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Product Image Placeholder */}
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+          <div className="w-full h-full bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-sm flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
             <div className="text-center text-gray-400">
               <div
-                className={`${variant === "compact" ? "w-16 h-16" : "w-24 h-24"} bg-white rounded-xl shadow-sm mx-auto mb-3 flex items-center justify-center`}
+                className={`${variant === "compact" ? "w-12 h-12" : "w-16 h-16"} bg-white/90 backdrop-blur-sm rounded-xl shadow-md mx-auto mb-2 flex items-center justify-center border border-white/20`}
               >
                 <div
-                  className={`${variant === "compact" ? "w-8 h-8" : "w-12 h-12"} bg-gray-300 rounded-lg`}
+                  className={`${variant === "compact" ? "w-6 h-6" : "w-8 h-8"} bg-gray-300/70 rounded-lg`}
                 ></div>
               </div>
               <p className="text-xs font-medium">
@@ -167,17 +151,17 @@ export default function ProductCard({
 
           {/* Quick Add to Cart - slides up from bottom */}
           {showAddToCart && (
-            <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/50 to-transparent">
+            <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
               <button
                 onClick={handleAddToCart}
                 disabled={isLoading}
-                className="w-full bg-black/90 backdrop-blur-sm text-white py-3 px-4 rounded-lg text-sm font-semibold hover:bg-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-white/20"
+                className="w-full bg-black/90 backdrop-blur-md text-white py-2.5 px-3 rounded-lg text-xs font-semibold hover:bg-black/95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-white/20 cursor-pointer"
               >
                 {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <ShoppingBagIcon className="h-4 w-4 mr-2" />
+                    <ShoppingBagIcon className="h-3.5 w-3.5 mr-1.5" />
                     Quick Add
                   </>
                 )}
@@ -187,17 +171,17 @@ export default function ProductCard({
         </div>
 
         {/* Product Info */}
-        <div className={variant === "compact" ? "p-4" : "p-5"}>
-          <div className="space-y-2">
+        <div className={variant === "compact" ? "p-3" : "p-4"}>
+          <div className="space-y-1.5">
             {/* Brand & Name */}
             <div>
               {product.brand && (
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
                   {product.brand}
                 </p>
               )}
               <h3
-                className={`${variant === "compact" ? "text-sm" : "text-base"} font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-snug`}
+                className={`${variant === "compact" ? "text-xs" : "text-sm"} font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight`}
               >
                 {product.name}
               </h3>
@@ -210,7 +194,7 @@ export default function ProductCard({
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`h-3.5 w-3.5 ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"}`}
+                      className={`h-2.5 w-2.5 ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -219,7 +203,7 @@ export default function ProductCard({
                   ))}
                 </div>
                 {product.reviewCount && (
-                  <span className="text-xs text-gray-500 ml-1">
+                  <span className="text-[10px] text-gray-500 ml-0.5">
                     ({product.reviewCount})
                   </span>
                 )}
@@ -228,7 +212,7 @@ export default function ProductCard({
 
             {/* Variants */}
             {product.variants && (
-              <p className="text-xs text-gray-500 font-medium">
+              <p className="text-[10px] text-gray-500 font-medium">
                 {typeof product.variants === "number"
                   ? `${product.variants} variants`
                   : product.variants}
@@ -236,26 +220,26 @@ export default function ProductCard({
             )}
 
             {/* Pricing */}
-            <div className="flex items-center space-x-2 pt-1">
+            <div className="flex items-center space-x-1.5 pt-0.5">
               <span
-                className={`${variant === "compact" ? "text-lg" : "text-xl"} font-bold text-gray-900`}
+                className={`${variant === "compact" ? "text-base" : "text-lg"} font-bold text-gray-900`}
               >
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice &&
                 product.originalPrice > product.price && (
-                  <span className="text-sm text-gray-500 line-through">
+                  <span className="text-xs text-gray-500 line-through">
                     {formatPrice(product.originalPrice)}
                   </span>
                 )}
             </div>
 
             {/* From label */}
-            <p className="text-xs text-gray-400 font-medium">From</p>
+            <p className="text-[10px] text-gray-400 font-medium">From</p>
 
             {/* Description for featured variant */}
             {variant === "featured" && product.description && (
-              <p className="text-sm text-gray-600 line-clamp-2 mt-3 leading-relaxed">
+              <p className="text-xs text-gray-600 line-clamp-2 mt-2 leading-relaxed">
                 {product.description}
               </p>
             )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   HeartIcon,
@@ -137,12 +138,12 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-2 rounded-full hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+        className="flex items-center space-x-2 p-2 rounded-full backdrop-blur-md bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 border border-white/20 cursor-pointer"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
         {/* Profile Image */}
-        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 border border-white/30">
           {user.image ? (
             <Image
               src={user.image}
@@ -152,7 +153,7 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white text-sm font-semibold">
+            <div className="w-full h-full flex items-center justify-center bg-slate-800/80 text-white text-sm font-semibold">
               {getUserInitials(user.name || "User")}
             </div>
           )}
@@ -160,125 +161,142 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
 
         {/* Desktop: Show name and chevron */}
         <div className="hidden md:flex items-center space-x-1">
-          <span className="text-sm font-medium text-gray-700 max-w-24 truncate">
+          <span className="text-sm font-medium text-slate-700 max-w-24 truncate">
             {user.name?.split(" ")[0] || "User"}
           </span>
-          <ChevronDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+          </motion.div>
         </div>
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setIsOpen(false)}
+            />
 
-          {/* Dropdown Content */}
-          <div className="absolute right-0 mt-2 w-72 origin-top-right bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
-            {/* Arrow pointer */}
-            <div className="absolute -top-1 right-6 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
+            {/* Dropdown Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute right-0 mt-2 w-64 origin-top-right bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20"
+            >
+              {/* Arrow pointer */}
+              <div className="absolute -top-1 right-5 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
 
-            {/* User Info Header */}
-            <div className="px-4 py-3 border-b border-gray-100">
-              <div className="flex items-center space-x-3">
-                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
-                  {user.image ? (
-                    <Image
-                      src={user.image}
-                      alt={user.name || "Profile"}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white font-semibold">
-                      {getUserInitials(user.name || "User")}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {user.name || "User"}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                  {user.role === "VENDOR" && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                      Vendor
-                    </span>
-                  )}
+              {/* User Info Header */}
+              <div className="px-3 py-3 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                    {user.image ? (
+                      <Image
+                        src={user.image}
+                        alt={user.name || "Profile"}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white text-sm font-semibold">
+                        {getUserInitials(user.name || "User")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 truncate">
+                      {user.name || "User"}
+                    </p>
+                    <p className="text-xs text-slate-600 truncate">
+                      {user.email}
+                    </p>
+                    {user.role === "VENDOR" && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                        Vendor
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Menu Items */}
-            <div className="py-2">
-              {profileMenuItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-4 py-3 text-sm transition-colors duration-150 ${
-                    item.isVendor
-                      ? "text-blue-700 hover:bg-blue-50 hover:text-blue-900 border-b border-gray-100"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors ${
+              {/* Menu Items */}
+              <div className="py-1">
+                {profileMenuItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`group flex items-center mx-2 px-3 py-2 text-xs transition-all duration-150 rounded-lg cursor-pointer ${
                       item.isVendor
-                        ? "bg-blue-100 group-hover:bg-blue-200"
-                        : "bg-gray-100 group-hover:bg-gray-200"
+                        ? "text-blue-700 hover:bg-blue-50 hover:text-blue-900 border-b border-gray-100 mb-1"
+                        : "text-slate-700 hover:bg-gray-50 hover:text-slate-900"
                     }`}
+                    onClick={() => setIsOpen(false)}
                   >
-                    <item.icon
-                      className={`w-4 h-4 transition-colors ${
+                    <div
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center mr-2 transition-colors ${
                         item.isVendor
-                          ? "text-blue-600 group-hover:text-blue-700"
-                          : "text-gray-600 group-hover:text-gray-700"
+                          ? "bg-blue-100 group-hover:bg-blue-200"
+                          : "bg-gray-100 group-hover:bg-gray-200"
                       }`}
-                    />
+                    >
+                      <item.icon
+                        className={`w-3 h-3 transition-colors ${
+                          item.isVendor
+                            ? "text-blue-600 group-hover:text-blue-700"
+                            : "text-slate-600 group-hover:text-slate-700"
+                        }`}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-xs">{item.name}</div>
+                      <div className="text-xs text-slate-500">
+                        {item.description}
+                      </div>
+                    </div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      whileHover={{ opacity: 1 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <ChevronDownIcon className="w-3 h-3 text-slate-400 rotate-[-90deg]" />
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Sign Out */}
+              <div className="border-t border-gray-100 pt-1 mx-2">
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onSignOut();
+                  }}
+                  className="group w-full flex items-center px-3 py-2 text-xs text-slate-700 hover:bg-red-50 hover:text-red-600 transition-all duration-150 rounded-lg cursor-pointer"
+                >
+                  <div className="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center mr-2 group-hover:bg-red-100 transition-colors">
+                    <ArrowRightOnRectangleIcon className="w-3 h-3 text-slate-600 group-hover:text-red-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {item.description}
+                    <div className="font-medium text-xs">Sign Out</div>
+                    <div className="text-xs text-slate-500">
+                      Sign out of your account
                     </div>
                   </div>
-                  <ChevronDownIcon className="w-4 h-4 text-gray-400 rotate-[-90deg] opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              ))}
-            </div>
-
-            {/* Sign Out */}
-            <div className="border-t border-gray-100 pt-2">
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  onSignOut();
-                }}
-                className="group w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150"
-              >
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-red-100 transition-colors">
-                  <ArrowRightOnRectangleIcon className="w-4 h-4 text-gray-600 group-hover:text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Sign Out</div>
-                  <div className="text-xs text-gray-500">
-                    Sign out of your account
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -292,9 +310,25 @@ function SmartBadge({ count }: SmartBadgeProps) {
   if (count === 0) return null;
 
   return (
-    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
       {count > 9 ? "9+" : count}
     </span>
+  );
+}
+
+// Skeleton Loading Component for Profile
+function ProfileSkeleton() {
+  return (
+    <div className="flex items-center space-x-2 p-2 rounded-full backdrop-blur-md bg-white/10 border border-white/20">
+      {/* Profile Image Skeleton */}
+      <div className="w-8 h-8 rounded-full bg-white/20 animate-pulse"></div>
+      
+      {/* Desktop: Show name skeleton */}
+      <div className="hidden md:flex items-center space-x-1">
+        <div className="w-12 h-3 bg-white/20 rounded animate-pulse"></div>
+        <div className="w-3 h-3 bg-white/20 rounded animate-pulse"></div>
+      </div>
+    </div>
   );
 }
 
@@ -312,336 +346,360 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="backdrop-blur-xl bg-white/70 border-b border-white/50 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold text-gray-900">
+          {/* Left side - Logo and Desktop Categories */}
+          <div className="flex items-center space-x-8">
+            {/* Logo - Always on the left */}
+            <Link href="/" className="text-2xl font-bold text-slate-900 flex-shrink-0">
               TechVault
             </Link>
-          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-8">
-              {categories.map((category) => (
-                <div
-                  key={category.name}
-                  className="relative group"
-                  onMouseEnter={() => setHoveredCategory(category.name)}
-                  onMouseLeave={() => setHoveredCategory(null)}
-                >
-                  <Link
-                    href={category.href}
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium flex items-center transition-colors duration-200"
-                  >
-                    {category.name}
-                    <ChevronDownIcon
-                      className={`ml-1 h-4 w-4 transition-transform duration-200 ${
-                        hoveredCategory === category.name ? "rotate-180" : ""
-                      }`}
-                    />
-                  </Link>
-
-                  {/* Dropdown Menu */}
+            {/* Desktop Navigation - Categories */}
+            <div className="hidden md:block">
+              <div className="flex items-baseline space-x-6">
+                {categories.map((category) => (
                   <div
-                    className={`absolute left-0 mt-1 w-56 origin-top transition-all duration-200 ease-out z-50 ${
-                      hoveredCategory === category.name
-                        ? "opacity-100 scale-100 translate-y-0"
-                        : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-                    }`}
+                    key={category.name}
+                    className="relative group"
+                    onMouseEnter={() => setHoveredCategory(category.name)}
+                    onMouseLeave={() => setHoveredCategory(null)}
                   >
-                    {/* Arrow pointer */}
-                    <div className="absolute -top-1 left-6 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
+                    <Link
+                      href={`/products?category=${encodeURIComponent(category.name)}`}
+                      className="text-slate-700 hover:text-slate-900 px-2 py-2 text-sm font-medium flex items-center transition-colors duration-200"
+                    >
+                      {category.name}
+                      <motion.div
+                        animate={{ rotate: hoveredCategory === category.name ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronDownIcon className="ml-1 h-4 w-4" />
+                      </motion.div>
+                    </Link>
 
-                    <div className="bg-white rounded-xl shadow-xl border border-gray-200 py-2 mt-1">
-                      <div className="px-3 py-2 border-b border-gray-100">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          {category.name}
-                        </p>
-                      </div>
-                      <div className="py-1">
-                        {category.subcategories.map((subcategory, index) => (
-                          <Link
-                            key={subcategory}
-                            href={`${category.href}/${subcategory.toLowerCase().replace(/\s+/g, "-")}`}
-                            className="group flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
-                          >
-                            {/* Icon placeholder */}
-                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group-hover:bg-gray-200 transition-colors">
-                              <div className="w-4 h-4 bg-gray-400 rounded group-hover:bg-gray-500"></div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">{subcategory}</div>
-                              <div className="text-xs text-gray-500">
-                                Explore {subcategory.toLowerCase()}
-                              </div>
-                            </div>
-                            {/* Arrow on hover */}
-                            <ChevronDownIcon className="w-4 h-4 text-gray-400 rotate-[-90deg] opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </Link>
-                        ))}
-                      </div>
-
-                      {/* View All Link */}
-                      <div className="border-t border-gray-100 mt-1 pt-1">
-                        <Link
-                          href={category.href}
-                          className="flex items-center justify-center px-4 py-2.5 text-sm font-medium text-black hover:bg-gray-50 transition-colors"
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                      {hoveredCategory === category.name && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                          className="absolute left-0 mt-1 w-48 origin-top z-50"
                         >
-                          View All {category.name}
-                          <svg
-                            className="ml-1 w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
+                          {/* Arrow pointer */}
+                          <div className="absolute -top-1 left-5 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
+
+                          <div className="bg-white rounded-xl shadow-xl border border-gray-200 py-2 mt-1">
+                            <div className="px-3 py-2 border-b border-gray-100">
+                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                {category.name}
+                              </p>
+                            </div>
+                            <div className="py-1">
+                              {category.subcategories.map((subcategory, index) => (
+                                <Link
+                                  key={subcategory}
+                                  href={`/products?category=${encodeURIComponent(subcategory)}`}
+                                  className="group flex items-center mx-2 px-3 py-2 text-xs text-slate-700 hover:bg-gray-50 hover:text-slate-900 transition-colors duration-150 rounded-lg cursor-pointer"
+                                >
+                                  {/* Icon placeholder */}
+                                  <div className="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center mr-2 group-hover:bg-gray-200 transition-colors">
+                                    <div className="w-3 h-3 bg-slate-400 rounded group-hover:bg-slate-500"></div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-xs">
+                                      {subcategory}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                      Explore {subcategory.toLowerCase()}
+                                    </div>
+                                  </div>
+                                  {/* Arrow on hover */}
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    whileHover={{ opacity: 1 }}
+                                    transition={{ duration: 0.15 }}
+                                  >
+                                    <ChevronDownIcon className="w-3 h-3 text-slate-400 rotate-[-90deg]" />
+                                  </motion.div>
+                                </Link>
+                              ))}
+                            </div>
+
+                            {/* View All Link */}
+                            <div className="border-t border-gray-100 mt-1 pt-1">
+                              <Link
+                                href={`/products?category=${encodeURIComponent(category.name)}`}
+                                className="flex items-center justify-center mx-2 px-3 py-2 text-xs font-medium text-slate-900 hover:bg-gray-50 transition-colors rounded-lg cursor-pointer"
+                              >
+                                View All {category.name}
+                                <svg
+                                  className="ml-1 w-3 h-3"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                              </Link>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="hidden md:block flex-1 max-w-lg mx-8">
+          {/* Center - Search Bar */}
+          <div className="hidden md:block flex-1 max-w-md mx-6">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400" />
               </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-gray-900 focus:border-gray-900 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2.5 text-sm backdrop-blur-md bg-white/30 border border-white/30 rounded-xl leading-5 placeholder-slate-500 focus:outline-none focus:placeholder-slate-400 focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
                 placeholder="Search products..."
               />
             </div>
           </div>
 
-          {/* Right side icons */}
-          <div className="hidden md:flex items-center space-x-4">
-            {/* Wishlist Button */}
+          {/* Right side - Actions and Profile */}
+          <div className="flex items-center space-x-3">
+            {/* Wishlist Button - Always visible */}
             <Link
               href="/wishlist"
-              className="text-gray-700 hover:text-gray-900 p-2 relative transition-colors"
+              className="text-slate-700 hover:text-slate-900 p-2.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block"
             >
               <HeartIcon className="h-6 w-6" />
               <SmartBadge count={wishlistItemCount} />
             </Link>
 
-            {/* Cart Button */}
+            {/* Cart Button - Always visible */}
             <Link
               href="/cart"
-              className="text-gray-700 hover:text-gray-900 p-2 relative transition-colors"
+              className="text-slate-700 hover:text-slate-900 p-2.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block"
             >
               <ShoppingBagIcon className="h-6 w-6" />
               <SmartBadge count={cartItemCount} />
             </Link>
 
-            {/* Conditional Auth/Profile Section */}
-            {status === "loading" ? (
-              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-            ) : session?.user ? (
-              <ProfileDropdown
-                user={{
-                  id: session.user.id || "",
-                  name: session.user.name,
-                  email: session.user.email,
-                  image: session.user.image,
-                  role: session.user.role,
-                }}
-                onSignOut={handleSignOut}
-              />
-            ) : (
-              <Link
-                href="/signin"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-700 hover:text-gray-900 p-2"
-            >
-              {isMobileMenuOpen ? (
-                <XMarkIcon className="h-6 w-6" />
+            {/* Auth/Profile Section - Fixed position */}
+            <div className="hidden md:block">
+              {status === "loading" ? (
+                <ProfileSkeleton />
+              ) : session?.user ? (
+                <ProfileDropdown
+                  user={{
+                    id: session.user.id || "",
+                    name: session.user.name,
+                    email: session.user.email,
+                    image: session.user.image,
+                    role: session.user.role,
+                  }}
+                  onSignOut={handleSignOut}
+                />
               ) : (
-                <Bars3Icon className="h-6 w-6" />
+                <Link
+                  href="/signin"
+                  className="text-slate-700 hover:text-slate-900 px-3 py-2 text-xs font-medium backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-xl border border-white/20 transition-all duration-200"
+                >
+                  Sign In
+                </Link>
               )}
-            </button>
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="text-slate-700 hover:text-slate-900 p-2.5 backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 transition-all duration-200"
+              >
+                {isMobileMenuOpen ? (
+                  <XMarkIcon className="h-6 w-6" />
+                ) : (
+                  <Bars3Icon className="h-6 w-6" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-
+  
       {/* Mobile menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
-            {/* Mobile Search */}
-            <div className="px-3 py-2">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 sm:text-sm"
-                  placeholder="Search products..."
-                />
-              </div>
-            </div>
-
-            {/* Mobile Categories */}
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                href={category.href}
-                className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 block px-3 py-2 text-base font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {category.name}
-              </Link>
-            ))}
-
-            {/* Mobile Auth/Profile Actions */}
-            <div className="border-t border-gray-200 pt-4 pb-3">
-              {session?.user ? (
-                <div className="px-3 space-y-3">
-                  {/* Mobile Profile Info */}
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
-                      {session.user.image ? (
-                        <Image
-                          src={session.user.image}
-                          alt={session.user.name || "Profile"}
-                          width={40}
-                          height={40}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white text-sm font-semibold">
-                          {getUserInitials(session.user.name || "User")}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {session.user.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {session.user.email}
-                      </p>
-                      {session.user.role === "VENDOR" && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                          Vendor
-                        </span>
-                      )}
-                    </div>
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden"
+          >
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 backdrop-blur-xl bg-white/80 border-t border-white/50">
+              {/* Mobile Search */}
+              <div className="px-3 py-2">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
                   </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-9 pr-3 py-2 text-xs backdrop-blur-md bg-white/30 border border-white/30 rounded-xl leading-4 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200"
+                    placeholder="Search products..."
+                  />
+                </div>
+              </div>
 
-                  {/* Mobile Profile Links */}
-                  <div className="space-y-1">
-                    {/* Vendor Dashboard for mobile */}
-                    {session.user.role === "VENDOR" && (
+              {/* Mobile Categories */}
+              {categories.map((category) => (
+                <Link
+                  key={category.name}
+                  href={`/products?category=${encodeURIComponent(category.name)}`}
+                  className="text-slate-700 hover:text-slate-900 hover:bg-white/50 block px-3 py-2 text-sm font-medium rounded-lg mx-2 transition-all duration-200"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {category.name}
+                </Link>
+              ))}
+
+              {/* Mobile Auth/Profile Actions */}
+              <div className="border-t border-white/30 pt-4 pb-3 mx-2">
+                {session?.user ? (
+                  <div className="px-3 space-y-3">
+                    {/* Mobile Profile Info */}
+                    <div className="flex items-center space-x-3 mb-4 p-3 backdrop-blur-md bg-white/30 rounded-xl border border-white/30">
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 border border-white/30">
+                        {session.user.image ? (
+                          <Image
+                            src={session.user.image}
+                            alt={session.user.name || "Profile"}
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-800/80 text-white text-xs font-semibold">
+                            {getUserInitials(session.user.name || "User")}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-900">
+                          {session.user.name}
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          {session.user.email}
+                        </p>
+                        {session.user.role === "VENDOR" && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                            Vendor
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Mobile Profile Links */}
+                    <div className="space-y-1">
+                      {/* Vendor Dashboard for mobile */}
+                      {session.user.role === "VENDOR" && (
+                        <Link
+                          href="/vendor/dashboard"
+                          className="flex items-center px-3 py-2 text-xs text-blue-700 hover:bg-blue-100/50 rounded-lg font-medium transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
+                          Vendor Dashboard
+                        </Link>
+                      )}
                       <Link
-                        href="/vendor/dashboard"
-                        className="flex items-center px-3 py-2 text-sm text-blue-700 hover:bg-blue-50 rounded-md font-medium"
+                        href="/profile"
+                        className="block px-3 py-2 text-xs text-slate-700 hover:bg-white/50 rounded-lg transition-all duration-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <BuildingStorefrontIcon className="w-4 h-4 mr-2" />
-                        Vendor Dashboard
+                        My Profile
                       </Link>
-                    )}
-                    <Link
-                      href="/profile"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      My Profile
-                    </Link>
-                    <Link
-                      href="/orders"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      My Orders
-                    </Link>
-                    <Link
-                      href="/wishlist"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Wishlist
-                    </Link>
-                    <Link
-                      href="/settings"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        handleSignOut();
-                      }}
-                      className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
-                    >
-                      Sign Out
-                    </button>
+                      <Link
+                        href="/orders"
+                        className="block px-3 py-2 text-xs text-slate-700 hover:bg-white/50 rounded-lg transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        My Orders
+                      </Link>
+                      <Link
+                        href="/wishlist"
+                        className="block px-3 py-2 text-xs text-slate-700 hover:bg-white/50 rounded-lg transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Wishlist
+                      </Link>
+                      <Link
+                        href="/settings"
+                        className="block px-3 py-2 text-xs text-slate-700 hover:bg-white/50 rounded-lg transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          handleSignOut();
+                        }}
+                        className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-100/50 rounded-lg transition-all duration-200"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center px-5 space-x-4">
+                ) : (
+                  <div className="flex items-center px-5 space-x-4">
+                    <Link
+                      href="/signin"
+                      className="text-slate-700 hover:text-slate-900 px-3 py-2 text-xs font-medium backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-xl border border-white/30 transition-all duration-200"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                )}
+
+                {/* Mobile Actions (Wishlist, Cart) */}
+                <div className="flex items-center px-5 space-x-4 mt-4">
                   <Link
-                    href="/signin"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                    href="/wishlist"
+                    className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200"
+                    aria-label="View wishlist"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    Sign In
+                    <HeartIcon className="h-5 w-5" />
+                    <SmartBadge count={wishlistItemCount} />
+                  </Link>
+                  <Link
+                    href="/cart"
+                    className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200"
+                    aria-label="View shopping cart"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <ShoppingBagIcon className="h-5 w-5" />
+                    <SmartBadge count={cartItemCount} />
                   </Link>
                 </div>
-              )}
-
-              {/* Mobile Actions (Wishlist, Cart) */}
-              <div className="flex items-center px-5 space-x-4 mt-4">
-                <Link
-                  href="/wishlist"
-                  className="text-gray-700 hover:text-gray-900 p-2 relative"
-                  aria-label="View wishlist"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <HeartIcon className="h-6 w-6" />
-                  <SmartBadge count={wishlistItemCount} />
-                </Link>
-                <Link
-                  href="/cart"
-                  className="text-gray-700 hover:text-gray-900 p-2 relative"
-                  aria-label="View shopping cart"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <ShoppingBagIcon className="h-6 w-6" />
-                  <SmartBadge count={cartItemCount} />
-                </Link>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

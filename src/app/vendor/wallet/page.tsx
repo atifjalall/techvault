@@ -2,22 +2,38 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   BanknotesIcon,
   ArrowDownTrayIcon,
   ArrowUpIcon,
   ClockIcon,
   CheckCircleIcon,
-  CalendarDaysIcon,
   CreditCardIcon,
   BuildingLibraryIcon,
-  InformationCircleIcon,
   EyeIcon,
   EyeSlashIcon,
   ArrowTrendingUpIcon,
-  ChevronRightIcon,
+  PlusIcon,
+  Cog6ToothIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { motion } from "framer-motion";
+
+// UI Components
+import { Button } from "@/components/ui/buttonSidebar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { formatPrice } from "@/lib/utils";
 
 interface WalletData {
@@ -47,448 +63,659 @@ interface WalletData {
   }>;
 }
 
-// Mock data
-const mockWalletData: WalletData = {
-  balance: {
-    available: 4567.89,
-    pending: 890.45,
-    total: 5458.34,
-  },
-  thisMonth: {
-    earnings: 12450.8,
-    growth: 18.5,
-  },
-  payoutInfo: {
-    nextPayout: "2024-09-20",
-    frequency: "Weekly",
-    method: "Bank Transfer",
-    account: "****1234",
-  },
-  recentTransactions: [
-    {
-      id: "1",
-      type: "sale",
-      amount: 299.99,
-      description: "iPhone 15 Pro Max - Order #12345",
-      date: "2024-09-15T10:30:00Z",
-      status: "completed",
-      orderId: "12345",
-    },
-    {
-      id: "2",
-      type: "sale",
-      amount: 189.5,
-      description: "AirPods Pro 2 - Order #12346",
-      date: "2024-09-15T08:15:00Z",
-      status: "completed",
-      orderId: "12346",
-    },
-    {
-      id: "3",
-      type: "payout",
-      amount: -2450.75,
-      description: "Weekly payout to bank account",
-      date: "2024-09-13T09:00:00Z",
-      status: "completed",
-    },
-    {
-      id: "4",
-      type: "sale",
-      amount: 99.99,
-      description: "Wireless Charger - Order #12347",
-      date: "2024-09-12T16:45:00Z",
-      status: "pending",
-      orderId: "12347",
-    },
-    {
-      id: "5",
-      type: "refund",
-      amount: -79.99,
-      description: "Refund for Order #12340",
-      date: "2024-09-11T14:20:00Z",
-      status: "completed",
-      orderId: "12340",
-    },
-  ],
-};
-
-function TransactionIcon({ type }: { type: string }) {
-  switch (type) {
-    case "sale":
-      return <ArrowUpIcon className="w-4 h-4 text-green-600" />;
-    case "payout":
-      return <ArrowDownTrayIcon className="w-4 h-4 text-blue-600" />;
-    case "refund":
-      return <ArrowUpIcon className="w-4 h-4 text-red-600 rotate-180" />;
-    case "fee":
-      return <CreditCardIcon className="w-4 h-4 text-gray-600" />;
+// Enhanced Stats Card Component with soft colors
+function StatsCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  change,
+  variant = "default",
+  action,
+  delay = 0,
+}: {
+  title: string;
+  value: string;
+  subtitle?: string;
+  icon: React.ElementType;
+  change?: string;
+  variant?: "default" | "success" | "warning" | "destructive";
+  action?: React.ReactNode;
+  delay?: number;
+}) {
+  const variantStyles = {
     default:
-      return <ClockIcon className="w-4 h-4 text-gray-600" />;
-  }
+      "bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border-slate-200",
+    success:
+      "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 border-emerald-200",
+    warning:
+      "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 border-amber-200",
+    destructive:
+      "bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 border-rose-200",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
+    >
+      <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm hover:shadow-md transition-all duration-300">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-3 flex-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-600">{title}</p>
+                {action}
+              </div>
+              <p className="text-3xl font-bold text-slate-900 tracking-tight">
+                {value}
+              </p>
+              {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+              {change && (
+                <div className="flex items-center space-x-1">
+                  <ArrowUpIcon className="w-3 h-3 text-emerald-500" />
+                  <p className="text-xs font-medium text-emerald-600">
+                    {change}
+                  </p>
+                  <span className="text-xs text-slate-400">vs last month</span>
+                </div>
+              )}
+            </div>
+            <div
+              className={`p-3 rounded-2xl ${variantStyles[variant]} shadow-sm`}
+            >
+              <Icon className="w-6 h-6" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 }
 
+// Enhanced Transaction Icon Component
+function TransactionIcon({ type }: { type: string }) {
+  const iconProps = "w-4 h-4";
+  const iconConfig = {
+    sale: { icon: ArrowUpIcon, color: "text-emerald-600", bg: "bg-emerald-50", rotate: "" },
+    payout: {
+      icon: ArrowDownTrayIcon,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      rotate: "",
+    },
+    refund: {
+      icon: ArrowUpIcon,
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+      rotate: "rotate-180",
+    },
+    fee: { icon: CreditCardIcon, color: "text-slate-600", bg: "bg-slate-50", rotate: "" },
+  };
+
+  const config = iconConfig[type as keyof typeof iconConfig] || iconConfig.fee;
+  const IconComponent = config.icon;
+
+  return (
+    <div
+      className={`w-10 h-10 ${config.bg} rounded-xl flex items-center justify-center`}
+    >
+      <IconComponent
+        className={`${iconProps} ${config.color} ${config.rotate || ""}`}
+      />
+    </div>
+  );
+}
+
+// Enhanced Status Badge Component
 function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case "completed":
-      return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircleIcon className="w-3 h-3 mr-1" />
-          Completed
-        </span>
-      );
-    case "pending":
-      return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <ClockIcon className="w-3 h-3 mr-1" />
-          Pending
-        </span>
-      );
-    case "failed":
-      return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          Failed
-        </span>
-      );
-    default:
-      return null;
-  }
+  const variants = {
+    completed: {
+      className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      label: "Completed",
+      icon: CheckCircleIcon,
+    },
+    pending: {
+      className: "bg-amber-100 text-amber-700 border-amber-200",
+      label: "Pending",
+      icon: ClockIcon,
+    },
+    failed: {
+      className: "bg-rose-100 text-rose-700 border-rose-200",
+      label: "Failed",
+      icon: ExclamationTriangleIcon,
+    },
+  };
+
+  const config = variants[status as keyof typeof variants];
+  if (!config) return null;
+
+  const Icon = config.icon;
+
+  return (
+    <Badge
+      className={`text-xs font-medium ${config.className} hover:bg-opacity-80`}
+    >
+      <Icon className="w-3 h-3 mr-1" />
+      {config.label}
+    </Badge>
+  );
+}
+
+// Enhanced Loading Skeleton Component
+function WalletSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Stats Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: i * 0.1 }}
+          >
+            <Card className="border-0 shadow-sm bg-white/80">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3 flex-1">
+                    <Skeleton className="h-4 w-24 bg-slate-200" />
+                    <Skeleton className="h-8 w-32 bg-slate-200" />
+                    <Skeleton className="h-3 w-20 bg-slate-200" />
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-2xl bg-slate-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Payout Info Skeleton */}
+      <Card className="border-0 shadow-sm bg-white/80">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-40 bg-slate-200" />
+            <Skeleton className="h-8 w-20 bg-slate-200" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-3 w-16 bg-slate-200" />
+                <Skeleton className="h-5 w-24 bg-slate-200" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Transactions Skeleton */}
+      <Card className="border-0 shadow-sm bg-white/80">
+        <CardHeader>
+          <Skeleton className="h-6 w-32 bg-slate-200" />
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="space-y-0">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0"
+              >
+                <div className="flex items-center space-x-3">
+                  <Skeleton className="h-10 w-10 rounded-xl bg-slate-200" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48 bg-slate-200" />
+                    <Skeleton className="h-3 w-32 bg-slate-200" />
+                  </div>
+                </div>
+                <div className="space-y-2 text-right">
+                  <Skeleton className="h-5 w-20 bg-slate-200" />
+                  <Skeleton className="h-3 w-16 bg-slate-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function VendorWalletPage() {
   const { data: session } = useSession();
-  const [data, setData] = useState<WalletData>(mockWalletData);
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<WalletData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
 
-  // Load wallet data
+  // Load wallet data from API
   useEffect(() => {
     const loadWalletData = async () => {
-      setLoading(true);
       try {
-        // Replace with actual API call
-        // const response = await fetch('/api/vendor/wallet');
-        // const result = await response.json();
-        // setData(result.data);
+        setLoading(true);
+        const response = await fetch("/api/vendor/wallet");
 
-        // Simulate loading
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        if (!response.ok) {
+          // If endpoint doesn't exist, provide default data
+          if (response.status === 404) {
+            const defaultData: WalletData = {
+              balance: {
+                available: 0,
+                pending: 0,
+                total: 0,
+              },
+              thisMonth: {
+                earnings: 0,
+                growth: 0,
+              },
+              payoutInfo: {
+                nextPayout: new Date(
+                  Date.now() + 7 * 24 * 60 * 60 * 1000
+                ).toISOString(),
+                frequency: "Weekly",
+                method: "Bank Transfer",
+                account: "Not configured",
+              },
+              recentTransactions: [],
+            };
+            setData(defaultData);
+            return;
+          }
+          throw new Error("Failed to fetch wallet data");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setData(result.data);
+        } else {
+          throw new Error(result.error || "Failed to load wallet data");
+        }
       } catch (error) {
         console.error("Error loading wallet data:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to load wallet data"
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    loadWalletData();
-  }, []);
+    if (session?.user) {
+      loadWalletData();
+    }
+  }, [session]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between mb-8"
+          >
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Wallet</h1>
+              <p className="text-slate-600 mt-1">
+                Manage your earnings and payouts
+              </p>
+            </div>
+          </motion.div>
+          <WalletSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <BanknotesIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                Unable to load wallet
+              </h3>
+              <p className="text-slate-500 mb-6">{error}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+              >
+                Try Again
+              </Button>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="p-6 max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          className="flex items-center justify-between"
         >
-          <h1 className="text-4xl font-light text-gray-900 mb-3">Wallet</h1>
-          <p className="text-lg text-gray-600">
-            Manage your earnings and payouts
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Wallet</h1>
+            <p className="text-slate-600 mt-1">
+              Manage your earnings and payouts
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="outline"
+              asChild
+              className="bg-white/80 border-slate-200 hover:bg-white"
+            >
+              <Link href="/vendor/wallet/settings">
+                <Cog6ToothIcon className="w-4 h-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm">
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Request Payout
+            </Button>
+          </div>
         </motion.div>
 
         {/* Balance Cards */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          {/* Available Balance */}
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
-                  <BanknotesIcon className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600">
-                    Available Balance
-                  </h3>
-                  <p className="text-xs text-gray-500">Ready for payout</p>
-                </div>
-              </div>
-              <button
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatsCard
+            title="Available Balance"
+            value={
+              balanceVisible ? formatPrice(data.balance.available) : "••••••"
+            }
+            subtitle="Ready for payout"
+            icon={BanknotesIcon}
+            variant="success"
+            delay={0}
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setBalanceVisible(!balanceVisible)}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="h-auto p-1 text-slate-400 hover:text-slate-600"
               >
                 {balanceVisible ? (
-                  <EyeSlashIcon className="w-5 h-5" />
+                  <EyeSlashIcon className="w-4 h-4" />
                 ) : (
-                  <EyeIcon className="w-5 h-5" />
+                  <EyeIcon className="w-4 h-4" />
                 )}
-              </button>
-            </div>
+              </Button>
+            }
+          />
 
-            <div className="space-y-4">
-              {balanceVisible ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-4xl font-light text-gray-900"
-                >
-                  {formatPrice(data.balance.available)}
-                </motion.div>
-              ) : (
-                <div className="text-4xl font-light text-gray-900">••••••</div>
-              )}
+          <StatsCard
+            title="Pending Balance"
+            value={
+              balanceVisible ? formatPrice(data.balance.pending) : "••••••"
+            }
+            subtitle="Processing payouts"
+            icon={ClockIcon}
+            variant="warning"
+            delay={0.1}
+          />
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Pending</span>
-                <span className="font-medium text-gray-900">
-                  {balanceVisible ? formatPrice(data.balance.pending) : "••••"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* This Month Earnings */}
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                <ArrowTrendingUpIcon className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-600">
-                  This Month
-                </h3>
-                <p className="text-xs text-gray-500">Total earnings</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-4xl font-light text-gray-900">
-                {formatPrice(data.thisMonth.earnings)}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <ArrowUpIcon className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-600">
-                  +{data.thisMonth.growth}%
-                </span>
-                <span className="text-sm text-gray-500">vs last month</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+          <StatsCard
+            title="This Month"
+            value={formatPrice(data.thisMonth.earnings)}
+            subtitle="Total earnings"
+            icon={ArrowTrendingUpIcon}
+            change={`+${data.thisMonth.growth}%`}
+            variant="default"
+            delay={0.2}
+          />
+        </div>
 
         {/* Payout Information */}
         <motion.div
-          className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center">
-                <BuildingLibraryIcon className="w-6 h-6 text-purple-600" />
+          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex items-center justify-center border border-blue-200">
+                    <BuildingLibraryIcon className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg text-slate-900">
+                      Payout Schedule
+                    </CardTitle>
+                    <p className="text-sm text-slate-600">Automatic payouts</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/80 border-slate-200 hover:bg-white"
+                >
+                  Manage
+                </Button>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">
-                  Payout Schedule
-                </h3>
-                <p className="text-sm text-gray-500">Automatic payouts</p>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    Next Payout
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {new Date(data.payoutInfo.nextPayout).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    Frequency
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {data.payoutInfo.frequency}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    Method
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {data.payoutInfo.method}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    Account
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {data.payoutInfo.account}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <button className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              Manage
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Next Payout
-              </p>
-              <p className="text-lg font-medium text-gray-900">
-                {new Date(data.payoutInfo.nextPayout).toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }
-                )}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Frequency
-              </p>
-              <p className="text-lg font-medium text-gray-900">
-                {data.payoutInfo.frequency}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Method
-              </p>
-              <p className="text-lg font-medium text-gray-900">
-                {data.payoutInfo.method}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                Account
-              </p>
-              <p className="text-lg font-medium text-gray-900">
-                {data.payoutInfo.account}
-              </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Recent Transactions */}
         <motion.div
-          className="bg-white rounded-3xl shadow-sm border border-gray-100"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <div className="p-8 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
-                Recent Activity
-              </h3>
-              <button className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                View All
-              </button>
-            </div>
-          </div>
+          <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg text-slate-900">
+                  Recent Transactions
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link
+                    href="/vendor/wallet/transactions"
+                    className="text-slate-600 hover:text-slate-900"
+                  >
+                    View All
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-slate-100">
+                    <TableHead className="text-slate-600">
+                      Transaction
+                    </TableHead>
+                    <TableHead className="text-slate-600">Date</TableHead>
+                    <TableHead className="text-slate-600">Status</TableHead>
+                    <TableHead className="text-right text-slate-600">
+                      Amount
+                    </TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.recentTransactions.map((transaction, index) => (
+                    <motion.tr
+                      key={transaction.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className="hover:bg-slate-50/50 border-slate-100"
+                    >
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <TransactionIcon type={transaction.type} />
+                          <div>
+                            <p className="font-medium text-slate-900 text-sm">
+                              {transaction.description}
+                            </p>
+                            <p className="text-xs text-slate-500 capitalize">
+                              {transaction.type}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
 
-          <div className="divide-y divide-gray-100">
-            <AnimatePresence>
-              {data.recentTransactions.map((transaction, index) => (
-                <motion.div
-                  key={transaction.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-2xl flex items-center justify-center">
-                        <TransactionIcon type={transaction.type} />
-                      </div>
-
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {transaction.description}
-                        </p>
-                        <div className="flex items-center space-x-3 mt-1">
-                          <p className="text-xs text-gray-500">
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-slate-900 text-sm">
                             {new Date(transaction.date).toLocaleDateString(
                               "en-US",
                               {
                                 month: "short",
                                 day: "numeric",
+                              }
+                            )}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(transaction.date).toLocaleTimeString(
+                              "en-US",
+                              {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               }
                             )}
                           </p>
-                          <StatusBadge status={transaction.status} />
                         </div>
-                      </div>
-                    </div>
+                      </TableCell>
 
-                    <div className="text-right">
-                      <p
-                        className={`text-lg font-medium ${
-                          transaction.amount > 0
-                            ? "text-green-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        {transaction.amount > 0 ? "+" : ""}
-                        {formatPrice(Math.abs(transaction.amount))}
-                      </p>
-                      {transaction.orderId && (
-                        <button className="text-xs text-blue-600 hover:text-blue-700 transition-colors mt-1">
-                          View Order
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                      <TableCell>
+                        <StatusBadge status={transaction.status} />
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <p
+                          className={`font-semibold ${
+                            transaction.amount > 0
+                              ? "text-emerald-600"
+                              : "text-slate-900"
+                          }`}
+                        >
+                          {transaction.amount > 0 ? "+" : ""}
+                          {formatPrice(Math.abs(transaction.amount))}
+                        </p>
+                      </TableCell>
+
+                      <TableCell>
+                        {transaction.orderId && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/vendor/orders/${transaction.orderId}`}
+                              className="text-slate-600 hover:text-slate-900 text-xs"
+                            >
+                              View
+                            </Link>
+                          </Button>
+                        )}
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Help Section */}
         <motion.div
-          className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3xl p-8 border border-blue-100"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <InformationCircleIcon className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-medium text-blue-900 mb-2">
-                How payouts work
-              </h3>
-              <p className="text-blue-700 mb-4">
-                Your earnings are automatically transferred to your bank account
-                based on your payout schedule. Funds typically take 1-3 business
-                days to appear in your account.
-              </p>
-              <button className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                Learn more
-                <ChevronRightIcon className="w-4 h-4 ml-1" />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Loading Overlay */}
-        <AnimatePresence>
-          {loading && (
-            <motion.div
-              className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-50 flex items-center justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-white rounded-2xl p-8 shadow-xl"
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      Loading wallet data
-                    </p>
-                    <p className="text-sm text-gray-600">Please wait...</p>
-                  </div>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center border border-blue-200">
+                  <BanknotesIcon className="w-6 h-6 text-blue-600" />
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-2">
+                    How payouts work
+                  </h3>
+                  <p className="text-blue-800 text-sm mb-4 leading-relaxed">
+                    Your earnings are automatically transferred to your bank
+                    account based on your payout schedule. Funds typically take
+                    1-3 business days to appear in your account.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-700 hover:text-blue-800 p-0 h-auto font-medium"
+                  >
+                    Learn more
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );
