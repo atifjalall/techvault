@@ -35,27 +35,55 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  isVerified    Boolean   @default(false)
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  phone             String?              // NEW - Phone number
+  bio               String?              // NEW - Business description
+  isVerified        Boolean   @default(false)
   verificationToken String?
-  resetToken    String?
-  resetTokenExpiry DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  resetToken        String?
+  resetTokenExpiry  DateTime?
   
-  // Cleanup unverified accounts after 7 days
-  deleteAt      DateTime? // For auto-cleanup
+  // NEW - Security settings
+  twoFactorEnabled    Boolean   @default(false)
+  phoneVerified       Boolean   @default(false)
+  lastPasswordChange  DateTime? @default(now())
+  
+  // NEW - Business address as JSON
+  businessAddress     Json?     // { street, city, postalCode, country }
+  
+  // NEW - Notification preferences as JSON  
+  notificationSettings Json?    // { orderAlerts, marketingEmails, productUpdates, payoutNotifications }
+  
+  // NEW - Privacy settings as JSON
+  privacySettings     Json?     // { profileVisibility, showEmail, showPhone }
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deleteAt          DateTime?
+  role              Role      @default(CUSTOMER)
 
-  accounts Account[]
-  sessions Session[]
-  orders   Order[]
-  reviews  Review[]
-  cartItems CartItem[]
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  reviews       Review[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+
+  // Vendor-specific
+  products       Product[]       @relation("VendorProducts")
+  transactions   Transaction[]
+  vendorSettings VendorSettings?
+}
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
 }
 
 model VerificationToken {
@@ -79,26 +107,40 @@ model Category {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  description  String?
-  price        Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2)
-  images       String[]
-  brand        String?
-  specifications Json?   // For electronics specs
-  stock        Int      @default(0)
-  isActive     Boolean  @default(true)
-  featured     Boolean  @default(false)
-  categoryId   String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  price          Decimal  @db.Decimal(10, 2)
+  comparePrice   Decimal? @db.Decimal(10, 2)
+  images         String[]
+  brand          String?
+  modelNumber    String? // Product model/SKU
+  specifications Json? // Technical specs as key-value pairs
+  stock          Int      @default(0)
+  lowStockAlert  Int      @default(10) // Alert threshold
+  isActive       Boolean  @default(true)
+  featured       Boolean  @default(false)
+  categoryId     String
+  vendorId       String?
 
-  category   Category    @relation(fields: [categoryId], references: [id])
-  reviews    Review[]
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  // Additional product details
+  warranty   String? // Warranty period (e.g., "2 years")
+  weight     String? // Product weight (e.g., "1.5 kg")
+  dimensions String? // Product dimensions (e.g., "25 x 15 x 8 cm")
+  tags       String[] // Search tags
+  color      String? // Product color
+  material   String? // Product material
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category      Category       @relation(fields: [categoryId], references: [id])
+  vendor        User?          @relation("VendorProducts", fields: [vendorId], references: [id])
+  reviews       Review[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[] @relation("ProductWishlistItems")
 }
 
 model CartItem {
@@ -110,6 +152,18 @@ model CartItem {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation("ProductWishlistItems", fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
 }
@@ -151,6 +205,41 @@ model Review {
   product Product @relation(fields: [productId], references: [id])
 
   @@unique([userId, productId])
+}
+
+// Vendor-specific models
+model VendorSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  storeName    String?
+  banner       String?
+  logo         String?
+  
+  // NEW - Business information
+  businessName String?  // Legal business name
+  businessType String?  // Business category (Electronics Retail, Online Store, etc.)
+  taxId        String?  // VAT/Tax ID number (e.g., DE123456789)
+  website      String?  // Business website URL
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vendor User @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  vendorId  String
+  type      TransactionType
+  amount    Decimal         @db.Decimal(10, 2)
+  createdAt DateTime        @default(now())
+
+  vendor User @relation(fields: [vendorId], references: [id])
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
 }
 
 enum OrderStatus {
