@@ -165,6 +165,21 @@ model Product {
   orderItems    OrderItem[]
   wishlistItems WishlistItem[] @relation("ProductWishlistItems")
   notifications  Notification[] @relation("ProductNotifications")
+  colors ProductColor[]
+}
+
+// New model for product colors
+model ProductColor {
+  id        String   @id @default(cuid())
+  productId String
+  color     String      // e.g., "Red", "Blue", "Black"
+  image     String      // URL to color image (Cloudinary)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, color]) // Each product can have a color only once
 }
 
 model CartItem {

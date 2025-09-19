@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { uploadMultipleImages } from "@/lib/cloudinary";
+
 import {
   PhotoIcon,
   XMarkIcon,
   PlusIcon,
-  ArrowLeftIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
@@ -18,10 +19,9 @@ import {
   ChevronRightIcon,
   CloudArrowUpIcon,
   SparklesIcon,
-  TagIcon,
-  CubeIcon,
   HeartIcon,
   ShoppingBagIcon,
+  SwatchIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 
@@ -53,6 +53,13 @@ import {
 
 import { formatPrice } from "@/lib/utils";
 
+interface ColorVariant {
+  color: string;
+  image: File | null;
+  imagePreview: string;
+  cloudinaryUrl?: string;
+}
+
 interface FormData {
   name: string;
   brand: string;
@@ -66,6 +73,8 @@ interface FormData {
   lowStockAlert: string;
   images: File[];
   imagePreviews: string[];
+  cloudinaryUrls?: string[];
+  colorVariants: ColorVariant[];
   specifications: { key: string; value: string }[];
   featured: boolean;
   newArrival: boolean;
@@ -97,7 +106,26 @@ interface Subcategory {
   categoryId: string;
 }
 
-// ProductCard Preview Component (matching UI ProductCard exactly)
+// Predefined color options
+const COLOR_OPTIONS = [
+  { name: "Black", value: "#000000" },
+  { name: "White", value: "#FFFFFF" },
+  { name: "Gray", value: "#6B7280" },
+  { name: "Red", value: "#EF4444" },
+  { name: "Blue", value: "#3B82F6" },
+  { name: "Green", value: "#10B981" },
+  { name: "Yellow", value: "#F59E0B" },
+  { name: "Purple", value: "#8B5CF6" },
+  { name: "Pink", value: "#EC4899" },
+  { name: "Orange", value: "#F97316" },
+  { name: "Brown", value: "#92400E" },
+  { name: "Navy", value: "#1E3A8A" },
+  { name: "Rose Gold", value: "#E11D48" },
+  { name: "Silver", value: "#9CA3AF" },
+  { name: "Gold", value: "#D97706" },
+];
+
+// ProductCard Preview Component (original style)
 function ProductCardPreview({
   formData,
   selectedCategory,
@@ -183,6 +211,28 @@ function ProductCardPreview({
           )}
         </div>
 
+        {/* Color variants display */}
+        {formData.colorVariants.length > 0 && (
+          <div className="absolute bottom-3 left-3 flex gap-1">
+            {formData.colorVariants.slice(0, 4).map((variant, index) => (
+              <div
+                key={index}
+                className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                style={{
+                  backgroundColor:
+                    COLOR_OPTIONS.find((c) => c.name === variant.color)
+                      ?.value || "#6B7280",
+                }}
+              />
+            ))}
+            {formData.colorVariants.length > 4 && (
+              <span className="text-xs text-white bg-black/50 px-1 rounded">
+                +{formData.colorVariants.length - 4}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Quick Add to Cart - slides up from bottom */}
         <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
           <button
@@ -255,6 +305,168 @@ function ProductCardPreview({
   );
 }
 
+// Simple Color Variant Component
+function ColorVariantManager({
+  colorVariants,
+  onUpdate,
+}: {
+  colorVariants: ColorVariant[];
+  onUpdate: (variants: ColorVariant[]) => void;
+}) {
+  const addColorVariant = () => {
+    onUpdate([...colorVariants, { color: "", image: null, imagePreview: "" }]);
+  };
+
+  const updateColorVariant = (
+    index: number,
+    field: keyof ColorVariant,
+    value: any
+  ) => {
+    const updated = colorVariants.map((variant, i) =>
+      i === index ? { ...variant, [field]: value } : variant
+    );
+    onUpdate(updated);
+  };
+
+  const removeColorVariant = (index: number) => {
+    onUpdate(colorVariants.filter((_, i) => i !== index));
+  };
+
+  const handleImageUpload = async (index: number, file: File) => {
+    // Create preview immediately
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateColorVariant(index, "imagePreview", reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    updateColorVariant(index, "image", file);
+
+    // Upload to Cloudinary in background
+    try {
+      const cloudinaryUrls = await uploadMultipleImages([file]);
+      updateColorVariant(index, "cloudinaryUrl", cloudinaryUrls[0]);
+    } catch (error) {
+      console.error("Color image upload failed:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">Color Variants (Optional)</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addColorVariant}
+          className="text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
+        >
+          <PlusIcon className="w-4 h-4 mr-1" />
+          Add Color
+        </Button>
+      </div>
+
+      {colorVariants.length > 0 && (
+        <div className="space-y-3">
+          {colorVariants.map((variant, index) => (
+            <Card
+              key={index}
+              className="bg-gray-50/50 backdrop-blur-sm border border-gray-200"
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center space-x-3">
+                  {/* Color Selection */}
+                  <div className="flex-1">
+                    <Select
+                      value={variant.color}
+                      onValueChange={(value) =>
+                        updateColorVariant(index, "color", value)
+                      }
+                    >
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Select color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COLOR_OPTIONS.map((color) => (
+                          <SelectItem key={color.name} value={color.name}>
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-4 h-4 rounded-full border border-gray-300"
+                                style={{ backgroundColor: color.value }}
+                              />
+                              <span>{color.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="flex items-center space-x-2">
+                    {variant.imagePreview ? (
+                      <img
+                        src={variant.imagePreview}
+                        alt={`${variant.color} variant`}
+                        className="w-12 h-12 rounded-lg object-cover border"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg border flex items-center justify-center">
+                        <PhotoIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+
+                    <label className="cursor-pointer">
+                      <span className="text-sm text-blue-600 hover:text-blue-700 underline">
+                        {variant.imagePreview ? "Change" : "Upload"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(index, file);
+                        }}
+                      />
+                    </label>
+
+                    {variant.cloudinaryUrl && (
+                      <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                    )}
+                  </div>
+
+                  {/* Remove Button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeColorVariant(index)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {colorVariants.length === 0 && (
+        <div className="text-center py-6 text-gray-500 bg-gray-50/30 rounded-lg border border-dashed border-gray-300">
+          <SwatchIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">No color variants added</p>
+          <p className="text-xs">
+            Add colors to help customers choose variants
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function VendorAddProductPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -278,6 +490,7 @@ export default function VendorAddProductPage() {
     lowStockAlert: "10",
     images: [],
     imagePreviews: [],
+    colorVariants: [],
     specifications: [{ key: "", value: "" }],
     featured: false,
     newArrival: false,
@@ -335,7 +548,6 @@ export default function VendorAddProductPage() {
     if (formData.categoryId && categories.length > 0) {
       const category = categories.find((c) => c.id === formData.categoryId);
       setSelectedCategory(category || null);
-      // Reset subcategory when category changes
       if (
         formData.subcategoryId &&
         category &&
@@ -368,29 +580,45 @@ export default function VendorAddProductPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + formData.images.length > 5) {
       setErrors({ images: "Maximum 5 images allowed" });
       return;
     }
 
-    const newImages = [...formData.images, ...files];
-    const newPreviews = [...formData.imagePreviews];
+    setIsLoading(true);
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => newPreviews.push(reader.result as string);
-      reader.readAsDataURL(file);
-    });
+    try {
+      const newPreviews = [...formData.imagePreviews];
+      const newImages = [...formData.images];
 
-    setTimeout(() => {
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = () => newPreviews.push(reader.result as string);
+        reader.readAsDataURL(file);
+        newImages.push(file);
+      });
+
+      setTimeout(() => {
+        setFormData((prev) => ({
+          ...prev,
+          images: newImages,
+          imagePreviews: newPreviews,
+        }));
+      }, 100);
+
+      const cloudinaryUrls = await uploadMultipleImages(files);
       setFormData((prev) => ({
         ...prev,
-        images: newImages,
-        imagePreviews: newPreviews,
+        cloudinaryUrls: [...(prev.cloudinaryUrls || []), ...cloudinaryUrls],
       }));
-    }, 100);
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setErrors({ images: "Failed to upload images. Please try again." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -438,12 +666,29 @@ export default function VendorAddProductPage() {
     } else if (currentStep === 2) {
       if (!formData.description.trim())
         stepErrors.description = "Description is required";
+      if (formData.weight && isNaN(parseFloat(formData.weight))) {
+        stepErrors.weight = "Weight must be a valid number";
+      }
     } else if (currentStep === 3) {
       if (!formData.price || parseFloat(formData.price) <= 0) {
         stepErrors.price = "Valid price is required";
       }
       if (!formData.stock || parseInt(formData.stock) < 0) {
         stepErrors.stock = "Valid stock quantity is required";
+      }
+      if (
+        formData.comparePrice &&
+        parseFloat(formData.comparePrice) <= parseFloat(formData.price || "0")
+      ) {
+        stepErrors.comparePrice =
+          "Compare price must be higher than regular price";
+      }
+      if (
+        formData.deliveryDays &&
+        (parseInt(formData.deliveryDays) < 1 ||
+          parseInt(formData.deliveryDays) > 30)
+      ) {
+        stepErrors.deliveryDays = "Delivery days must be between 1 and 30";
       }
     }
 
@@ -485,11 +730,21 @@ export default function VendorAddProductPage() {
     setApiError("");
 
     try {
-      // Process images
-      const uploadedImageUrls =
-        formData.images.length > 0
-          ? formData.images.map((img) => `/products/${Date.now()}-${img.name}`)
-          : [];
+      let finalImageUrls: string[] = [];
+
+      if (formData.cloudinaryUrls && formData.cloudinaryUrls.length > 0) {
+        finalImageUrls = formData.cloudinaryUrls;
+      } else if (formData.images.length > 0) {
+        finalImageUrls = await uploadMultipleImages(formData.images);
+      }
+
+      // Prepare color variants with Cloudinary URLs
+      const colorVariantsForSubmission = formData.colorVariants
+        .filter((variant) => variant.color && variant.cloudinaryUrl)
+        .map((variant) => ({
+          color: variant.color,
+          image: variant.cloudinaryUrl!,
+        }));
 
       const specificationsObj = formData.specifications
         .filter((spec) => spec.key.trim() && spec.value.trim())
@@ -519,7 +774,8 @@ export default function VendorAddProductPage() {
           : undefined,
         stock: parseInt(formData.stock),
         lowStockAlert: parseInt(formData.lowStockAlert),
-        images: uploadedImageUrls,
+        images: finalImageUrls,
+        colors: colorVariantsForSubmission, // This will be processed in the API
         specifications:
           Object.keys(specificationsObj).length > 0
             ? specificationsObj
@@ -682,6 +938,12 @@ export default function VendorAddProductPage() {
                 <span className="text-gray-600">Images</span>
                 <span className="font-medium">
                   {formData.imagePreviews.length}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Colors</span>
+                <span className="font-medium">
+                  {formData.colorVariants.length}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -931,13 +1193,20 @@ export default function VendorAddProductPage() {
                         </Label>
                         <Input
                           id="weight"
+                          type="number"
+                          step="0.01"
                           value={formData.weight}
                           onChange={(e) =>
                             handleInputChange("weight", e.target.value)
                           }
                           placeholder="1.5"
-                          className="text-sm"
+                          className={`text-sm ${errors.weight ? "border-red-500" : ""}`}
                         />
+                        {errors.weight && (
+                          <p className="text-red-500 text-xs">
+                            {errors.weight}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -957,33 +1226,32 @@ export default function VendorAddProductPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="length" className="text-sm">
-                          Length (if applicable)
+                        <Label htmlFor="storage" className="text-sm">
+                          Storage/Memory
                         </Label>
                         <Input
-                          id="length"
-                          value={formData.length}
+                          id="storage"
+                          value={formData.storage}
                           onChange={(e) =>
-                            handleInputChange("length", e.target.value)
+                            handleInputChange("storage", e.target.value)
                           }
-                          placeholder="Cable length, etc."
+                          placeholder="128GB, 16GB RAM, etc."
                           className="text-sm"
                         />
                       </div>
                     </div>
 
-                    {/* Storage for electronics */}
                     <div className="space-y-2">
-                      <Label htmlFor="storage" className="text-sm">
-                        Storage/Memory
+                      <Label htmlFor="length" className="text-sm">
+                        Length (if applicable)
                       </Label>
                       <Input
-                        id="storage"
-                        value={formData.storage}
+                        id="length"
+                        value={formData.length}
                         onChange={(e) =>
-                          handleInputChange("storage", e.target.value)
+                          handleInputChange("length", e.target.value)
                         }
-                        placeholder="128GB, 16GB RAM, etc."
+                        placeholder="Cable length, etc."
                         className="text-sm"
                       />
                     </div>
@@ -1079,6 +1347,7 @@ export default function VendorAddProductPage() {
                           id="price"
                           type="number"
                           step="0.01"
+                          min="0"
                           value={formData.price}
                           onChange={(e) =>
                             handleInputChange("price", e.target.value)
@@ -1099,13 +1368,19 @@ export default function VendorAddProductPage() {
                           id="comparePrice"
                           type="number"
                           step="0.01"
+                          min="0"
                           value={formData.comparePrice}
                           onChange={(e) =>
                             handleInputChange("comparePrice", e.target.value)
                           }
                           placeholder="399.99"
-                          className="text-sm"
+                          className={`text-sm ${errors.comparePrice ? "border-red-500" : ""}`}
                         />
+                        {errors.comparePrice && (
+                          <p className="text-red-500 text-xs">
+                            {errors.comparePrice}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500">
                           Original price for showing discount
                         </p>
@@ -1138,6 +1413,7 @@ export default function VendorAddProductPage() {
                         <Input
                           id="stock"
                           type="number"
+                          min="0"
                           value={formData.stock}
                           onChange={(e) =>
                             handleInputChange("stock", e.target.value)
@@ -1157,6 +1433,7 @@ export default function VendorAddProductPage() {
                         <Input
                           id="lowStockAlert"
                           type="number"
+                          min="0"
                           value={formData.lowStockAlert}
                           onChange={(e) =>
                             handleInputChange("lowStockAlert", e.target.value)
@@ -1201,15 +1478,22 @@ export default function VendorAddProductPage() {
                         <Input
                           id="deliveryDays"
                           type="number"
+                          min="1"
+                          max="30"
                           value={formData.deliveryDays}
                           onChange={(e) =>
                             handleInputChange("deliveryDays", e.target.value)
                           }
                           placeholder="3"
-                          className="text-sm"
+                          className={`text-sm ${errors.deliveryDays ? "border-red-500" : ""}`}
                         />
+                        {errors.deliveryDays && (
+                          <p className="text-red-500 text-xs">
+                            {errors.deliveryDays}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500">
-                          Expected delivery time in days
+                          Expected delivery time (1-30 days)
                         </p>
                       </div>
                     </div>
@@ -1252,16 +1536,24 @@ export default function VendorAddProductPage() {
                               size="sm"
                               className="absolute -top-1 -right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
                               onClick={() => removeImage(index)}
+                              disabled={isLoading}
                             >
                               <XMarkIcon className="w-3 h-3" />
                             </Button>
+                            {formData.cloudinaryUrls?.[index] && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-green-500 text-white text-xs p-1 rounded-b-lg">
+                                Uploaded ✓
+                              </div>
+                            )}
                           </div>
                         ))}
 
-                        <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
+                        <label
+                          className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
                           <CloudArrowUpIcon className="w-5 h-5 text-gray-400" />
                           <span className="text-xs text-gray-500 mt-1">
-                            Add Images
+                            {isLoading ? "Uploading..." : "Add Images"}
                           </span>
                           <input
                             type="file"
@@ -1269,6 +1561,7 @@ export default function VendorAddProductPage() {
                             accept="image/*"
                             onChange={handleImageUpload}
                             className="hidden"
+                            disabled={isLoading}
                           />
                         </label>
                       </div>
@@ -1276,6 +1569,14 @@ export default function VendorAddProductPage() {
                         <p className="text-red-500 text-xs">{errors.images}</p>
                       )}
                     </div>
+
+                    {/* Color Variants */}
+                    <ColorVariantManager
+                      colorVariants={formData.colorVariants}
+                      onUpdate={(variants) =>
+                        handleInputChange("colorVariants", variants)
+                      }
+                    />
 
                     {/* Product Settings */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
