@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   EllipsisVerticalIcon,
@@ -67,8 +68,8 @@ interface Customer {
   _count: {
     orders: number;
   };
-  totalSpent: number; // This would be calculated from orders
-  lastOrderDate?: string; // From most recent order
+  totalSpent: number;
+  lastOrderDate?: string;
 }
 
 interface CustomersResponse {
@@ -88,55 +89,66 @@ interface CustomersResponse {
   };
 }
 
-// Stats Card Component
-function StatsCard({
+// Compact Stats Card Component - matching dashboard style
+function StatCard({
   title,
   value,
   icon: Icon,
   change,
-  variant = "default",
+  iconColor,
+  bgColor,
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
-  change: string;
-  variant?: "default" | "success" | "warning" | "destructive";
+  change: number;
+  iconColor: string;
+  bgColor: string;
 }) {
-  const variantStyles = {
-    default: "bg-blue-50 text-blue-600",
-    success: "bg-green-50 text-green-600",
-    warning: "bg-yellow-50 text-yellow-600",
-    destructive: "bg-red-50 text-red-600",
-  };
+  const isPositive = change >= 0;
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {typeof value === "number" &&
-              title.toLowerCase().includes("revenue")
-                ? formatPrice(value)
-                : value}
-            </p>
-            <p
-              className={`text-xs font-medium ${change.startsWith("+") ? "text-green-600" : "text-red-600"}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-0 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">{title}</p>
+              <p className="text-xl font-bold text-gray-900">{value}</p>
+              <div className="flex items-center space-x-1">
+                {isPositive ? (
+                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                ) : (
+                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                )}
+                <span
+                  className={`text-xs font-medium ${
+                    isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {isPositive ? "+" : ""}
+                  {change.toFixed(1)}%
+                </span>
+                <span className="text-xs text-gray-500">vs last month</span>
+              </div>
+            </div>
+            <div
+              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
             >
-              {change} from last month
-            </p>
+              <Icon className={`h-5 w-5 ${iconColor}`} />
+            </div>
           </div>
-          <div className={`p-3 rounded-xl ${variantStyles[variant]}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
-// Sort Button Component
+// Sort Button Component - matching dashboard style
 function SortButton({
   field,
   currentSort,
@@ -155,12 +167,12 @@ function SortButton({
       variant="ghost"
       size="sm"
       onClick={() => onSort(field)}
-      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-gray-600 uppercase tracking-wide"
+      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-slate-600 uppercase tracking-wide cursor-pointer"
     >
       <span className="flex items-center space-x-1">
         <span>{children}</span>
         {currentSort === field && (
-          <div className="text-blue-600">
+          <div className="text-slate-900">
             {currentOrder === "asc" ? (
               <ArrowUpIcon className="w-3 h-3" />
             ) : (
@@ -170,6 +182,58 @@ function SortButton({
         )}
       </span>
     </Button>
+  );
+}
+
+// Loading Skeletons - matching dashboard style
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="w-10 h-10 rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <Card className="border-0 shadow-sm bg-white">
+      <CardContent className="p-0">
+        <div className="p-6 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center space-x-3">
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -307,427 +371,471 @@ export default function VendorCustomersPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Customer Management
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Manage customer relationships and view order history
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="p-6 space-y-6">
+        {/* Header - matching dashboard style */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Customers</h1>
+            <p className="text-sm text-gray-600">
+              Manage and track your customer relationships
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total Customers"
-          value={stats.totalCustomers}
-          icon={UsersIcon}
-          change="+12.5%"
-          variant="default"
-        />
-        <StatsCard
-          title="New This Month"
-          value={stats.newCustomersThisMonth}
-          icon={UserIcon}
-          change="+8.3%"
-          variant="success"
-        />
-        <StatsCard
-          title="Total Revenue"
-          value={stats.totalRevenue}
-          icon={CurrencyEuroIcon}
-          change="+15.2%"
-          variant="default"
-        />
-        <StatsCard
-          title="Avg Order Value"
-          value={formatPrice(stats.averageOrderValue)}
-          icon={ShoppingBagIcon}
-          change="+5.7%"
-          variant="success"
-        />
-      </div>
+        {/* Stats Grid - matching dashboard style */}
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <StatCard
+              title="Total Customers"
+              value={stats.totalCustomers}
+              change={12.5}
+              icon={UsersIcon}
+              iconColor="text-blue-600"
+              bgColor="bg-blue-50"
+            />
+            <StatCard
+              title="New This Month"
+              value={stats.newCustomersThisMonth}
+              change={8.3}
+              icon={UserIcon}
+              iconColor="text-green-600"
+              bgColor="bg-green-50"
+            />
+            <StatCard
+              title="Total Revenue"
+              value={formatPrice(stats.totalRevenue)}
+              change={15.2}
+              icon={CurrencyEuroIcon}
+              iconColor="text-purple-600"
+              bgColor="bg-purple-50"
+            />
+            <StatCard
+              title="Avg Order Value"
+              value={
+                isNaN(stats.averageOrderValue) || stats.averageOrderValue === 0
+                  ? "€0.00"
+                  : formatPrice(stats.averageOrderValue)
+              }
+              change={5.7}
+              icon={ShoppingBagIcon}
+              iconColor="text-orange-600"
+              bgColor="bg-orange-50"
+            />
+          </motion.div>
+        )}
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="search">Search Customers</Label>
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="search"
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                    placeholder="Search by name, email, or phone..."
-                  />
+        {/* Filters - compact style */}
+        <Card className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Search */}
+                <div className="md:col-span-2 space-y-2">
+                  <Label
+                    htmlFor="search"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Search Customers
+                  </Label>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="search"
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9 text-sm"
+                      placeholder="Search by name, email, or phone..."
+                    />
+                  </div>
+                </div>
+
+                {/* Role Filter */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="role"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Role
+                  </Label>
+                  <Select
+                    value={roleFilter || "all"}
+                    onValueChange={(value) =>
+                      setRoleFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Roles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="CUSTOMER">Customer</SelectItem>
+                      <SelectItem value="VENDOR">Vendor</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Verification Filter */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="verified"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Verification
+                  </Label>
+                  <Select
+                    value={verificationFilter || "all"}
+                    onValueChange={(value) =>
+                      setVerificationFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="true">Verified</SelectItem>
+                      <SelectItem value="false">Unverified</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              {/* Role Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={roleFilter || "all"}
-                  onValueChange={(value) =>
-                    setRoleFilter(value === "all" ? "" : value)
-                  }
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-600">
+                  {totalCount} customers found
+                </p>
+                <Button
+                  type="submit"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Roles" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="CUSTOMER">Customer</SelectItem>
-                    <SelectItem value="VENDOR">Vendor</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Apply Filters
+                </Button>
               </div>
+            </form>
+          </CardContent>
+        </Card>
 
-              {/* Verification Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="verified">Verification</Label>
-                <Select
-                  value={verificationFilter || "all"}
-                  onValueChange={(value) =>
-                    setVerificationFilter(value === "all" ? "" : value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="true">Verified</SelectItem>
-                    <SelectItem value="false">Unverified</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                {totalCount} customers found
-              </p>
-              <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Apply Filters
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Customers Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-12 text-center space-y-4">
-              <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-              <Skeleton className="h-4 w-48 mx-auto" />
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            </div>
-          ) : !customers || customers.length === 0 ? (
-            <div className="p-12 text-center">
-              <UsersIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        {/* Customers Table */}
+        {loading ? (
+          <TableSkeleton />
+        ) : !customers || customers.length === 0 ? (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-12 text-center">
+              <UsersIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
                 No customers found
               </h3>
-              <p className="text-gray-500">
+              <p className="text-xs text-gray-500">
                 Customers will appear here as they register and make purchases
               </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>
-                    <SortButton
-                      field="name"
-                      currentSort={sortBy}
-                      currentOrder={sortOrder}
-                      onSort={handleSort}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-b border-gray-100">
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="name"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Customer
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="h-10">Contact</TableHead>
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="role"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Role
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="h-10">Orders</TableHead>
+                    <TableHead className="h-10">Total Spent</TableHead>
+                    <TableHead className="h-10">Status</TableHead>
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="createdAt"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Joined
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="w-[50px] h-10">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow
+                      key={customer.id}
+                      className="hover:bg-gray-50/50 border-b border-gray-50"
                     >
-                      Customer
-                    </SortButton>
-                  </TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>
-                    <SortButton
-                      field="role"
-                      currentSort={sortBy}
-                      currentOrder={sortOrder}
-                      onSort={handleSort}
-                    >
-                      Role
-                    </SortButton>
-                  </TableHead>
-                  <TableHead>Orders</TableHead>
-                  <TableHead>Total Spent</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>
-                    <SortButton
-                      field="createdAt"
-                      currentSort={sortBy}
-                      currentOrder={sortOrder}
-                      onSort={handleSort}
-                    >
-                      Joined
-                    </SortButton>
-                  </TableHead>
-                  <TableHead className="w-[50px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id} className="hover:bg-gray-50/50">
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-                          {customer.image ? (
-                            <Image
-                              src={customer.image}
-                              alt={customer.name || "Customer"}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-blue-600 font-medium text-sm">
-                              {getInitials(customer.name || customer.email)}
+                      <TableCell className="py-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                            {customer.image ? (
+                              <Image
+                                src={customer.image}
+                                alt={customer.name || "Customer"}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-blue-600 font-medium text-xs">
+                                {getInitials(customer.name || customer.email)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {customer.name || "Anonymous"}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                              {customer.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center text-xs text-gray-600">
+                            <EnvelopeIcon className="w-3 h-3 mr-1.5 text-gray-400" />
+                            <span className="truncate max-w-[120px]">
+                              {customer.email}
                             </span>
+                          </div>
+                          {customer.phone && (
+                            <div className="flex items-center text-xs text-gray-600">
+                              <PhoneIcon className="w-3 h-3 mr-1.5 text-gray-400" />
+                              <span>{customer.phone}</span>
+                            </div>
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {customer.name || "Anonymous"}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate max-w-[150px]">
-                            {customer.email}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <EnvelopeIcon className="w-3 h-3 mr-2 text-gray-400" />
-                          <span className="truncate max-w-[120px]">
-                            {customer.email}
-                          </span>
-                        </div>
-                        {customer.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <PhoneIcon className="w-3 h-3 mr-2 text-gray-400" />
-                            <span>{customer.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge
-                        variant={
-                          customer.role === "VENDOR"
-                            ? "default"
-                            : customer.role === "ADMIN"
-                              ? "destructive"
-                              : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {customer.role}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="text-center">
-                        <p className="font-medium text-gray-900">
-                          {customer._count.orders}
-                        </p>
-                        <p className="text-xs text-gray-500">orders</p>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <p className="font-bold text-gray-900">
-                        {formatPrice(customer.totalSpent || 0)}
-                      </p>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
+                      <TableCell className="py-3">
                         <Badge
                           variant={
-                            customer.isVerified ? "default" : "secondary"
+                            customer.role === "VENDOR"
+                              ? "default"
+                              : customer.role === "ADMIN"
+                                ? "destructive"
+                                : "secondary"
                           }
-                          className="text-xs"
+                          className="text-xs px-2 py-0.5"
                         >
-                          {customer.isVerified ? "Verified" : "Unverified"}
+                          {customer.role}
                         </Badge>
-                        {customer.emailVerified && (
-                          <Badge variant="outline" className="text-xs">
-                            Email ✓
+                      </TableCell>
+
+                      <TableCell className="py-3">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-gray-900">
+                            {customer._count.orders}
+                          </p>
+                          <p className="text-xs text-gray-500">orders</p>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {formatPrice(customer.totalSpent || 0)}
+                        </p>
+                      </TableCell>
+
+                      <TableCell className="py-3">
+                        <div className="flex items-center space-x-1">
+                          <Badge
+                            variant={
+                              customer.isVerified ? "default" : "secondary"
+                            }
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {customer.isVerified ? "Verified" : "Unverified"}
                           </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {new Date(customer.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(customer.createdAt)}
-                        </p>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100"
-                          >
-                            <EllipsisVerticalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/vendor/orders?customer=${customer.id}`}
+                          {customer.emailVerified && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-1.5 py-0.5"
                             >
-                              <EyeIcon className="w-4 h-4 mr-2" />
-                              View Orders
-                            </Link>
-                          </DropdownMenuItem>
+                              Email ✓
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
 
-                          <DropdownMenuSeparator />
+                      <TableCell className="py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(customer.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(customer.createdAt)}
+                          </p>
+                        </div>
+                      </TableCell>
 
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleContactCustomer(customer, "email")
-                            }
-                          >
-                            <EnvelopeIcon className="w-4 h-4 mr-2" />
-                            Send Email
-                          </DropdownMenuItem>
+                      <TableCell className="py-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 hover:bg-gray-100 cursor-pointer"
+                            >
+                              <EllipsisVerticalIcon className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/vendor/orders?customer=${customer.id}`}
+                                className="cursor-pointer"
+                              >
+                                <EyeIcon className="w-3 h-3 mr-2" />
+                                View Orders
+                              </Link>
+                            </DropdownMenuItem>
 
-                          {customer.phone && (
+                            <DropdownMenuSeparator />
+
                             <DropdownMenuItem
                               onClick={() =>
-                                handleContactCustomer(customer, "phone")
+                                handleContactCustomer(customer, "email")
                               }
+                              className="cursor-pointer"
                             >
-                              <PhoneIcon className="w-4 h-4 mr-2" />
-                              Call Customer
+                              <EnvelopeIcon className="w-3 h-3 mr-2" />
+                              Send Email
                             </DropdownMenuItem>
-                          )}
 
-                          {customer.phone && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleContactCustomer(customer, "sms")
-                              }
-                            >
-                              <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
-                              Send SMS
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                            {customer.phone && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleContactCustomer(customer, "phone")
+                                }
+                                className="cursor-pointer"
+                              >
+                                <PhoneIcon className="w-3 h-3 mr-2" />
+                                Call Customer
+                              </DropdownMenuItem>
+                            )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-700">
-            Showing {(currentPage - 1) * 10 + 1} to{" "}
-            {Math.min(currentPage * 10, totalCount)} of {totalCount} customers
-          </p>
+                            {customer.phone && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleContactCustomer(customer, "sms")
+                                }
+                                className="cursor-pointer"
+                              >
+                                <ChatBubbleLeftRightIcon className="w-3 h-3 mr-2" />
+                                Send SMS
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
+        {/* Pagination - compact style */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-700">
+              Showing {(currentPage - 1) * 10 + 1} to{" "}
+              {Math.min(currentPage * 10, totalCount)} of {totalCount} customers
+            </p>
 
-            <div className="flex space-x-1">
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                let pageNumber;
-                if (totalPages <= 7) {
-                  pageNumber = i + 1;
-                } else if (currentPage <= 4) {
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 3) {
-                  pageNumber = totalPages - 6 + i;
-                } else {
-                  pageNumber = currentPage - 3 + i;
-                }
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Previous
+              </Button>
 
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={`w-10 ${currentPage === pageNumber ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
-                  >
-                    {pageNumber}
-                  </Button>
-                );
-              })}
+              <div className="flex space-x-1">
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 7) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNumber = totalPages - 6 + i;
+                  } else {
+                    pageNumber = currentPage - 3 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        currentPage === pageNumber ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-8 h-8 text-xs cursor-pointer ${
+                        currentPage === pageNumber
+                          ? "bg-slate-900 hover:bg-slate-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Next
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

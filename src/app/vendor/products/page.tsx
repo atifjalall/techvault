@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -16,31 +16,53 @@ import {
   PhotoIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
   XCircleIcon,
   StarIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  CubeIcon,
+  FunnelIcon,
+  CurrencyEuroIcon,
 } from "@heroicons/react/24/outline";
-import {
-  StarIcon as StarIconSolid,
-  CheckCircleIcon as CheckCircleIconSolid,
-} from "@heroicons/react/24/solid";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 // UI Components
 import { Button } from "@/components/ui/buttonSidebar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-
-import { formatPrice } from "@/lib/utils";
-import React from "react";
 
 interface Product {
   id: string;
@@ -51,7 +73,6 @@ interface Product {
   comparePrice?: number;
   images: string[];
   brand?: string;
-  modelNumber?: string;
   stock: number;
   lowStockAlert: number;
   isActive: boolean;
@@ -63,10 +84,17 @@ interface Product {
     id: string;
     name: string;
   };
-  _count: {
+  _count?: {
     reviews: number;
     cartItems: number;
+    orderItems: number;
   };
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface ProductsResponse {
@@ -78,137 +106,333 @@ interface ProductsResponse {
     totalCount: number;
     totalPages: number;
   };
+  categories: Category[];
 }
 
-// Enhanced Stock Badge Component
-function StockBadge({ stock, lowStockAlert }: { stock: number; lowStockAlert: number }) {
-  const getStockStatus = () => {
-    if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const, icon: XCircleIcon };
-    if (stock <= lowStockAlert) return { label: "Low Stock", variant: "secondary" as const, icon: ExclamationTriangleIcon };
-    return { label: "In Stock", variant: "default" as const, icon: CheckCircleIcon };
-  };
-
-  const status = getStockStatus();
-  const Icon = status.icon;
-
-  return (
-    <div className="text-center space-y-1">
-      <div className="text-sm font-semibold text-gray-900">{stock}</div>
-      <Badge variant={status.variant} className="text-xs">
-        <Icon className="w-3 h-3 mr-1" />
-        {status.label}
-      </Badge>
-    </div>
-  );
-}
-
-// Status Badge Component
-function StatusBadge({ isActive, onToggle }: { isActive: boolean; onToggle: () => void }) {
-  return (
-    <Button
-      onClick={onToggle}
-      variant="outline"
-      size="sm"
-      className={`text-xs transition-colors duration-200 ${
-        isActive 
-          ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" 
-          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-      }`}
-    >
-      {isActive ? (
-        <>
-          <CheckCircleIconSolid className="w-3 h-3 mr-1.5" />
-          Active
-        </>
-      ) : (
-        <>
-          <ClockIcon className="w-3 h-3 mr-1.5" />
-          Inactive
-        </>
-      )}
-    </Button>
-  );
-}
-
-// Stats Card Component
-function StatsCard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  change, 
-  variant = "default" 
-}: { 
-  title: string; 
-  value: number; 
-  icon: React.ElementType; 
-  change: string;
-  variant?: "default" | "success" | "warning" | "destructive";
+// Stats Card Component - matching customers page
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  change,
+  iconColor,
+  bgColor,
+}: {
+  title: string;
+  value: number | string;
+  icon: React.ElementType;
+  change: number;
+  iconColor: string;
+  bgColor: string;
 }) {
-  const variantStyles = {
-    default: "bg-blue-50 text-blue-600",
-    success: "bg-green-50 text-green-600", 
-    warning: "bg-yellow-50 text-yellow-600",
-    destructive: "bg-red-50 text-red-600"
-  };
+  const isPositive = change >= 0;
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className={`text-xs font-medium ${change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-              {change} from last month
-            </p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-0 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">{title}</p>
+              <p className="text-xl font-bold text-gray-900">{value}</p>
+              <div className="flex items-center space-x-1">
+                {isPositive ? (
+                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                ) : (
+                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                )}
+                <span
+                  className={`text-xs font-medium ${
+                    isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {isPositive ? "+" : ""}
+                  {change.toFixed(1)}%
+                </span>
+                <span className="text-xs text-gray-500">vs last month</span>
+              </div>
+            </div>
+            <div
+              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+            >
+              <Icon className={`h-5 w-5 ${iconColor}`} />
+            </div>
           </div>
-          <div className={`p-3 rounded-xl ${variantStyles[variant]}`}>
-            <Icon className="w-6 h-6" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
-// Sort Button Component
-function SortButton({ 
-  field, 
-  currentSort, 
-  currentOrder, 
-  onSort, 
-  children 
-}: { 
-  field: string; 
-  currentSort: string; 
-  currentOrder: "asc" | "desc"; 
-  onSort: (field: string) => void; 
-  children: React.ReactNode; 
+// Sort Button Component - matching customers page
+function SortButton({
+  field,
+  currentSort,
+  currentOrder,
+  onSort,
+  children,
+}: {
+  field: string;
+  currentSort: string;
+  currentOrder: "asc" | "desc";
+  onSort: (field: string) => void;
+  children: React.ReactNode;
 }) {
   return (
     <Button
       variant="ghost"
       size="sm"
       onClick={() => onSort(field)}
-      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-gray-600 uppercase tracking-wide"
+      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-slate-600 uppercase tracking-wide cursor-pointer"
     >
       <span className="flex items-center space-x-1">
         <span>{children}</span>
         {currentSort === field && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-blue-600"
-          >
+          <div className="text-slate-900">
             {currentOrder === "asc" ? (
               <ArrowUpIcon className="w-3 h-3" />
             ) : (
               <ArrowDownIcon className="w-3 h-3" />
             )}
-          </motion.div>
+          </div>
         )}
       </span>
     </Button>
+  );
+}
+
+// Loading Skeletons - matching customers page
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="w-10 h-10 rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <Card className="border-0 shadow-sm bg-white">
+      <CardContent className="p-0">
+        <div className="p-6 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center space-x-3">
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Product Row Component
+function ProductRow({
+  product,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}: {
+  product: Product;
+  onEdit: (id: string) => void;
+  onDelete: (product: Product) => void;
+  onToggleStatus: (product: Product) => void;
+}) {
+  const stockStatus =
+    product.stock === 0
+      ? {
+          label: "Out of Stock",
+          color: "bg-red-100 text-red-800 border-red-200",
+        }
+      : product.stock <= product.lowStockAlert
+        ? {
+            label: "Low Stock",
+            color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          }
+        : {
+            label: "In Stock",
+            color: "bg-green-100 text-green-800 border-green-200",
+          };
+
+  const formatPrice = (price: number | string) =>
+    `€${Number(price).toFixed(2)}`;
+
+  return (
+    <TableRow className="hover:bg-gray-50/50 border-b border-gray-50">
+      {/* Product Info */}
+      <TableCell className="py-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+            {product.images[0] ? (
+              <Image
+                src={product.images[0]}
+                alt={product.name}
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <PhotoIcon className="h-4 w-4 text-gray-400" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {product.name}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {product.brand} • {product.category.name}
+            </p>
+            {product.featured && (
+              <div className="flex items-center mt-1">
+                <StarIconSolid className="h-3 w-3 text-yellow-400" />
+                <span className="text-xs text-yellow-600 ml-1">Featured</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </TableCell>
+
+      {/* Price */}
+      <TableCell className="py-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">
+            {formatPrice(product.price)}
+          </p>
+          {product.comparePrice && (
+            <p className="text-xs text-gray-500 line-through">
+              {formatPrice(product.comparePrice)}
+            </p>
+          )}
+        </div>
+      </TableCell>
+
+      {/* Stock */}
+      <TableCell className="py-3">
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-900">{product.stock}</p>
+          <div className="mt-1">
+            <Badge className={`text-xs px-2 py-0.5 ${stockStatus.color}`}>
+              {stockStatus.label}
+            </Badge>
+          </div>
+        </div>
+      </TableCell>
+
+      {/* Status */}
+      <TableCell className="py-3">
+        <button
+          onClick={() => onToggleStatus(product)}
+          className="cursor-pointer"
+        >
+          <Badge
+            className={`text-xs px-2 py-0.5 ${
+              product.isActive 
+                ? "bg-green-100 text-green-800 border-green-200" 
+                : "bg-red-100 text-red-800 border-red-200"
+            }`}
+          >
+            {product.isActive ? "Active" : "Draft"}
+          </Badge>
+        </button>
+      </TableCell>
+
+      {/* Sales */}
+      <TableCell className="py-3">
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-900">
+            {product._count?.orderItems || 0}
+          </p>
+          <p className="text-xs text-gray-500">sold</p>
+        </div>
+      </TableCell>
+
+      {/* Actions */}
+      <TableCell className="py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:bg-gray-100 cursor-pointer"
+            >
+              <EllipsisVerticalIcon className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onEdit(product.id)}
+              className="cursor-pointer"
+            >
+              <PencilIcon className="h-3 w-3 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/products/${product.slug}`} target="_blank">
+                <EyeIcon className="h-3 w-3 mr-2" />
+                View
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onToggleStatus(product)}
+              className="cursor-pointer"
+            >
+              {product.isActive ? (
+                <>
+                  <XCircleIcon className="h-3 w-3 mr-2" />
+                  Deactivate
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="h-3 w-3 mr-2" />
+                  Activate
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onDelete(product)}
+              className="text-red-600 cursor-pointer"
+            >
+              <TrashIcon className="h-3 w-3 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -217,37 +441,42 @@ export default function VendorProductsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // State
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
-  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"));
-  const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
-  const [sortBy, setSortBy] = useState("created");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    activeProducts: 0,
+    lowStockItems: 0,
+    totalValue: 0,
+  });
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
+  const [categoryFilter, setCategoryFilter] = useState(
+    searchParams.get("category") || ""
+  );
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") || ""
+  );
+  const [sortBy, setSortBy] = useState(
+    searchParams.get("sortBy") || "createdAt"
+  );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Load categories
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setCategories(data.categories);
-        }
-      })
-      .catch((err) => console.error("Error loading categories:", err));
-  }, []);
+  // Modals
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  // Load products
-  useEffect(() => {
-    loadProducts();
-  }, [currentPage, searchTerm, selectedCategory, statusFilter, sortBy, sortOrder]);
-
+  // Load products and stats
   const loadProducts = async () => {
     try {
       setLoading(true);
@@ -259,16 +488,55 @@ export default function VendorProductsPage() {
       });
 
       if (searchTerm) params.append("search", searchTerm);
-      if (selectedCategory) params.append("category", selectedCategory);
+      if (categoryFilter) params.append("category", categoryFilter);
       if (statusFilter) params.append("status", statusFilter);
 
-      const response = await fetch(`/api/vendor/products?${params}`);
-      const data: ProductsResponse = await response.json();
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        fetch(`/api/vendor/products?${params}`),
+        fetch("/api/categories"),
+      ]);
 
-      if (data.success) {
-        setProducts(data.products);
-        setTotalPages(data.pagination.totalPages);
-        setTotalCount(data.pagination.totalCount);
+      if (productsResponse.ok) {
+        const data = await productsResponse.json();
+        if (data.success) {
+          setProducts(data.products);
+          setTotalCount(data.pagination.totalCount);
+          setTotalPages(data.pagination.totalPages);
+        }
+      }
+
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
+        if (categoriesData.success) {
+          setCategories(categoriesData.categories);
+        }
+      }
+
+      // Load stats
+      const statsResponse = await fetch("/api/vendor/products?limit=1000");
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success) {
+          const allProducts = statsData.products;
+          const totalProducts = allProducts.length;
+          const activeProducts = allProducts.filter(
+            (p: Product) => p.isActive
+          ).length;
+          const lowStockItems = allProducts.filter(
+            (p: Product) => p.stock <= p.lowStockAlert
+          ).length;
+          const totalValue = allProducts.reduce(
+            (sum: number, p: Product) => sum + Number(p.price) * p.stock,
+            0
+          );
+
+          setStats({
+            totalProducts,
+            activeProducts,
+            lowStockItems,
+            totalValue,
+          });
+        }
       }
     } catch (error) {
       console.error("Error loading products:", error);
@@ -277,47 +545,22 @@ export default function VendorProductsPage() {
     }
   };
 
+  useEffect(() => {
+    loadProducts();
+  }, [
+    currentPage,
+    searchTerm,
+    categoryFilter,
+    statusFilter,
+    sortBy,
+    sortOrder,
+  ]);
+
+  // Handlers
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
     loadProducts();
-  };
-
-  const handleStatusToggle = async (productId: string, currentStatus: boolean) => {
-    try {
-      const response = await fetch(`/api/vendor/products/${productId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
-
-      if (response.ok) {
-        loadProducts();
-      }
-    } catch (error) {
-      console.error("Error updating product status:", error);
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      const response = await fetch(`/api/vendor/products/${productId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setShowDeleteModal(false);
-        setProductToDelete(null);
-        loadProducts();
-      }
-    } catch (error) {
-      console.error("Error deleting product:", error);
-    }
-  };
-
-  const getDiscountPercentage = (price: number, comparePrice?: number) => {
-    if (!comparePrice || comparePrice <= price) return 0;
-    return Math.round(((comparePrice - price) / comparePrice) * 100);
   };
 
   const handleSort = (field: string) => {
@@ -329,385 +572,363 @@ export default function VendorProductsPage() {
     }
   };
 
+  const handleEdit = (productId: string) => {
+    router.push(`/vendor/products/${productId}/edit`);
+  };
+
+  const handleDelete = (product: Product) => {
+    setProductToDelete(product);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      const response = await fetch(
+        `/api/vendor/products/${productToDelete.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        await loadProducts();
+        setShowDeleteModal(false);
+        setProductToDelete(null);
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
+  const handleToggleStatus = async (product: Product) => {
+    try {
+      const response = await fetch(`/api/vendor/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !product.isActive }),
+      });
+
+      if (response.ok) {
+        await loadProducts();
+      }
+    } catch (error) {
+      console.error("Error updating product status:", error);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
-          <p className="text-gray-600 mt-1">Manage your product inventory and listings</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="p-6 space-y-6">
+        {/* Header - matching customers page style */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Products</h1>
+            <p className="text-sm text-gray-600">
+              Manage and track your product inventory
+            </p>
+          </div>
+          <Button
+            asChild
+            className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+          >
+            <Link href="/vendor/products/add">
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add Product
+            </Link>
+          </Button>
         </div>
-        <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Link href="/vendor/products/add">
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Product
-          </Link>
-        </Button>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total Products"
-          value={totalCount}
-          icon={PhotoIcon}
-          change="+12%"
-          variant="default"
-        />
-        <StatsCard
-          title="Active Products"
-          value={products.filter((p) => p.isActive).length}
-          icon={CheckCircleIcon}
-          change="+5%"
-          variant="success"
-        />
-        <StatsCard
-          title="Low Stock"
-          value={products.filter((p) => p.stock <= p.lowStockAlert && p.stock > 0).length}
-          icon={ExclamationTriangleIcon}
-          change="-2%"
-          variant="warning"
-        />
-        <StatsCard
-          title="Out of Stock"
-          value={products.filter((p) => p.stock === 0).length}
-          icon={XCircleIcon}
-          change="-8%"
-          variant="destructive"
-        />
-      </div>
+        {/* Stats Grid - matching customers page style */}
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <StatCard
+              title="Total Products"
+              value={stats.totalProducts}
+              change={12.5}
+              icon={CubeIcon}
+              iconColor="text-blue-600"
+              bgColor="bg-blue-50"
+            />
+            <StatCard
+              title="Active Products"
+              value={stats.activeProducts}
+              change={8.3}
+              icon={CheckCircleIcon}
+              iconColor="text-green-600"
+              bgColor="bg-green-50"
+            />
+            <StatCard
+              title="Low Stock Items"
+              value={stats.lowStockItems}
+              change={-5.2}
+              icon={ExclamationTriangleIcon}
+              iconColor="text-orange-600"
+              bgColor="bg-orange-50"
+            />
+            <StatCard
+              title="Inventory Value"
+              value={`€${stats.totalValue.toFixed(0)}`}
+              change={15.7}
+              icon={CurrencyEuroIcon}
+              iconColor="text-purple-600"
+              bgColor="bg-purple-50"
+            />
+          </motion.div>
+        )}
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="search">Search Products</Label>
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="search"
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                    placeholder="Search by name, brand, or model..."
-                  />
+        {/* Filters - matching customers page style */}
+        <Card className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Search */}
+                <div className="md:col-span-2 space-y-2">
+                  <Label
+                    htmlFor="search"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Search Products
+                  </Label>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="search"
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9 text-sm"
+                      placeholder="Search by name, brand, or category..."
+                    />
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="category"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Category
+                  </Label>
+                  <Select
+                    value={categoryFilter || "all"}
+                    onValueChange={(value) =>
+                      setCategoryFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="status"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Status
+                  </Label>
+                  <Select
+                    value={statusFilter || "all"}
+                    onValueChange={(value) =>
+                      setStatusFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              {/* Category Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? "" : value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-600">
+                  {totalCount} products found
+                </p>
+                <Button
+                  type="submit"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
+                >
+                  Apply Filters
+                </Button>
               </div>
+            </form>
+          </CardContent>
+        </Card>
 
-              {/* Status Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-              <p className="text-sm text-gray-600">{totalCount} products found</p>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">Apply Filters</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Products Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-12 text-center space-y-4">
-              <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-              <Skeleton className="h-4 w-48 mx-auto" />
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="p-12 text-center">
-              <PhotoIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-500 mb-6">Start by adding your first product to get started</p>
-              <Button asChild>
-                <Link href="/vendor/products/add" className="bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors">
-                  <PlusIcon className="h-5 w-5 mr-2" />
-                  Add Your First Product
+        {/* Products Table */}
+        {loading ? (
+          <TableSkeleton />
+        ) : !products || products.length === 0 ? (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-12 text-center">
+              <CubeIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                No products found
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                {searchTerm || categoryFilter || statusFilter
+                  ? "Try adjusting your filters or search terms"
+                  : "Get started by creating your first product"}
+              </p>
+              <Button
+                asChild
+                className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+              >
+                <Link href="/vendor/products/add">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Product
                 </Link>
               </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[300px]">
-                    <SortButton field="name" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort}>
-                      Product
-                    </SortButton>
-                  </TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>
-                    <SortButton field="price" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort}>
-                      Price
-                    </SortButton>
-                  </TableHead>
-                  <TableHead>
-                    <SortButton field="stock" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort}>
-                      Stock
-                    </SortButton>
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>
-                    <SortButton field="created" currentSort={sortBy} currentOrder={sortOrder} onSort={handleSort}>
-                      Created
-                    </SortButton>
-                  </TableHead>
-                  <TableHead className="w-[50px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                  {products.map((product, index) => {
-                    const discount = getDiscountPercentage(product.price, product.comparePrice);
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-b border-gray-100">
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="name"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Product
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="price"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Price
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="h-10">
+                      <SortButton
+                        field="stock"
+                        currentSort={sortBy}
+                        currentOrder={sortOrder}
+                        onSort={handleSort}
+                      >
+                        Stock
+                      </SortButton>
+                    </TableHead>
+                    <TableHead className="h-10">Status</TableHead>
+                    <TableHead className="h-10">Sales</TableHead>
+                    <TableHead className="w-[50px] h-10">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <ProductRow
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
-                    return (
-                      <TableRow key={product.id} className="hover:bg-gray-50/50">
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-shrink-0 w-12 h-12">
-                              {product.images.length > 0 ? (
-                                <Image
-                                  src={product.images[0]}
-                                  alt={product.name}
-                                  width={48}
-                                  height={48}
-                                  className="w-12 h-12 object-cover rounded-lg border"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center border">
-                                  <PhotoIcon className="w-6 h-6 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-gray-900 truncate">{product.name}</p>
-                              <div className="flex items-center space-x-2 mt-1">
-                                {product.brand && (
-                                  <span className="text-xs text-gray-500">{product.brand}</span>
-                                )}
-                                {product.modelNumber && (
-                                  <span className="text-xs text-gray-400">#{product.modelNumber}</span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2 mt-1">
-                                {product.featured && (
-                                  <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                    <StarIconSolid className="w-3 h-3 mr-1" />
-                                    Featured
-                                  </Badge>
-                                )}
-                                {product._count.reviews > 0 && (
-                                  <span className="text-xs text-gray-500 flex items-center">
-                                    <StarIcon className="w-3 h-3 mr-1" />
-                                    {product._count.reviews} reviews
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <span className="font-medium text-gray-900">{product.category.name}</span>
-                        </TableCell>
-
-                        <TableCell>
-                          <div>
-                            <div className="font-bold text-gray-900">{formatPrice(product.price)}</div>
-                            {product.comparePrice && discount > 0 && (
-                              <div className="text-xs text-blue-600 font-semibold">{discount}% off</div>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <StockBadge stock={product.stock} lowStockAlert={product.lowStockAlert} />
-                        </TableCell>
-
-                        <TableCell>
-                          <StatusBadge
-                            isActive={product.isActive}
-                            onToggle={() => handleStatusToggle(product.id, product.isActive)}
-                          />
-                        </TableCell>
-
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {new Date(product.createdAt).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(product.createdAt).toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                                <EllipsisVerticalIcon className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/products/${product.slug}`}>
-                                  <EyeIcon className="w-4 h-4 mr-2" />
-                                  View Product
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/vendor/products/${product.id}/edit`}>
-                                  <PencilIcon className="w-4 h-4 mr-2" />
-                                  Edit Product
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-red-600 focus:text-red-600"
-                                onClick={() => {
-                                  setProductToDelete(product.id);
-                                  setShowDeleteModal(true);
-                                }}
-                              >
-                                <TrashIcon className="w-4 h-4 mr-2" />
-                                Delete Product
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-700">
-            Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalCount)} of {totalCount} products
-          </p>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-
-            <div className="flex space-x-1">
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                let pageNumber;
-                if (totalPages <= 7) {
-                  pageNumber = i + 1;
-                } else if (currentPage <= 4) {
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 3) {
-                  pageNumber = totalPages - 6 + i;
-                } else {
-                  pageNumber = currentPage - 3 + i;
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-600">
+              Showing {(currentPage - 1) * 20 + 1} to{" "}
+              {Math.min(currentPage * 20, totalCount)} of {totalCount} products
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="cursor-pointer"
+              >
+                Previous
+              </Button>
+              <span className="text-xs text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
-
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className="w-10"
-                  >
-                    {pageNumber}
-                  </Button>
-                );
-              })}
+                disabled={currentPage === totalPages}
+                className="cursor-pointer"
+              >
+                Next
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this product? This action cannot be undone and will permanently remove the product from your store.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => productToDelete && handleDeleteProduct(productToDelete)}
-            >
-              Delete Product
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Delete Confirmation Modal */}
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-sm">Delete Product</DialogTitle>
+              <DialogDescription className="text-xs">
+                Are you sure you want to delete &quot;{productToDelete?.name}
+                &quot;? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteModal(false)}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={confirmDelete}
+                className="cursor-pointer"
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
