@@ -103,46 +103,46 @@ function SidebarContent({
 }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col bg-white border-r border-gray-200">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
-        <Link href="/" className="text-xl font-bold text-gray-900">
+      {/* Header - MATCHING navbar height exactly */}
+      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-12 border-b border-gray-200">
+        <Link
+          href="/"
+          className="text-lg font-bold text-gray-900 cursor-pointer"
+        >
           TechVault
         </Link>
         {isMobile && (
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
           >
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Clean spacer */}
-      <div className="h-4"></div>
-
       {/* Navigation */}
-      <nav className="flex-1 px-6 py-4 space-y-2">
+      <nav className="flex-1 px-4 py-3 space-y-1">
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
             <motion.div
               key={item.name}
-              whileHover={{ x: 2 }}
+              whileHover={{ x: 1 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.15 }}
             >
               <Link
                 href={item.href}
                 onClick={isMobile ? onClose : undefined}
-                className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
+                className={`group flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 relative cursor-pointer ${
                   isActive
                     ? "bg-blue-50 text-blue-700 shadow-sm border border-blue-100"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 <item.icon
-                  className={`mr-3 h-5 w-5 transition-colors ${
+                  className={`mr-2.5 h-4 w-4 transition-colors ${
                     isActive
                       ? "text-blue-600"
                       : "text-gray-400 group-hover:text-gray-600"
@@ -152,7 +152,7 @@ function SidebarContent({
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="ml-auto w-2 h-2 bg-blue-600 rounded-full"
+                    className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full"
                     initial={false}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
@@ -164,10 +164,10 @@ function SidebarContent({
       </nav>
 
       {/* Minimal Footer */}
-      <div className="p-6 border-t border-gray-100">
+      <div className="p-4 border-t border-gray-100">
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          <div className="flex items-center justify-center space-x-1.5">
+            <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
             <p className="text-xs text-gray-500 font-medium">System Online</p>
           </div>
         </div>

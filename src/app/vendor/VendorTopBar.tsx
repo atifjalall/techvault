@@ -49,15 +49,15 @@ interface Notification {
 
 // Skeleton Loading Component
 const NotificationSkeleton = () => (
-  <div className="px-4 py-3 border-b border-gray-100 animate-pulse">
-    <div className="flex items-start space-x-3">
-      <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
+  <div className="px-3 py-2 border-b border-gray-100 animate-pulse">
+    <div className="flex items-start space-x-2">
+      <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
       <div className="flex-1 min-w-0">
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        <div className="h-3 bg-gray-200 rounded w-3/4 mb-1"></div>
+        <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
+        <div className="h-2 bg-gray-200 rounded w-1/2"></div>
       </div>
-      <div className="w-2 h-2 bg-gray-200 rounded-full flex-shrink-0"></div>
+      <div className="w-1 h-1 bg-gray-200 rounded-full flex-shrink-0"></div>
     </div>
   </div>
 );
@@ -182,15 +182,15 @@ export default function VendorTopBar({
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "order":
-        return <ShoppingBagIcon className="h-5 w-5 text-blue-500" />;
+        return <ShoppingBagIcon className="h-4 w-4 text-blue-500" />;
       case "product":
-        return <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />;
+        return <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />;
       case "payment":
-        return <CheckIcon className="h-5 w-5 text-green-500" />;
+        return <CheckIcon className="h-4 w-4 text-green-500" />;
       case "system":
-        return <InformationCircleIcon className="h-5 w-5 text-purple-500" />;
+        return <InformationCircleIcon className="h-4 w-4 text-purple-500" />;
       default:
-        return <BellIcon className="h-5 w-5 text-gray-500" />;
+        return <BellIcon className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -228,30 +228,30 @@ export default function VendorTopBar({
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-12">
           {/* Left section */}
           <div className="flex items-center space-x-4">
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden p-2 hover:bg-gray-100"
+              className="lg:hidden p-1.5 hover:bg-gray-100 cursor-pointer"
               onClick={onMobileMenuToggle}
             >
-              <Bars3Icon className="h-5 w-5" />
+              <Bars3Icon className="h-4 w-4" />
             </Button>
 
             {/* Breadcrumbs */}
-            <nav className="hidden sm:flex items-center space-x-1 text-sm">
+            <nav className="hidden sm:flex items-center space-x-1 text-xs">
               {finalBreadcrumbs.map((crumb, index) => (
                 <div key={crumb.name} className="flex items-center">
                   {index > 0 && (
-                    <ChevronDownIcon className="h-3 w-3 text-gray-400 mx-2 rotate-[-90deg]" />
+                    <ChevronDownIcon className="h-2.5 w-2.5 text-gray-400 mx-1.5 rotate-[-90deg]" />
                   )}
                   {crumb.href ? (
                     <Link
                       href={crumb.href}
-                      className="text-gray-500 hover:text-gray-900 transition-colors"
+                      className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                     >
                       {crumb.name}
                     </Link>
@@ -266,14 +266,14 @@ export default function VendorTopBar({
 
             {/* Page title for mobile */}
             <div className="sm:hidden">
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-sm font-semibold text-gray-900">
                 {title || finalBreadcrumbs[finalBreadcrumbs.length - 1]?.name}
               </h1>
             </div>
           </div>
 
           {/* Right section */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {/* Notifications */}
             <DropdownMenu
               open={notificationOpen}
@@ -283,11 +283,11 @@ export default function VendorTopBar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="relative p-2 hover:bg-gray-100 rounded-lg"
+                  className="relative p-1.5 hover:bg-gray-100 rounded-md cursor-pointer"
                 >
-                  <BellIcon className="h-5 w-5 text-gray-600" />
+                  <BellIcon className="h-4 w-4 text-gray-600" />
                   {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </Badge>
                   )}
@@ -296,13 +296,13 @@ export default function VendorTopBar({
 
               <DropdownMenuContent
                 align="end"
-                className="w-80 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-0 max-h-96 overflow-hidden"
+                className="w-72 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0 max-h-80 overflow-hidden"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between p-3 border-b border-gray-100">
                   <div className="flex items-center space-x-2">
-                    <BellIcon className="h-5 w-5 text-gray-600" />
-                    <h3 className="font-semibold text-gray-900">
+                    <BellIcon className="h-4 w-4 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">
                       Notifications
                     </h3>
                     {unreadCount > 0 && (
@@ -316,7 +316,7 @@ export default function VendorTopBar({
                       variant="ghost"
                       size="sm"
                       onClick={markAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-700 p-1"
+                      className="text-xs text-blue-600 hover:text-blue-700 p-1 cursor-pointer"
                     >
                       Mark all read
                     </Button>
@@ -324,7 +324,7 @@ export default function VendorTopBar({
                 </div>
 
                 {/* Notifications List */}
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-56 overflow-y-auto">
                   {isLoadingNotifications ? (
                     // Skeleton loading
                     Array.from({ length: 3 }).map((_, i) => (
@@ -332,9 +332,9 @@ export default function VendorTopBar({
                     ))
                   ) : notifications.length === 0 ? (
                     // Empty state
-                    <div className="p-8 text-center">
-                      <BellIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 text-sm">
+                    <div className="p-6 text-center">
+                      <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-xs">
                         No notifications yet
                       </p>
                     </div>
@@ -343,7 +343,7 @@ export default function VendorTopBar({
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        className={`px-3 py-2 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
                           !notification.isRead ? "bg-blue-50" : ""
                         }`}
                         onClick={() => {
@@ -356,13 +356,13 @@ export default function VendorTopBar({
                           }
                         }}
                       >
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                        <div className="flex items-start space-x-2">
+                          <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                             {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p
-                              className={`text-sm font-medium ${
+                              className={`text-xs font-medium ${
                                 !notification.isRead
                                   ? "text-gray-900"
                                   : "text-gray-700"
@@ -370,15 +370,15 @@ export default function VendorTopBar({
                             >
                               {notification.title}
                             </p>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 mt-0.5">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-400 mt-0.5">
                               {formatTimeAgo(notification.createdAt)}
                             </p>
                           </div>
                           {!notification.isRead && (
-                            <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                           )}
                         </div>
                       </div>
@@ -388,10 +388,10 @@ export default function VendorTopBar({
 
                 {/* Footer */}
                 {notifications.length > 0 && (
-                  <div className="p-3 border-t border-gray-100 bg-gray-50">
+                  <div className="p-2 border-t border-gray-100 bg-gray-50">
                     <Link
                       href="/vendor/notifications"
-                      className="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                     >
                       View all notifications
                     </Link>
@@ -405,35 +405,35 @@ export default function VendorTopBar({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-6 w-6">
                     <AvatarImage
                       src={session?.user?.image || ""}
                       alt={session?.user?.name || ""}
                     />
-                    <AvatarFallback className="bg-black text-white text-sm">
+                    <AvatarFallback className="bg-black text-white text-xs">
                       {getUserInitials(session?.user?.name || "V")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900 max-w-20 truncate">
+                    <p className="text-xs font-medium text-gray-900 max-w-16 truncate">
                       {session?.user?.name?.split(" ")[0] || "Vendor"}
                     </p>
                     <p className="text-xs text-gray-500">Vendor</p>
                   </div>
-                  <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                  <ChevronDownIcon className="h-3 w-3 text-gray-400" />
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 align="end"
-                className="w-64 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-1"
+                className="w-56 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1"
               >
                 {/* User info header */}
-                <DropdownMenuLabel className="p-3 border-b border-gray-100">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-10 w-10">
+                <DropdownMenuLabel className="p-2 border-b border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={session?.user?.image || ""}
                         alt={session?.user?.name || ""}
@@ -443,7 +443,7 @@ export default function VendorTopBar({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
+                      <p className="text-xs font-semibold text-gray-900 truncate">
                         {session?.user?.name || "Vendor"}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
@@ -464,9 +464,9 @@ export default function VendorTopBar({
                   <DropdownMenuItem asChild>
                     <Link
                       href="/"
-                      className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
                     >
-                      <HomeIcon className="h-4 w-4 mr-3 text-gray-400" />
+                      <HomeIcon className="h-3 w-3 mr-2 text-gray-400" />
                       Visit Store
                     </Link>
                   </DropdownMenuItem>
@@ -474,9 +474,9 @@ export default function VendorTopBar({
                   <DropdownMenuItem asChild>
                     <Link
                       href="/vendor/settings"
-                      className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
                     >
-                      <Cog6ToothIcon className="h-4 w-4 mr-3 text-gray-400" />
+                      <Cog6ToothIcon className="h-3 w-3 mr-2 text-gray-400" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
@@ -488,9 +488,9 @@ export default function VendorTopBar({
                 <div className="p-1">
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className="flex items-center px-3 py-2 text-sm text-red-700 hover:bg-red-50 rounded-lg cursor-pointer"
+                    className="flex items-center px-2 py-1.5 text-xs text-red-700 hover:bg-red-50 rounded-md cursor-pointer"
                   >
-                    <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3 text-red-500" />
+                    <ArrowRightOnRectangleIcon className="h-3 w-3 mr-2 text-red-500" />
                     Sign out
                   </DropdownMenuItem>
                 </div>

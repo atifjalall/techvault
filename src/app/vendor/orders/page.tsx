@@ -119,6 +119,7 @@ interface OrdersResponse {
     pendingOrders: number;
     processingOrders: number;
     completedOrders: number;
+    totalOrders: number;
   };
 }
 
@@ -211,60 +212,6 @@ function PaymentStatusBadge({ status }: { status: string }) {
     <Badge variant="outline" className={`text-xs ${config.color}`}>
       {config.label}
     </Badge>
-  );
-}
-
-// Stats Card Component
-function StatsCard({
-  title,
-  value,
-  icon: Icon,
-  change,
-  variant = "default",
-}: {
-  title: string;
-  value: number | string;
-  icon: React.ElementType;
-  change: string;
-  variant?: "default" | "success" | "warning" | "destructive";
-}) {
-  const variantStyles = {
-    default:
-      "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 border-blue-200",
-    success:
-      "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 border-emerald-200",
-    warning:
-      "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 border-amber-200",
-    destructive:
-      "bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 border-rose-200",
-  };
-
-  return (
-    <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {typeof value === "number" &&
-              title.toLowerCase().includes("revenue")
-                ? formatPrice(value)
-                : value}
-            </p>
-            <p
-              className={`text-xs font-medium ${
-                change.startsWith("+") ? "text-emerald-600" : "text-rose-600"
-              }`}
-            >
-              {change} from last month
-            </p>
-          </div>
-          <div className={`p-3 rounded-xl ${variantStyles[variant]} shadow-sm`}>
-            <Icon className="w-5 h-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -370,6 +317,7 @@ export default function VendorOrdersPage() {
     pendingOrders: 0,
     processingOrders: 0,
     completedOrders: 0,
+    totalOrders: 0,
   });
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -402,14 +350,13 @@ export default function VendorOrdersPage() {
           setOrders(result.orders || []);
           setTotalPages(result.pagination?.totalPages ?? 1);
           setTotalCount(result.pagination?.totalCount ?? 0);
-          setStats(
-            result.stats || {
-              totalRevenue: 0,
-              pendingOrders: 0,
-              processingOrders: 0,
-              completedOrders: 0,
-            }
-          );
+          setStats({
+            totalRevenue: result.stats?.totalRevenue || 0,
+            pendingOrders: result.stats?.pendingOrders || 0,
+            processingOrders: result.stats?.processingOrders || 0,
+            completedOrders: result.stats?.completedOrders || 0,
+            totalOrders: result.stats?.totalOrders || 0,
+          });
         } else {
           throw new Error("Failed to load orders data");
         }
@@ -535,15 +482,14 @@ export default function VendorOrdersPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="border-0 shadow-sm bg-white/80">
-                <CardContent className="p-5">
+              <Card key={i} className="border-0 shadow-sm">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-8 w-20" />
-                      <Skeleton className="h-3 w-28" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-6 w-16" />
                     </div>
-                    <Skeleton className="h-11 w-11 rounded-xl" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
                   </div>
                 </CardContent>
               </Card>
@@ -602,38 +548,86 @@ export default function VendorOrdersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              Orders
-            </h1>
-            <p className="text-slate-600 mt-1">
+            <h1 className="text-xl font-bold text-gray-900">Orders</h1>
+            <p className="text-sm text-gray-600">
               Manage and track your customer orders
             </p>
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Updated UI */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatsCard
-            title="Total Revenue"
-            value={stats.totalRevenue}
-            icon={CurrencyEuroIcon}
-            change="+12.5%"
-            variant="default"
-          />
-          <StatsCard
-            title="Pending Orders"
-            value={stats.pendingOrders}
-            icon={ClockIcon}
-            change="+8.2%"
-            variant="warning"
-          />
-          <StatsCard
-            title="Completed Orders"
-            value={stats.completedOrders}
-            icon={CheckCircleIcon}
-            change="+22.1%"
-            variant="success"
-          />
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">
+                    Total Revenue
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatPrice(stats.totalRevenue)}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <CurrencyEuroIcon className="h-5 w-5 text-emerald-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">
+                    Total Orders
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.totalOrders}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <ShoppingBagIcon className="h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">
+                    Pending Orders
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.pendingOrders}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <ClockIcon className="h-5 w-5 text-amber-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600">
+                    Processing Orders
+                  </p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.processingOrders}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <ArrowPathIcon className="h-5 w-5 text-purple-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}

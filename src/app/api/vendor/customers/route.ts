@@ -11,10 +11,10 @@ export async function GET(request: Request) {
 
     // Parse query parameters
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "15");
+    const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
-    const statusFilter = searchParams.get("status") || "";
-    const dateFilter = searchParams.get("date") || "";
+    const roleFilter = searchParams.get("role") || "";
+    const verificationFilter = searchParams.get("verified") || "";
     const sortBy = searchParams.get("sort") || "createdAt";
     const sortOrder = searchParams.get("order") || "desc";
 
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get vendor's products (for filtering orders)
+    // Get vendor's products to filter customers who bought from this vendor
     let productIds: string[] = [];
     if (user.role === "VENDOR") {
       const vendorProducts = await db.product.findMany({
@@ -46,23 +46,20 @@ export async function GET(request: Request) {
         select: { id: true },
       });
       productIds = vendorProducts.map((p) => p.id);
-    } else {
-      // For demo purposes, get all products if not a vendor
-      const allProducts = await db.product.findMany({
-        select: { id: true },
-        take: 20,
-      });
-      productIds = allProducts.map((p) => p.id);
     }
 
-    // Build where conditions
+    // Build where conditions for customers who have orders with vendor's products
     const whereConditions: any = {};
 
-    // Filter by vendor's products
+    // If vendor has products, only show customers who bought from them
     if (productIds.length > 0) {
-      whereConditions.items = {
+      whereConditions.orders = {
         some: {
-          productId: { in: productIds },
+          items: {
+            some: {
+              productId: { in: productIds },
+            },
+          },
         },
       };
     }
@@ -70,78 +67,74 @@ export async function GET(request: Request) {
     // Search filter
     if (search) {
       whereConditions.OR = [
-        { id: { contains: search, mode: "insensitive" } },
-        {
-          user: {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-            ],
-          },
-        },
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    // Status filter
-    if (statusFilter && statusFilter !== "all") {
-      whereConditions.status = statusFilter.toUpperCase();
+    // Role filter
+    if (roleFilter && roleFilter !== "all") {
+      whereConditions.role = roleFilter.toUpperCase();
     }
 
-    // Date filter
-    if (dateFilter && dateFilter !== "all") {
-      const now = new Date();
-      const startDate = new Date();
-
-      switch (dateFilter) {
-        case "today":
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case "week":
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case "month":
-          startDate.setMonth(now.getMonth() - 1);
-          break;
-        case "quarter":
-          startDate.setMonth(now.getMonth() - 3);
-          break;
-      }
-
-      whereConditions.createdAt = { gte: startDate };
+    // Verification filter
+    if (verificationFilter && verificationFilter !== "all") {
+      whereConditions.isVerified = verificationFilter === "true";
     }
 
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Get orders with related data
-    const orders = await db.order.findMany({
+    // Get customers with order data
+    const customers = await db.user.findMany({
       where: whereConditions,
       include: {
-        user: {
+        _count: {
           select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
+            orders:
+              productIds.length > 0
+                ? {
+                    where: {
+                      items: {
+                        some: {
+                          productId: { in: productIds },
+                        },
+                      },
+                    },
+                  }
+                : true,
           },
         },
-        items: {
+        orders: {
           where:
             productIds.length > 0
               ? {
-                  productId: { in: productIds },
+                  items: {
+                    some: {
+                      productId: { in: productIds },
+                    },
+                  },
                 }
-              : undefined,
-          include: {
-            product: {
+              : {},
+          select: {
+            id: true,
+            total: true,
+            createdAt: true,
+            items: {
+              where:
+                productIds.length > 0
+                  ? {
+                      productId: { in: productIds },
+                    }
+                  : {},
               select: {
-                id: true,
-                name: true,
-                images: true,
                 price: true,
+                quantity: true,
               },
             },
           },
+          orderBy: { createdAt: "desc" },
         },
       },
       orderBy: {
@@ -151,117 +144,150 @@ export async function GET(request: Request) {
       take: limit,
     });
 
+    // Calculate total spent for each customer and format response
+    const customersWithStats = customers.map((customer) => {
+      // Calculate total spent from vendor-specific orders
+      let totalSpent = 0;
+      let lastOrderDate: string | undefined;
+
+      if (customer.orders && customer.orders.length > 0) {
+        // Get the most recent order date
+        lastOrderDate = customer.orders[0].createdAt.toISOString();
+
+        // Calculate total spent from all orders
+        totalSpent = customer.orders.reduce((sum, order) => {
+          const orderTotal = order.items.reduce((itemSum, item) => {
+            return itemSum + Number(item.price) * item.quantity;
+          }, 0);
+          return sum + orderTotal;
+        }, 0);
+      }
+
+      return {
+        id: customer.id,
+        name: customer.name || "",
+        email: customer.email,
+        phone: customer.phone,
+        image: customer.image,
+        emailVerified: customer.emailVerified?.toISOString(),
+        createdAt: customer.createdAt.toISOString(),
+        role: customer.role as "CUSTOMER" | "VENDOR" | "ADMIN",
+        isVerified: customer.isVerified,
+        _count: {
+          orders: customer._count.orders,
+        },
+        totalSpent: Math.round(totalSpent * 100) / 100, // Round to 2 decimal places
+        lastOrderDate,
+      };
+    });
+
     // Get total count for pagination
-    const totalCount = await db.order.count({
+    const totalCount = await db.user.count({
       where: whereConditions,
     });
 
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Format orders for response
-    const formattedOrders = orders.map((order) => {
-      const orderTotal = Number(order.total);
-      const shippingAmount = 9.99; // Mock shipping - you can add this to your schema
-      const taxRate = 0.19; // 19% VAT for Germany
-      const taxAmount = orderTotal * taxRate;
-
-      return {
-        id: order.id,
-        orderNumber: `ORD-${order.id.slice(-6).toUpperCase()}`,
-        customerId: order.userId,
-        customerName: order.user.name || "Unknown Customer",
-        customerEmail: order.user.email,
-        customerPhone: order.user.phone,
-        status: order.status.toLowerCase(),
-        totalAmount: orderTotal,
-        shippingAmount,
-        taxAmount,
-        items: order.items.map((item) => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.product.name,
-          productImage: item.product.images[0] || "/products/default.jpg",
-          quantity: item.quantity,
-          price: Number(item.price),
-          total: Number(item.price) * item.quantity,
-        })),
-        shippingAddress:
-          typeof order.shippingAddress === "object"
-            ? (order.shippingAddress as any)
-            : {
-                street: "Address not provided",
-                city: "Unknown",
-                postalCode: "Unknown",
-                country: "Germany",
-              },
-        paymentMethod: "Credit Card", // Mock - you can add this to your schema
-        paymentStatus: "paid", // Mock - you can add this to your schema
-        createdAt: order.createdAt.toISOString(),
-        updatedAt: order.updatedAt.toISOString(),
-        estimatedDelivery: new Date(
-          Date.now() + 7 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        trackingNumber:
-          order.status === "SHIPPED" || order.status === "DELIVERED"
-            ? `TRK${Math.random().toString().slice(2, 10).toUpperCase()}`
-            : undefined,
-      };
-    });
-
-    // Calculate stats
-    const allOrders = await db.order.findMany({
-      where:
-        productIds.length > 0
-          ? {
-              items: {
-                some: {
-                  productId: { in: productIds },
+    // Calculate stats for all customers (vendor-specific if applicable)
+    const statsWhereCondition =
+      productIds.length > 0
+        ? {
+            orders: {
+              some: {
+                items: {
+                  some: {
+                    productId: { in: productIds },
+                  },
                 },
               },
-            }
-          : {},
+            },
+          }
+        : {};
+
+    const allCustomers = await db.user.findMany({
+      where: statsWhereCondition,
       select: {
-        status: true,
-        total: true,
+        id: true,
         createdAt: true,
+        orders: {
+          where:
+            productIds.length > 0
+              ? {
+                  items: {
+                    some: {
+                      productId: { in: productIds },
+                    },
+                  },
+                }
+              : {},
+          select: {
+            total: true,
+            createdAt: true,
+            items: {
+              where:
+                productIds.length > 0
+                  ? {
+                      productId: { in: productIds },
+                    }
+                  : {},
+              select: {
+                price: true,
+                quantity: true,
+              },
+            },
+          },
+        },
       },
     });
 
+    // Calculate stats
+    const totalCustomers = allCustomers.length;
+
+    // New customers this month
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const thisMonthOrders = allOrders.filter((order) => {
-      const orderDate = new Date(order.createdAt);
+    const newCustomersThisMonth = allCustomers.filter((customer) => {
+      const createdDate = new Date(customer.createdAt);
       return (
-        orderDate.getMonth() === currentMonth &&
-        orderDate.getFullYear() === currentYear
+        createdDate.getMonth() === currentMonth &&
+        createdDate.getFullYear() === currentYear
       );
+    }).length;
+
+    // Calculate total revenue and total orders for average calculation
+    let totalRevenue = 0;
+    let totalOrderCount = 0;
+
+    allCustomers.forEach((customer) => {
+      customer.orders.forEach((order) => {
+        // Calculate order total from items
+        const orderTotal = order.items.reduce((sum, item) => {
+          return sum + Number(item.price) * item.quantity;
+        }, 0);
+
+        if (orderTotal > 0) {
+          totalRevenue += orderTotal;
+          totalOrderCount += 1;
+        }
+      });
     });
 
-    const totalRevenue = thisMonthOrders.reduce(
-      (sum, order) => sum + Number(order.total),
-      0
-    );
-
-    const pendingOrders = allOrders.filter(
-      (o) => o.status === "PENDING"
-    ).length;
-    const processingOrders = allOrders.filter((o) =>
-      ["PROCESSING", "SHIPPED"].includes(o.status)
-    ).length;
-    const completedOrders = allOrders.filter(
-      (o) => o.status === "DELIVERED"
-    ).length;
+    // Calculate average order value with proper null check
+    const averageOrderValue =
+      totalOrderCount > 0
+        ? Math.round((totalRevenue / totalOrderCount) * 100) / 100
+        : 0;
 
     const stats = {
-      totalRevenue,
-      pendingOrders,
-      processingOrders,
-      completedOrders,
+      totalCustomers,
+      newCustomersThisMonth,
+      averageOrderValue,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
     };
 
     return NextResponse.json({
       success: true,
-      orders: formattedOrders,
+      customers: customersWithStats,
       pagination: {
         page,
         limit,
@@ -271,59 +297,9 @@ export async function GET(request: Request) {
       stats,
     });
   } catch (error) {
-    console.error("Orders API error:", error);
+    console.error("Customers API error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT endpoint for updating order status
-export async function PUT(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    const { orderId, status } = await request.json();
-
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Validate status
-    const validStatuses = [
-      "PENDING",
-      "PROCESSING",
-      "SHIPPED",
-      "DELIVERED",
-      "CANCELLED",
-    ];
-    if (!validStatuses.includes(status.toUpperCase())) {
-      return NextResponse.json(
-        { success: false, error: "Invalid status" },
-        { status: 400 }
-      );
-    }
-
-    // Update order status
-    const updatedOrder = await db.order.update({
-      where: { id: orderId },
-      data: {
-        status: status.toUpperCase(),
-        updatedAt: new Date(),
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      order: updatedOrder,
-    });
-  } catch (error) {
-    console.error("Order update error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to update order" },
       { status: 500 }
     );
   }
