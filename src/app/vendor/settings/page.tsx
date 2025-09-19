@@ -14,7 +14,6 @@ import {
   EyeIcon,
   EyeSlashIcon,
   CameraIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 
@@ -79,7 +78,7 @@ interface UserSettings {
   };
 }
 
-// Clean Settings Section Component
+// Compact Settings Section Component
 function SettingsSection({
   title,
   description,
@@ -92,17 +91,17 @@ function SettingsSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+    <Card className="border-0 shadow-sm bg-white">
+      <CardHeader className="pb-3">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl">
-            <Icon className="w-5 h-5 text-slate-600" />
+          <div className="p-2 bg-slate-50 rounded-lg">
+            <Icon className="w-4 h-4 text-slate-600" />
           </div>
           <div>
-            <CardTitle className="text-base font-semibold text-slate-900">
+            <CardTitle className="text-sm font-semibold text-slate-900">
               {title}
             </CardTitle>
-            <p className="text-sm text-slate-600 mt-1">{description}</p>
+            <p className="text-xs text-slate-600">{description}</p>
           </div>
         </div>
       </CardHeader>
@@ -114,32 +113,32 @@ function SettingsSection({
 // Loading Skeletons
 function SettingsSkeletons() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Card key={i} className="border-0 shadow-sm bg-white/80">
-          <CardHeader className="pb-4">
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardHeader className="pb-3">
             <div className="flex items-center space-x-3">
-              <Skeleton className="w-9 h-9 rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-4 w-64" />
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-48" />
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-10 w-full" />
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-8 w-full" />
                 </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-8 w-full" />
                 </div>
               </div>
               <div className="flex justify-end">
-                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-8 w-20" />
               </div>
             </div>
           </CardContent>
@@ -458,11 +457,11 @@ export default function VendorSettingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-        <div className="p-6 max-w-4xl mx-auto space-y-8">
+        <div className="p-6 space-y-6">
           {/* Header Skeleton */}
-          <div className="mb-8">
-            <Skeleton className="h-8 w-32 mb-2" />
-            <Skeleton className="h-5 w-64" />
+          <div>
+            <Skeleton className="h-6 w-24 mb-1" />
+            <Skeleton className="h-4 w-48" />
           </div>
           <SettingsSkeletons />
         </div>
@@ -479,14 +478,14 @@ export default function VendorSettingsPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <ExclamationTriangleIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+            <ExclamationTriangleIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">
               Unable to load settings
             </h3>
-            <p className="text-slate-500 mb-6">{error}</p>
+            <p className="text-xs text-slate-500 mb-4">{error}</p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
+              className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
             >
               Try Again
             </Button>
@@ -500,15 +499,15 @@ export default function VendorSettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Settings
-          </h1>
-          <p className="text-slate-600 mt-1">
-            Manage your account and business preferences
-          </p>
+      <div className="p-6 space-y-6">
+        {/* Header - matching other pages */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+            <p className="text-sm text-gray-600">
+              Manage your account and business preferences
+            </p>
+          </div>
         </div>
 
         {/* Success/Error Messages */}
@@ -533,7 +532,7 @@ export default function VendorSettingsPage() {
                     <ExclamationTriangleIcon className="w-4 h-4 text-rose-600 mr-2" />
                   )}
                   <AlertDescription
-                    className={success ? "text-emerald-800" : "text-rose-800"}
+                    className={`text-xs ${success ? "text-emerald-800" : "text-rose-800"}`}
                   >
                     {success || error}
                   </AlertDescription>
@@ -543,39 +542,39 @@ export default function VendorSettingsPage() {
           )}
         </AnimatePresence>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Profile Settings */}
           <SettingsSection
             title="Profile Information"
-            description="Update your personal and business details"
+            description="Update your personal details"
             icon={UserIcon}
           >
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Profile Image */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100">
                     {settings.profile.image ? (
                       <Image
                         src={settings.profile.image}
                         alt="Profile"
-                        width={64}
-                        height={64}
+                        width={48}
+                        height={48}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <UserIcon className="w-6 h-6 text-slate-400" />
+                        <UserIcon className="w-5 h-5 text-slate-400" />
                       </div>
                     )}
                   </div>
-                  <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-800 transition-colors">
-                    <CameraIcon className="w-3 h-3" />
+                  <label className="absolute -bottom-1 -right-1 w-5 h-5 bg-slate-900 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-800 transition-colors">
+                    <CameraIcon className="w-2.5 h-2.5" />
                     <input type="file" accept="image/*" className="hidden" />
                   </label>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-slate-900">
+                  <h4 className="text-xs font-medium text-slate-900">
                     Profile Photo
                   </h4>
                   <p className="text-xs text-slate-500">JPG, PNG. Max 2MB</p>
@@ -583,9 +582,11 @@ export default function VendorSettingsPage() {
               </div>
 
               {/* Profile Form */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="store-name">Store Name</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="store-name" className="text-xs">
+                    Store Name
+                  </Label>
                   <Input
                     id="store-name"
                     value={profileForm.name}
@@ -596,11 +597,14 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="Your store name"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-xs">
+                    Email Address
+                  </Label>
                   <div className="relative">
                     <Input
                       id="email"
@@ -613,15 +617,18 @@ export default function VendorSettingsPage() {
                         }))
                       }
                       placeholder="your@email.com"
+                      className="h-8 text-sm"
                     />
                     {settings.security.emailVerified && (
-                      <CheckCircleIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                      <CheckCircleIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-emerald-500" />
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="phone" className="text-xs">
+                    Phone Number
+                  </Label>
                   <div className="relative">
                     <Input
                       id="phone"
@@ -634,16 +641,19 @@ export default function VendorSettingsPage() {
                         }))
                       }
                       placeholder="+49 123 456789"
+                      className="h-8 text-sm"
                     />
                     {settings.security.phoneVerified && (
-                      <CheckCircleIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                      <CheckCircleIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-emerald-500" />
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Store Description</Label>
+              <div className="space-y-1">
+                <Label htmlFor="bio" className="text-xs">
+                  Store Description
+                </Label>
                 <Textarea
                   id="bio"
                   value={profileForm.bio}
@@ -651,7 +661,8 @@ export default function VendorSettingsPage() {
                     setProfileForm((prev) => ({ ...prev, bio: e.target.value }))
                   }
                   placeholder="Tell customers about your store..."
-                  rows={3}
+                  rows={2}
+                  className="text-sm resize-none"
                 />
               </div>
 
@@ -659,7 +670,7 @@ export default function VendorSettingsPage() {
                 <Button
                   onClick={updateProfile}
                   disabled={saving === "profile"}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
                 >
                   {saving === "profile" ? "Saving..." : "Save Profile"}
                 </Button>
@@ -670,30 +681,33 @@ export default function VendorSettingsPage() {
           {/* Business Address */}
           <SettingsSection
             title="Business Address"
-            description="Your business location and contact address"
+            description="Your business location"
             icon={MapPinIcon}
           >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="street">Street Address</Label>
-                  <Input
-                    id="street"
-                    value={addressForm.street}
-                    onChange={(e) =>
-                      setAddressForm((prev) => ({
-                        ...prev,
-                        street: e.target.value,
-                      }))
-                    }
-                    placeholder="123 Main Street"
-                  />
-                </div>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="street" className="text-xs">
+                  Street Address
+                </Label>
+                <Input
+                  id="street"
+                  value={addressForm.street}
+                  onChange={(e) =>
+                    setAddressForm((prev) => ({
+                      ...prev,
+                      street: e.target.value,
+                    }))
+                  }
+                  placeholder="123 Main Street"
+                  className="h-8 text-sm"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="city" className="text-xs">
+                    City
+                  </Label>
                   <Input
                     id="city"
                     value={addressForm.city}
@@ -704,11 +718,14 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="Hamburg"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="postal-code">Postal Code</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="postal-code" className="text-xs">
+                    Postal Code
+                  </Label>
                   <Input
                     id="postal-code"
                     value={addressForm.postalCode}
@@ -719,18 +736,21 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="20095"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="country" className="text-xs">
+                    Country
+                  </Label>
                   <Select
                     value={addressForm.country}
                     onValueChange={(value) =>
                       setAddressForm((prev) => ({ ...prev, country: value }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -746,7 +766,7 @@ export default function VendorSettingsPage() {
                 <Button
                   onClick={updateAddress}
                   disabled={saving === "address"}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
                 >
                   {saving === "address" ? "Saving..." : "Save Address"}
                 </Button>
@@ -757,13 +777,15 @@ export default function VendorSettingsPage() {
           {/* Business Information */}
           <SettingsSection
             title="Business Information"
-            description="Legal business details and tax information"
+            description="Legal business details"
             icon={BuildingStorefrontIcon}
           >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="business-name">Legal Business Name</Label>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="business-name" className="text-xs">
+                    Legal Business Name
+                  </Label>
                   <Input
                     id="business-name"
                     value={businessForm.businessName}
@@ -774,11 +796,14 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="Your Business GmbH"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="business-type">Business Type</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="business-type" className="text-xs">
+                    Business Type
+                  </Label>
                   <Select
                     value={businessForm.businessType}
                     onValueChange={(value) =>
@@ -788,7 +813,7 @@ export default function VendorSettingsPage() {
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -802,8 +827,10 @@ export default function VendorSettingsPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tax-id">Tax ID / VAT Number</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="tax-id" className="text-xs">
+                    Tax ID / VAT Number
+                  </Label>
                   <Input
                     id="tax-id"
                     value={businessForm.taxId}
@@ -814,11 +841,14 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="DE123456789"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website URL</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="website" className="text-xs">
+                    Website URL
+                  </Label>
                   <Input
                     id="website"
                     type="url"
@@ -830,6 +860,7 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="https://yourstore.com"
+                    className="h-8 text-sm"
                   />
                 </div>
               </div>
@@ -838,7 +869,7 @@ export default function VendorSettingsPage() {
                 <Button
                   onClick={updateBusinessInfo}
                   disabled={saving === "business"}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
                 >
                   {saving === "business" ? "Saving..." : "Save Business Info"}
                 </Button>
@@ -849,18 +880,20 @@ export default function VendorSettingsPage() {
           {/* Security Settings */}
           <SettingsSection
             title="Security & Privacy"
-            description="Manage your account security settings"
+            description="Manage account security"
             icon={ShieldCheckIcon}
           >
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Change Password */}
               <div>
-                <h4 className="text-sm font-medium text-slate-900 mb-4">
+                <h4 className="text-xs font-medium text-slate-900 mb-2">
                   Change Password
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="current-password" className="text-xs">
+                      Current Password
+                    </Label>
                     <div className="relative">
                       <Input
                         id="current-password"
@@ -873,25 +906,28 @@ export default function VendorSettingsPage() {
                           }))
                         }
                         placeholder="Current password"
+                        className="h-8 text-sm pr-8"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
-                          <EyeSlashIcon className="w-4 h-4 text-slate-400" />
+                          <EyeSlashIcon className="w-3 h-3 text-slate-400" />
                         ) : (
-                          <EyeIcon className="w-4 h-4 text-slate-400" />
+                          <EyeIcon className="w-3 h-3 text-slate-400" />
                         )}
                       </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
+                  <div className="space-y-1">
+                    <Label htmlFor="new-password" className="text-xs">
+                      New Password
+                    </Label>
                     <Input
                       id="new-password"
                       type="password"
@@ -903,11 +939,14 @@ export default function VendorSettingsPage() {
                         }))
                       }
                       placeholder="New password"
+                      className="h-8 text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <div className="space-y-1">
+                    <Label htmlFor="confirm-password" className="text-xs">
+                      Confirm Password
+                    </Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -919,35 +958,35 @@ export default function VendorSettingsPage() {
                         }))
                       }
                       placeholder="Confirm password"
+                      className="h-8 text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-between items-center mt-3">
+                  <p className="text-xs text-slate-500">
+                    Last changed:{" "}
+                    {new Date(
+                      settings.security.lastPasswordChange
+                    ).toLocaleDateString()}
+                  </p>
                   <Button
                     onClick={changePassword}
                     disabled={saving === "password"}
-                    className="bg-slate-900 hover:bg-slate-800 text-white"
+                    className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
                   >
                     {saving === "password" ? "Changing..." : "Change Password"}
                   </Button>
                 </div>
-
-                <p className="text-xs text-slate-500 mt-2">
-                  Last changed:{" "}
-                  {new Date(
-                    settings.security.lastPasswordChange
-                  ).toLocaleDateString()}
-                </p>
               </div>
 
               {/* Two-Factor Authentication */}
-              <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-xl">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div>
-                  <h4 className="text-sm font-medium text-slate-900">
+                  <h4 className="text-xs font-medium text-slate-900">
                     Two-Factor Authentication
                   </h4>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-xs text-slate-600">
                     Add extra security to your account
                   </p>
                 </div>
@@ -967,7 +1006,7 @@ export default function VendorSettingsPage() {
             description="Choose what notifications you want to receive"
             icon={BellIcon}
           >
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[
                 {
                   key: "orderAlerts",
@@ -992,13 +1031,13 @@ export default function VendorSettingsPage() {
               ].map(({ key, label, description }) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between p-4 bg-slate-50/50 rounded-xl"
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
                 >
                   <div>
-                    <h4 className="text-sm font-medium text-slate-900">
+                    <h4 className="text-xs font-medium text-slate-900">
                       {label}
                     </h4>
-                    <p className="text-sm text-slate-600">{description}</p>
+                    <p className="text-xs text-slate-600">{description}</p>
                   </div>
                   <Switch
                     checked={
@@ -1023,17 +1062,17 @@ export default function VendorSettingsPage() {
             description="Irreversible account actions"
             icon={ExclamationTriangleIcon}
           >
-            <div className="p-4 border-2 border-rose-200 rounded-xl bg-rose-50/50">
+            <div className="p-3 border border-rose-200 rounded-lg bg-rose-50">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-rose-900 mb-2">
+                  <h4 className="text-xs font-medium text-rose-900 mb-1">
                     Delete Account
                   </h4>
-                  <p className="text-sm text-rose-600 mb-3">
+                  <p className="text-xs text-rose-600 mb-2">
                     Permanently delete your vendor account and all data. This
                     cannot be undone.
                   </p>
-                  <div className="space-y-1 text-xs text-rose-600">
+                  <div className="space-y-0.5 text-xs text-rose-600">
                     <p>• All products removed from marketplace</p>
                     <p>• Order history and customer data deleted</p>
                     <p>• Pending payouts processed before deletion</p>
@@ -1042,7 +1081,7 @@ export default function VendorSettingsPage() {
                 <Button
                   variant="destructive"
                   onClick={() => setShowDeleteModal(true)}
-                  className="flex-shrink-0 ml-4"
+                  className="flex-shrink-0 ml-3 h-8 px-3 text-xs cursor-pointer"
                 >
                   Delete Account
                 </Button>
@@ -1055,31 +1094,31 @@ export default function VendorSettingsPage() {
         <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-rose-900">
+              <DialogTitle className="text-sm text-rose-900">
                 Delete Account
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs">
                 This action cannot be undone. All your data will be permanently
                 deleted.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="flex items-center p-4 bg-rose-50 rounded-lg border border-rose-200">
-                <ExclamationTriangleIcon className="w-6 h-6 text-rose-600 mr-3 flex-shrink-0" />
+            <div className="space-y-3">
+              <div className="flex items-center p-3 bg-rose-50 rounded-lg border border-rose-200">
+                <ExclamationTriangleIcon className="w-5 h-5 text-rose-600 mr-2 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-rose-900 text-sm">
+                  <p className="font-medium text-rose-900 text-xs">
                     This action cannot be undone
                   </p>
-                  <p className="text-sm text-rose-600">
+                  <p className="text-xs text-rose-600">
                     All data will be permanently deleted
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="delete-confirm">
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor="delete-confirm" className="text-xs">
                     Type <strong>DELETE</strong> to confirm
                   </Label>
                   <Input
@@ -1092,11 +1131,14 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="DELETE"
+                    className="h-8 text-sm"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="delete-password">Enter your password</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="delete-password" className="text-xs">
+                    Enter your password
+                  </Label>
                   <Input
                     id="delete-password"
                     type="password"
@@ -1108,6 +1150,7 @@ export default function VendorSettingsPage() {
                       }))
                     }
                     placeholder="Your password"
+                    className="h-8 text-sm"
                   />
                 </div>
               </div>
@@ -1117,6 +1160,7 @@ export default function VendorSettingsPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteModal(false)}
+                className="h-8 px-3 text-xs cursor-pointer"
               >
                 Cancel
               </Button>
@@ -1152,6 +1196,7 @@ export default function VendorSettingsPage() {
                   deleteForm.confirmText !== "DELETE" ||
                   !deleteForm.password
                 }
+                className="h-8 px-3 text-xs cursor-pointer"
               >
                 {saving === "delete" ? "Deleting..." : "Delete Account"}
               </Button>

@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PhotoIcon,
@@ -18,7 +17,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CloudArrowUpIcon,
+  SparklesIcon,
+  HeartIcon,
+  ShoppingBagIcon,
+  SwatchIcon,
 } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
+import { uploadMultipleImages } from "@/lib/cloudinary";
 
 // UI Components
 import { Button } from "@/components/ui/buttonSidebar";
@@ -47,6 +52,16 @@ import {
 
 import { formatPrice } from "@/lib/utils";
 
+interface ColorVariant {
+  id?: string;
+  color: string;
+  image: string;
+  imageFile?: File;
+  imagePreview?: string;
+  isNew?: boolean;
+  cloudinaryUrl?: string;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -61,14 +76,21 @@ interface Product {
   lowStockAlert: number;
   isActive: boolean;
   featured: boolean;
+  newArrival: boolean;
+  returnable: boolean;
   categoryId: string;
+  subcategoryId?: string;
   warranty?: string;
   weight?: string;
   dimensions?: string;
   color?: string;
   material?: string;
+  storage?: string;
+  length?: string;
+  deliveryDays?: number;
   tags: string[];
   specifications: Record<string, string>;
+  colors?: ColorVariant[];
   category: {
     id: string;
     name: string;
@@ -80,6 +102,379 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  subcategories: Subcategory[];
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+  categoryId: string;
+}
+
+// Predefined color options
+const COLOR_OPTIONS = [
+  { name: "Black", value: "#000000" },
+  { name: "White", value: "#FFFFFF" },
+  { name: "Gray", value: "#6B7280" },
+  { name: "Red", value: "#EF4444" },
+  { name: "Blue", value: "#3B82F6" },
+  { name: "Green", value: "#10B981" },
+  { name: "Yellow", value: "#F59E0B" },
+  { name: "Purple", value: "#8B5CF6" },
+  { name: "Pink", value: "#EC4899" },
+  { name: "Orange", value: "#F97316" },
+  { name: "Brown", value: "#92400E" },
+  { name: "Navy", value: "#1E3A8A" },
+  { name: "Rose Gold", value: "#E11D48" },
+  { name: "Silver", value: "#9CA3AF" },
+  { name: "Gold", value: "#D97706" },
+];
+
+// ProductCard Preview Component (matching UI ProductCard exactly)
+function ProductCardPreview({ product }: { product: Product }) {
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const discountPercentage =
+    product.comparePrice && product.price
+      ? Math.round(
+          ((product.comparePrice - product.price) / product.comparePrice) * 100
+        )
+      : 0;
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWishlisted(!isWishlisted);
+  };
+
+  return (
+    <div className="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 hover:border-white/30 hover:-translate-y-1">
+      {/* Product Image */}
+      <div className="relative aspect-square bg-gradient-to-br from-gray-50/80 to-gray-100/60 backdrop-blur-sm overflow-hidden">
+        {/* Left side badges */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+          {product.newArrival && (
+            <span className="bg-black text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              NEW
+            </span>
+          )}
+          {product.featured && (
+            <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              FEATURED
+            </span>
+          )}
+        </div>
+
+        {/* Top right elements */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+          {/* Discount badge */}
+          {discountPercentage > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              -{discountPercentage}%
+            </span>
+          )}
+
+          {/* Heart icon */}
+          <button
+            onClick={handleWishlistToggle}
+            className="p-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl border border-white/30 transition-all duration-300 hover:scale-110 hover:bg-white/95 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+            title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            {isWishlisted ? (
+              <HeartIconSolid className="h-3.5 w-3.5 text-red-500" />
+            ) : (
+              <HeartIcon className="h-3.5 w-3.5 text-gray-600 hover:text-red-500" />
+            )}
+          </button>
+        </div>
+
+        {/* Product Image */}
+        <div className="w-full h-full bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-sm flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
+          {product.images.length > 0 ? (
+            <img
+              src={product.images[0]}
+              alt={product.name || "Product preview"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center text-gray-400">
+              <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-xl shadow-md mx-auto mb-2 flex items-center justify-center border border-white/20">
+                <div className="w-8 h-8 bg-gray-300/70 rounded-lg"></div>
+              </div>
+              <p className="text-xs font-medium">
+                {product.category?.name || "Product"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Color variants display */}
+        {product.colors && product.colors.length > 0 && (
+          <div className="absolute bottom-3 left-3 flex gap-1">
+            {product.colors.slice(0, 4).map((variant, index) => (
+              <div
+                key={index}
+                className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                style={{
+                  backgroundColor:
+                    COLOR_OPTIONS.find((c) => c.name === variant.color)
+                      ?.value || "#6B7280",
+                }}
+              />
+            ))}
+            {product.colors.length > 4 && (
+              <span className="text-xs text-white bg-black/50 px-1 rounded">
+                +{product.colors.length - 4}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Quick Add to Cart - slides up from bottom */}
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+          <button
+            className="w-full bg-black/90 backdrop-blur-md text-white py-2.5 px-3 rounded-lg text-xs font-semibold hover:bg-black/95 transition-all duration-300 flex items-center justify-center border border-white/20 cursor-pointer"
+            disabled
+          >
+            <ShoppingBagIcon className="h-3.5 w-3.5 mr-1.5" />
+            Quick Add
+          </button>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      <div className="p-4">
+        <div className="space-y-1.5">
+          {/* Brand & Name */}
+          <div>
+            {product.brand && (
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
+                {product.brand}
+              </p>
+            )}
+            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight">
+              {product.name || "Untitled Product"}
+            </h3>
+          </div>
+
+          {/* Rating */}
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className="h-2.5 w-2.5 fill-gray-200"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs text-gray-400">(0)</span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-base font-bold text-gray-900">
+                €{product.price}
+              </span>
+              {product.comparePrice && product.comparePrice > product.price && (
+                <span className="text-sm text-gray-500 line-through">
+                  €{product.comparePrice}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            {product.stock && <span>{product.stock} in stock</span>}
+            {product.deliveryDays && (
+              <span>{product.deliveryDays}d delivery</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Color Variant Manager Component
+function ColorVariantManager({
+  colorVariants,
+  onUpdate,
+}: {
+  colorVariants: ColorVariant[];
+  onUpdate: (variants: ColorVariant[]) => void;
+}) {
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+
+  const addColorVariant = () => {
+    onUpdate([...colorVariants, { color: "", image: "", isNew: true }]);
+  };
+
+  const updateColorVariant = (
+    index: number,
+    field: keyof ColorVariant,
+    value: any
+  ) => {
+    const updated = colorVariants.map((variant, i) =>
+      i === index ? { ...variant, [field]: value } : variant
+    );
+    onUpdate(updated);
+  };
+
+  const removeColorVariant = (index: number) => {
+    onUpdate(colorVariants.filter((_, i) => i !== index));
+  };
+
+  const handleImageUpload = async (index: number, file: File) => {
+    setUploadingIndex(index);
+
+    // Create preview immediately
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateColorVariant(index, "imagePreview", reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    updateColorVariant(index, "imageFile", file);
+
+    // Upload to Cloudinary in background
+    try {
+      const cloudinaryUrls = await uploadMultipleImages([file]);
+      updateColorVariant(index, "cloudinaryUrl", cloudinaryUrls[0]);
+      updateColorVariant(index, "image", cloudinaryUrls[0]);
+    } catch (error) {
+      console.error("Color image upload failed:", error);
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">Color Variants (Optional)</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addColorVariant}
+          className="text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
+        >
+          <PlusIcon className="w-4 h-4 mr-1" />
+          Add Color
+        </Button>
+      </div>
+
+      {colorVariants.length > 0 && (
+        <div className="space-y-3">
+          {colorVariants.map((variant, index) => (
+            <Card
+              key={index}
+              className="bg-gray-50/50 backdrop-blur-sm border border-gray-200"
+            >
+              <CardContent className="p-3">
+                <div className="flex items-center space-x-3">
+                  {/* Color Selection */}
+                  <div className="flex-1">
+                    <Select
+                      value={variant.color}
+                      onValueChange={(value) =>
+                        updateColorVariant(index, "color", value)
+                      }
+                    >
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Select color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COLOR_OPTIONS.map((color) => (
+                          <SelectItem key={color.name} value={color.name}>
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-4 h-4 rounded-full border border-gray-300"
+                                style={{ backgroundColor: color.value }}
+                              />
+                              <span>{color.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="flex items-center space-x-2">
+                    {variant.imagePreview || variant.image ? (
+                      <img
+                        src={variant.imagePreview || variant.image}
+                        alt={`${variant.color} variant`}
+                        className="w-12 h-12 rounded-lg object-cover border"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg border flex items-center justify-center">
+                        <PhotoIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+
+                    <label className="cursor-pointer">
+                      <span className="text-sm text-blue-600 hover:text-blue-700 underline">
+                        {variant.image ? "Change" : "Upload"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(index, file);
+                        }}
+                      />
+                    </label>
+
+                    {/* Upload Status */}
+                    {uploadingIndex === index ? (
+                      <div className="w-4 h-4 border border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    ) : variant.cloudinaryUrl ? (
+                      <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                    ) : variant.isNew ? (
+                      <span className="text-xs text-orange-500">New</span>
+                    ) : (
+                      <CheckCircleIcon className="w-4 h-4 text-gray-400" />
+                    )}
+                  </div>
+
+                  {/* Remove Button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeColorVariant(index)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {colorVariants.length === 0 && (
+        <div className="text-center py-6 text-gray-500 bg-gray-50/30 rounded-lg border border-dashed border-gray-300">
+          <SwatchIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">No color variants added</p>
+          <p className="text-xs">
+            Add colors to help customers choose variants
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function VendorEditProductPage() {
@@ -89,6 +484,9 @@ export default function VendorEditProductPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
@@ -103,19 +501,25 @@ export default function VendorEditProductPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [newCloudinaryUrls, setNewCloudinaryUrls] = useState<string[]>([]);
 
   const steps = [
     {
       id: 1,
       name: "Basic Info",
-      description: "Product name, brand, and description",
+      description: "Product name, brand, and category",
     },
-    { id: 2, name: "Pricing", description: "Set price and manage inventory" },
-    { id: 3, name: "Media", description: "Add images and specifications" },
+    {
+      id: 2,
+      name: "Details",
+      description: "Description, specifications, and attributes",
+    },
+    { id: 3, name: "Pricing", description: "Set price and manage inventory" },
     {
       id: 4,
-      name: "Settings",
-      description: "Configure visibility and features",
+      name: "Media",
+      description: "Update images and configure settings",
     },
   ];
 
@@ -159,13 +563,20 @@ export default function VendorEditProductPage() {
     }
   }, [params.id]);
 
+  // Update selected category when categoryId changes
+  useEffect(() => {
+    if (product?.categoryId && categories.length > 0) {
+      const category = categories.find((c) => c.id === product.categoryId);
+      setSelectedCategory(category || null);
+    }
+  }, [product?.categoryId, categories]);
+
   // Auto-save functionality
   const autoSave = async (updatedProduct: Partial<Product>) => {
     if (!product) return;
 
     setSaveStatus("saving");
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
@@ -185,36 +596,71 @@ export default function VendorEditProductPage() {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
 
+    // Reset subcategory when category changes
+    if (field === "categoryId" && value !== product.categoryId) {
+      updatedProduct.subcategoryId = "";
+      setProduct(updatedProduct);
+    }
+
     setTimeout(() => {
       autoSave({ [field]: value });
     }, 1000);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
 
-    files.forEach((file) => {
-      if (file.type.startsWith("image/")) {
+    if (
+      !product ||
+      files.length + product.images.length + newImages.length > 5
+    ) {
+      setErrors({ images: "Maximum 5 images allowed" });
+      return;
+    }
+
+    setUploadingImages(true);
+
+    try {
+      // Show immediate previews for better UX
+      const newPreviews: string[] = [];
+      files.forEach((file) => {
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setNewImages((prev) => [...prev, file]);
-          setImagePreviews((prev) => [...prev, result]);
-        };
+        reader.onload = () => newPreviews.push(reader.result as string);
         reader.readAsDataURL(file);
-      }
-    });
+      });
+
+      // Update previews first
+      setTimeout(() => {
+        setNewImages((prev) => [...prev, ...files]);
+        setImagePreviews((prev) => [...prev, ...newPreviews]);
+      }, 100);
+
+      // Upload to Cloudinary in background
+      const cloudinaryUrls = await uploadMultipleImages(files);
+      setNewCloudinaryUrls((prev) => [...prev, ...cloudinaryUrls]);
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      setErrors({ images: "Failed to upload images. Please try again." });
+
+      // Remove failed uploads from previews
+      const failedCount = files.length;
+      setNewImages((prev) => prev.slice(0, -failedCount));
+      setImagePreviews((prev) => prev.slice(0, -failedCount));
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setNewCloudinaryUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const removeExistingImage = (index: number) => {
     if (!product) return;
     const updatedImages = product.images.filter((_, i) => i !== index);
     handleFieldChange("images", updatedImages);
-  };
-
-  const removeNewImage = (index: number) => {
-    setNewImages((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addSpecification = () => {
@@ -260,14 +706,22 @@ export default function VendorEditProductPage() {
 
     setSaving(true);
     try {
-      // Simulate image upload
-      const uploadedImageUrls =
-        newImages.length > 0
-          ? newImages.map((img) => `/products/${Date.now()}-${img.name}`)
-          : [];
+      // Combine existing images with new uploads
+      let finalImageUrls: string[] = [...product.images];
 
-      const allImages = [...product.images, ...uploadedImageUrls];
+      // Add newly uploaded Cloudinary URLs
+      if (newCloudinaryUrls.length > 0) {
+        finalImageUrls = [...finalImageUrls, ...newCloudinaryUrls];
+      }
 
+      // If there are still unuploaded images, upload them now
+      const unuploadedImages = newImages.slice(newCloudinaryUrls.length);
+      if (unuploadedImages.length > 0) {
+        const additionalUrls = await uploadMultipleImages(unuploadedImages);
+        finalImageUrls = [...finalImageUrls, ...additionalUrls];
+      }
+
+      // Process specifications
       const specificationsObj = specifications
         .filter((spec) => spec.key.trim() && spec.value.trim())
         .reduce(
@@ -278,14 +732,55 @@ export default function VendorEditProductPage() {
           {} as Record<string, string>
         );
 
+      // Prepare color variants for submission
+      const colorVariantsForSubmission = (product.colors || [])
+        .filter((variant) => variant.color && variant.image)
+        .map((variant) => ({
+          color: variant.color,
+          image: variant.cloudinaryUrl || variant.image,
+        }));
+
+      // Prepare the complete payload
       const payload = {
-        ...product,
-        images: allImages,
+        name: product.name,
+        description: product.description,
+        brand: product.brand,
+        modelNumber: product.modelNumber,
+        categoryId: product.categoryId,
+        subcategoryId: product.subcategoryId,
+        price: product.price,
+        comparePrice: product.comparePrice,
+        stock: product.stock,
+        lowStockAlert: product.lowStockAlert,
+        images: finalImageUrls,
+        colors: colorVariantsForSubmission, // Include color variants
         specifications: specificationsObj,
+        featured: product.featured,
+        newArrival: product.newArrival,
+        returnable: product.returnable,
+        isActive: product.isActive,
+        warranty: product.warranty,
+        weight: product.weight,
+        dimensions: product.dimensions,
+        storage: product.storage,
+        length: product.length,
+        deliveryDays: product.deliveryDays,
+        tags: product.tags,
+        color: product.color,
+        material: product.material,
       };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await fetch(`/api/vendor/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update product");
+      }
 
       setShowSuccessModal(true);
       setTimeout(() => {
@@ -301,12 +796,61 @@ export default function VendorEditProductPage() {
     }
   };
 
+  // Validation function
+  const validateCurrentStep = () => {
+    const stepErrors: Record<string, string> = {};
+
+    if (currentStep === 1) {
+      if (!product?.name?.trim()) stepErrors.name = "Product name is required";
+      if (!product?.categoryId) stepErrors.categoryId = "Category is required";
+      if (!product?.brand?.trim()) stepErrors.brand = "Brand is required";
+    } else if (currentStep === 2) {
+      if (!product?.description?.trim())
+        stepErrors.description = "Description is required";
+      if (product?.weight && isNaN(parseFloat(product.weight))) {
+        stepErrors.weight = "Weight must be a valid number";
+      }
+    } else if (currentStep === 3) {
+      if (!product?.price || product.price <= 0) {
+        stepErrors.price = "Valid price is required";
+      }
+      if (!product?.stock || product.stock < 0) {
+        stepErrors.stock = "Valid stock quantity is required";
+      }
+      if (product?.comparePrice && product.comparePrice <= product.price) {
+        stepErrors.comparePrice =
+          "Compare price must be higher than regular price";
+      }
+      if (
+        product?.deliveryDays &&
+        (product.deliveryDays < 1 || product.deliveryDays > 30)
+      ) {
+        stepErrors.deliveryDays = "Delivery days must be between 1 and 30";
+      }
+    }
+
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateCurrentStep() && currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading product...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">Loading product...</p>
         </div>
       </div>
     );
@@ -314,15 +858,18 @@ export default function VendorEditProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
             Product not found
           </h2>
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500 mb-4 text-sm">
             The product you&apos;re looking for doesn&apos;t exist.
           </p>
-          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button
+            asChild
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm cursor-pointer"
+          >
             <Link href="/vendor/products">Back to Products</Link>
           </Button>
         </div>
@@ -333,20 +880,20 @@ export default function VendorEditProductPage() {
   const stockStatus = getStockStatus();
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header with Glassmorphism */}
+    <div className="p-4 space-y-4">
+      {/* Header */}
       <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Product</h1>
+              <h1 className="text-xl font-bold text-gray-900">Edit Product</h1>
               <p className="text-sm text-gray-600">
                 Make changes to your product listing
               </p>
             </div>
 
-            {/* Auto-save Status */}
-            <div className="flex items-center space-x-4">
+            {/* Auto-save Status & Actions */}
+            <div className="flex items-center space-x-3">
               <AnimatePresence>
                 {saveStatus !== "idle" && (
                   <motion.div
@@ -384,7 +931,11 @@ export default function VendorEditProductPage() {
               </AnimatePresence>
 
               <div className="flex items-center space-x-2">
-                <Button variant="outline" asChild>
+                <Button
+                  variant="outline"
+                  asChild
+                  className="text-sm cursor-pointer"
+                >
                   <Link href={`/products/${product.slug}`}>
                     <EyeIcon className="w-4 h-4 mr-2" />
                     Preview
@@ -394,7 +945,7 @@ export default function VendorEditProductPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm cursor-pointer"
                 >
                   {saving ? (
                     <>
@@ -412,9 +963,9 @@ export default function VendorEditProductPage() {
             </div>
           </div>
 
-          {/* Progress Bar - Blue Glassmorphism */}
-          <div className="mt-6">
-            <div className="bg-white/30 backdrop-blur-sm rounded-full h-3 overflow-hidden">
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="bg-white/30 backdrop-blur-sm rounded-full h-2 overflow-hidden">
               <motion.div
                 className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
                 initial={{ width: 0 }}
@@ -422,14 +973,14 @@ export default function VendorEditProductPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
               />
             </div>
-            <div className="flex justify-between mt-3">
-              {steps.map((step, index) => (
+            <div className="flex justify-between mt-2">
+              {steps.map((step) => (
                 <Button
                   key={step.id}
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentStep(step.id)}
-                  className={`text-xs ${
+                  className={`text-xs cursor-pointer ${
                     currentStep >= step.id
                       ? "text-blue-600 font-medium"
                       : "text-gray-500"
@@ -444,100 +995,29 @@ export default function VendorEditProductPage() {
       </Card>
 
       {/* Main Form */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Preview Sidebar */}
         <Card className="lg:col-span-1 bg-white/70 backdrop-blur-md border border-white/20">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg">Live Preview</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Product Preview */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
-              {/* Product Image */}
-              <div className="relative aspect-square bg-gray-100">
-                {product.images.length > 0 || imagePreviews.length > 0 ? (
-                  <img
-                    src={imagePreviews[0] || product.images[0]}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <PhotoIcon className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
-
-                {/* Featured Badge */}
-                {product.featured && (
-                  <div className="absolute top-3 left-3">
-                    <Badge className="bg-blue-600 text-white text-xs">
-                      Featured
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Discount Badge */}
-                {calculateDiscount() > 0 && (
-                  <div className="absolute top-3 right-3">
-                    <Badge className="bg-red-500 text-white text-xs">
-                      -{calculateDiscount()}%
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className="p-4">
-                <div className="mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-gray-500">{product.brand}</p>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-lg font-bold text-blue-600">
-                    {formatPrice(product.price)}
-                  </span>
-                  {product.comparePrice && calculateDiscount() > 0 && (
-                    <span className="text-sm text-gray-500 line-through">
-                      {formatPrice(product.comparePrice)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Category */}
-                {product.categoryId && (
-                  <p className="text-xs text-gray-600 mb-3">
-                    {categories.find((c) => c.id === product.categoryId)
-                      ?.name || "Category"}
-                  </p>
-                )}
-
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    size="sm"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled
-                  >
-                    Add to Cart
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-gray-600 border-gray-200"
-                    disabled
-                  >
-                    Add to Wishlist
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <ProductCardPreview product={product} />
 
             {/* Stats */}
-            <div className="space-y-3 pt-4 border-t">
+            <div className="space-y-2 pt-3 border-t">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Images</span>
+                <span className="font-medium">
+                  {product.images.length + imagePreviews.length}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Colors</span>
+                <span className="font-medium">
+                  {product.colors?.length || 0}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Status</span>
                 <Badge
@@ -579,16 +1059,18 @@ export default function VendorEditProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Basic Information</CardTitle>
                     <p className="text-sm text-gray-600">
                       Update your product details
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Product Name</Label>
+                        <Label htmlFor="name" className="text-sm">
+                          Product Name *
+                        </Label>
                         <Input
                           id="name"
                           value={product.name}
@@ -596,11 +1078,17 @@ export default function VendorEditProductPage() {
                             handleFieldChange("name", e.target.value)
                           }
                           placeholder="e.g. Wireless Gaming Headset Pro"
+                          className={`text-sm ${errors.name ? "border-red-500" : ""}`}
                         />
+                        {errors.name && (
+                          <p className="text-red-500 text-xs">{errors.name}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="brand">Brand</Label>
+                        <Label htmlFor="brand" className="text-sm">
+                          Brand *
+                        </Label>
                         <Input
                           id="brand"
                           value={product.brand || ""}
@@ -608,18 +1096,26 @@ export default function VendorEditProductPage() {
                             handleFieldChange("brand", e.target.value)
                           }
                           placeholder="e.g. Sony, Apple, Samsung"
+                          className={`text-sm ${errors.brand ? "border-red-500" : ""}`}
                         />
+                        {errors.brand && (
+                          <p className="text-red-500 text-xs">{errors.brand}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="category">Category</Label>
+                        <Label htmlFor="category" className="text-sm">
+                          Category *
+                        </Label>
                         <Select
                           value={product.categoryId}
                           onValueChange={(value) =>
                             handleFieldChange("categoryId", value)
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger
+                            className={`text-sm ${errors.categoryId ? "border-red-500" : ""}`}
+                          >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -630,31 +1126,64 @@ export default function VendorEditProductPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {errors.categoryId && (
+                          <p className="text-red-500 text-xs">
+                            {errors.categoryId}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="modelNumber">Model Number / SKU</Label>
-                        <Input
-                          id="modelNumber"
-                          value={product.modelNumber || ""}
-                          onChange={(e) =>
-                            handleFieldChange("modelNumber", e.target.value)
+                        <Label htmlFor="subcategory" className="text-sm">
+                          Subcategory
+                        </Label>
+                        <Select
+                          value={product.subcategoryId || "select"}
+                          onValueChange={(value) =>
+                            handleFieldChange(
+                              "subcategoryId",
+                              value === "select" ? "" : value
+                            )
                           }
-                          placeholder="e.g. WH-1000XM5"
-                        />
+                          disabled={
+                            !selectedCategory ||
+                            selectedCategory.subcategories.length === 0
+                          }
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Select a subcategory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">
+                              Select a subcategory
+                            </SelectItem>
+                            {selectedCategory?.subcategories.map(
+                              (subcategory) => (
+                                <SelectItem
+                                  key={subcategory.id}
+                                  value={subcategory.id}
+                                >
+                                  {subcategory.name}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={product.description || ""}
+                      <Label htmlFor="modelNumber" className="text-sm">
+                        Model Number / SKU
+                      </Label>
+                      <Input
+                        id="modelNumber"
+                        value={product.modelNumber || ""}
                         onChange={(e) =>
-                          handleFieldChange("description", e.target.value)
+                          handleFieldChange("modelNumber", e.target.value)
                         }
-                        rows={4}
-                        placeholder="Describe your product features, benefits, and specifications..."
+                        placeholder="e.g. WH-1000XM5"
+                        className="text-sm"
                       />
                     </div>
                   </CardContent>
@@ -662,7 +1191,7 @@ export default function VendorEditProductPage() {
               </motion.div>
             )}
 
-            {/* Step 2: Pricing & Stock */}
+            {/* Step 2: Details */}
             {currentStep === 2 && (
               <motion.div
                 key="step2"
@@ -672,197 +1201,141 @@ export default function VendorEditProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Pricing & Stock</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Product Details</CardTitle>
                     <p className="text-sm text-gray-600">
-                      Update your pricing and inventory levels
+                      Update description, specifications, and attributes
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="description" className="text-sm">
+                        Description *
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={product.description || ""}
+                        onChange={(e) =>
+                          handleFieldChange("description", e.target.value)
+                        }
+                        rows={4}
+                        placeholder="Describe your product features, benefits, and specifications..."
+                        className={`text-sm ${errors.description ? "border-red-500" : ""}`}
+                      />
+                      {errors.description && (
+                        <p className="text-red-500 text-xs">
+                          {errors.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Physical Attributes */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="price">Price (€)</Label>
+                        <Label htmlFor="color" className="text-sm">
+                          Color
+                        </Label>
                         <Input
-                          id="price"
-                          type="number"
-                          step="0.01"
-                          value={product.price}
+                          id="color"
+                          value={product.color || ""}
                           onChange={(e) =>
-                            handleFieldChange(
-                              "price",
-                              parseFloat(e.target.value)
-                            )
+                            handleFieldChange("color", e.target.value)
                           }
-                          placeholder="299.99"
+                          placeholder="Black"
+                          className="text-sm"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="comparePrice">Compare Price (€)</Label>
+                        <Label htmlFor="material" className="text-sm">
+                          Material
+                        </Label>
                         <Input
-                          id="comparePrice"
+                          id="material"
+                          value={product.material || ""}
+                          onChange={(e) =>
+                            handleFieldChange("material", e.target.value)
+                          }
+                          placeholder="Aluminum"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="weight" className="text-sm">
+                          Weight (kg)
+                        </Label>
+                        <Input
+                          id="weight"
                           type="number"
                           step="0.01"
-                          value={product.comparePrice || ""}
+                          value={product.weight || ""}
                           onChange={(e) =>
-                            handleFieldChange(
-                              "comparePrice",
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : undefined
-                            )
+                            handleFieldChange("weight", e.target.value)
                           }
-                          placeholder="399.99"
+                          placeholder="1.5"
+                          className={`text-sm ${errors.weight ? "border-red-500" : ""}`}
                         />
-                        <p className="text-xs text-gray-500">
-                          Original price for showing discount
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Discount</Label>
-                        <div className="px-3 py-2 bg-blue-50 border rounded-md text-sm text-blue-700 font-medium">
-                          {calculateDiscount()}% off
-                        </div>
+                        {errors.weight && (
+                          <p className="text-red-500 text-xs">
+                            {errors.weight}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="stock">Stock Quantity</Label>
+                        <Label htmlFor="dimensions" className="text-sm">
+                          Dimensions (L x W x H cm)
+                        </Label>
                         <Input
-                          id="stock"
-                          type="number"
-                          value={product.stock}
+                          id="dimensions"
+                          value={product.dimensions || ""}
                           onChange={(e) =>
-                            handleFieldChange("stock", parseInt(e.target.value))
+                            handleFieldChange("dimensions", e.target.value)
                           }
-                          placeholder="50"
+                          placeholder="25 x 15 x 8"
+                          className="text-sm"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="lowStockAlert">Low Stock Alert</Label>
+                        <Label htmlFor="storage" className="text-sm">
+                          Storage/Memory
+                        </Label>
                         <Input
-                          id="lowStockAlert"
-                          type="number"
-                          value={product.lowStockAlert}
+                          id="storage"
+                          value={product.storage || ""}
                           onChange={(e) =>
-                            handleFieldChange(
-                              "lowStockAlert",
-                              parseInt(e.target.value)
-                            )
+                            handleFieldChange("storage", e.target.value)
                           }
-                          placeholder="10"
+                          placeholder="128GB, 16GB RAM, etc."
+                          className="text-sm"
                         />
-                        <p className="text-xs text-gray-500">
-                          Alert when stock falls below this number
-                        </p>
                       </div>
                     </div>
 
-                    {calculateDiscount() > 0 && (
-                      <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-center">
-                          <CheckCircleIcon className="w-5 h-5 text-blue-600 mr-2" />
-                          <span className="text-sm font-medium text-blue-800">
-                            {calculateDiscount()}% discount applied - Great for
-                            attracting customers!
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Step 3: Media & Details */}
-            {currentStep === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Media & Details</CardTitle>
-                    <p className="text-sm text-gray-600">
-                      Update images and specifications
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Product Images */}
-                    <div className="space-y-4">
-                      <Label>Product Images</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {/* Existing Images */}
-                        {product.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image}
-                              alt={`Product ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                              onClick={() => removeExistingImage(index)}
-                            >
-                              <XMarkIcon className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
-
-                        {/* New Images */}
-                        {imagePreviews.map((preview, index) => (
-                          <div key={`new-${index}`} className="relative group">
-                            <img
-                              src={preview}
-                              alt={`New ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                              onClick={() => removeNewImage(index)}
-                            >
-                              <XMarkIcon className="w-3 h-3" />
-                            </Button>
-                            <div className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-xs p-1 rounded-b-lg">
-                              New
-                            </div>
-                          </div>
-                        ))}
-
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
-                          <CloudArrowUpIcon className="w-6 h-6 text-gray-400" />
-                          <span className="text-xs text-gray-500 mt-1">
-                            Add Images
-                          </span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="length" className="text-sm">
+                        Length (if applicable)
+                      </Label>
+                      <Input
+                        id="length"
+                        value={product.length || ""}
+                        onChange={(e) =>
+                          handleFieldChange("length", e.target.value)
+                        }
+                        placeholder="Cable length, etc."
+                        className="text-sm"
+                      />
                     </div>
 
                     {/* Specifications */}
-                    <div className="space-y-4">
-                      <Label>Technical Specifications</Label>
-                      <div className="space-y-3">
+                    <div className="space-y-3">
+                      <Label className="text-sm">
+                        Technical Specifications
+                      </Label>
+                      <div className="space-y-2">
                         {specifications.map((spec, index) => (
-                          <div key={index} className="grid grid-cols-5 gap-3">
+                          <div key={index} className="grid grid-cols-5 gap-2">
                             <div className="col-span-2">
                               <Input
                                 value={spec.key}
@@ -874,6 +1347,7 @@ export default function VendorEditProductPage() {
                                   )
                                 }
                                 placeholder="Feature name"
+                                className="text-sm"
                               />
                             </div>
                             <div className="col-span-2">
@@ -887,6 +1361,7 @@ export default function VendorEditProductPage() {
                                   )
                                 }
                                 placeholder="Feature value"
+                                className="text-sm"
                               />
                             </div>
                             <Button
@@ -894,9 +1369,9 @@ export default function VendorEditProductPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => removeSpecification(index)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                             >
-                              <XMarkIcon className="w-4 h-4" />
+                              <XMarkIcon className="w-3 h-3" />
                             </Button>
                           </div>
                         ))}
@@ -906,9 +1381,9 @@ export default function VendorEditProductPage() {
                           variant="outline"
                           size="sm"
                           onClick={addSpecification}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
                         >
-                          <PlusIcon className="w-4 h-4 mr-2" />
+                          <PlusIcon className="w-3 h-3 mr-1" />
                           Add Specification
                         </Button>
                       </div>
@@ -918,7 +1393,193 @@ export default function VendorEditProductPage() {
               </motion.div>
             )}
 
-            {/* Step 4: Settings */}
+            {/* Step 3: Pricing & Stock */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Pricing & Stock</CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Update your pricing and inventory levels
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="price" className="text-sm">
+                          Price (€) *
+                        </Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={product.price}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              "price",
+                              parseFloat(e.target.value)
+                            )
+                          }
+                          placeholder="299.99"
+                          className={`text-sm ${errors.price ? "border-red-500" : ""}`}
+                        />
+                        {errors.price && (
+                          <p className="text-red-500 text-xs">{errors.price}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="comparePrice" className="text-sm">
+                          Compare Price (€)
+                        </Label>
+                        <Input
+                          id="comparePrice"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={product.comparePrice || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              "comparePrice",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined
+                            )
+                          }
+                          placeholder="399.99"
+                          className={`text-sm ${errors.comparePrice ? "border-red-500" : ""}`}
+                        />
+                        {errors.comparePrice && (
+                          <p className="text-red-500 text-xs">
+                            {errors.comparePrice}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Original price for showing discount
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm">Discount</Label>
+                        <div className="px-3 py-2 bg-blue-50 border rounded-md text-sm text-blue-700 font-medium">
+                          {calculateDiscount()}% off
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stock" className="text-sm">
+                          Stock Quantity *
+                        </Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          min="0"
+                          value={product.stock}
+                          onChange={(e) =>
+                            handleFieldChange("stock", parseInt(e.target.value))
+                          }
+                          placeholder="50"
+                          className={`text-sm ${errors.stock ? "border-red-500" : ""}`}
+                        />
+                        {errors.stock && (
+                          <p className="text-red-500 text-xs">{errors.stock}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="lowStockAlert" className="text-sm">
+                          Low Stock Alert
+                        </Label>
+                        <Input
+                          id="lowStockAlert"
+                          type="number"
+                          min="0"
+                          value={product.lowStockAlert}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              "lowStockAlert",
+                              parseInt(e.target.value)
+                            )
+                          }
+                          placeholder="10"
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Alert when stock falls below this number
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="warranty" className="text-sm">
+                          Warranty (years)
+                        </Label>
+                        <Select
+                          value={product.warranty || "2"}
+                          onValueChange={(value) =>
+                            handleFieldChange("warranty", value)
+                          }
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">No Warranty</SelectItem>
+                            <SelectItem value="1">1 Year</SelectItem>
+                            <SelectItem value="2">2 Years</SelectItem>
+                            <SelectItem value="3">3 Years</SelectItem>
+                            <SelectItem value="5">5 Years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="deliveryDays" className="text-sm">
+                          Delivery Days
+                        </Label>
+                        <Input
+                          id="deliveryDays"
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={product.deliveryDays || ""}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              "deliveryDays",
+                              e.target.value
+                                ? parseInt(e.target.value)
+                                : undefined
+                            )
+                          }
+                          placeholder="3"
+                          className={`text-sm ${errors.deliveryDays ? "border-red-500" : ""}`}
+                        />
+                        {errors.deliveryDays && (
+                          <p className="text-red-500 text-xs">
+                            {errors.deliveryDays}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Expected delivery time (1-30 days)
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Step 4: Media & Settings */}
             {currentStep === 4 && (
               <motion.div
                 key="step4"
@@ -928,17 +1589,119 @@ export default function VendorEditProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Settings & Additional Info</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Media & Settings</CardTitle>
                     <p className="text-sm text-gray-600">
-                      Configure visibility and additional details
+                      Update images and configure product settings
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Quick Settings with Glass Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <CardContent className="space-y-4">
+                    {/* Product Images */}
+                    <div className="space-y-3">
+                      <Label className="text-sm">Product Images</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {/* Existing Images from Database */}
+                        {product.images.map((image, index) => (
+                          <div
+                            key={`existing-${index}`}
+                            className="relative group"
+                          >
+                            <img
+                              src={image}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-1 -right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                              onClick={() => removeExistingImage(index)}
+                              disabled={saving}
+                            >
+                              <XMarkIcon className="w-3 h-3" />
+                            </Button>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gray-500 text-white text-xs p-1 rounded-b-lg">
+                              Current
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* New Images */}
+                        {imagePreviews.map((preview, index) => (
+                          <div key={`new-${index}`} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`New ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-1 -right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                              onClick={() => removeNewImage(index)}
+                              disabled={uploadingImages || saving}
+                            >
+                              <XMarkIcon className="w-3 h-3" />
+                            </Button>
+
+                            {/* Upload Status Indicator */}
+                            <div className="absolute bottom-0 left-0 right-0 text-white text-xs p-1 rounded-b-lg">
+                              {newCloudinaryUrls[index] ? (
+                                <div className="bg-green-500">Uploaded ✓</div>
+                              ) : uploadingImages ? (
+                                <div className="bg-blue-500">Uploading...</div>
+                              ) : (
+                                <div className="bg-orange-500">Pending</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        <label
+                          className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors ${uploadingImages || saving ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <CloudArrowUpIcon className="w-5 h-5 text-gray-400" />
+                          <span className="text-xs text-gray-500 mt-1">
+                            {uploadingImages ? "Uploading..." : "Add Images"}
+                          </span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            disabled={uploadingImages || saving}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Upload Progress Info */}
+                      {uploadingImages && (
+                        <div className="text-xs text-blue-600 flex items-center">
+                          <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Uploading images to Cloudinary...
+                        </div>
+                      )}
+
+                      {errors.images && (
+                        <p className="text-red-500 text-xs">{errors.images}</p>
+                      )}
+                    </div>
+
+                    {/* Color Variants */}
+                    <ColorVariantManager
+                      colorVariants={product.colors || []}
+                      onUpdate={(variants) =>
+                        handleFieldChange("colors", variants)
+                      }
+                    />
+
+                    {/* Product Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <Label className="text-sm font-medium">
@@ -961,7 +1724,7 @@ export default function VendorEditProductPage() {
                       </Card>
 
                       <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <Label className="text-sm font-medium">
@@ -982,80 +1745,59 @@ export default function VendorEditProductPage() {
                           </div>
                         </CardContent>
                       </Card>
-                    </div>
 
-                    {/* Additional Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="color">Color</Label>
-                        <Input
-                          id="color"
-                          value={product.color || ""}
-                          onChange={(e) =>
-                            handleFieldChange("color", e.target.value)
-                          }
-                          placeholder="Black"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="material">Material</Label>
-                        <Input
-                          id="material"
-                          value={product.material || ""}
-                          onChange={(e) =>
-                            handleFieldChange("material", e.target.value)
-                          }
-                          placeholder="Aluminum"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="weight">Weight (kg)</Label>
-                        <Input
-                          id="weight"
-                          value={product.weight || ""}
-                          onChange={(e) =>
-                            handleFieldChange("weight", e.target.value)
-                          }
-                          placeholder="1.5"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="warranty">Warranty (years)</Label>
-                        <Select
-                          value={product.warranty || "2"}
-                          onValueChange={(value) =>
-                            handleFieldChange("warranty", value)
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">No Warranty</SelectItem>
-                            <SelectItem value="1">1 Year</SelectItem>
-                            <SelectItem value="2">2 Years</SelectItem>
-                            <SelectItem value="3">3 Years</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Card className="bg-green-50/50 backdrop-blur-sm border border-green-100">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                <SparklesIcon className="w-4 h-4 inline mr-1" />
+                                New Arrival
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {product.newArrival
+                                  ? "Marked as new arrival"
+                                  : "Regular product"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={product.newArrival}
+                              onCheckedChange={(checked) =>
+                                handleFieldChange("newArrival", checked)
+                              }
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-yellow-50/50 backdrop-blur-sm border border-yellow-100">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Returnable
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {product.returnable
+                                  ? "Customers can return"
+                                  : "No returns allowed"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={product.returnable}
+                              onCheckedChange={(checked) =>
+                                handleFieldChange("returnable", checked)
+                              }
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dimensions">
-                        Dimensions (L x W x H cm)
+                      <Label htmlFor="tags" className="text-sm">
+                        Tags (comma separated)
                       </Label>
-                      <Input
-                        id="dimensions"
-                        value={product.dimensions || ""}
-                        onChange={(e) =>
-                          handleFieldChange("dimensions", e.target.value)
-                        }
-                        placeholder="25 x 15 x 8"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="tags">Tags (comma separated)</Label>
                       <Input
                         id="tags"
                         value={product.tags?.join(", ") || ""}
@@ -1065,8 +1807,12 @@ export default function VendorEditProductPage() {
                             e.target.value.split(",").map((tag) => tag.trim())
                           )
                         }
-                        placeholder="wireless, gaming, bluetooth"
+                        placeholder="wireless, gaming, bluetooth, premium"
+                        className="text-sm"
                       />
+                      <p className="text-xs text-gray-500">
+                        Help customers find your product with relevant tags
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1075,43 +1821,44 @@ export default function VendorEditProductPage() {
           </AnimatePresence>
 
           {/* Step Navigation */}
-          <Card className="mt-6 bg-white/70 backdrop-blur-md border border-white/20">
-            <CardContent className="p-4">
+          <Card className="mt-4 bg-white/70 backdrop-blur-md border border-white/20">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                  onClick={prevStep}
                   disabled={currentStep === 1}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer text-sm"
                 >
-                  <ChevronLeftIcon className="w-4 h-4 mr-2" />
+                  <ChevronLeftIcon className="w-4 h-4 mr-1" />
                   Previous
                 </Button>
 
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-50 text-blue-700 text-xs"
+                >
                   Step {currentStep} of {steps.length}
                 </Badge>
 
                 {currentStep < steps.length ? (
                   <Button
-                    onClick={() =>
-                      setCurrentStep(Math.min(steps.length, currentStep + 1))
-                    }
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={nextStep}
+                    className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer text-sm"
                   >
                     Next
-                    <ChevronRightIcon className="w-4 h-4 ml-2" />
+                    <ChevronRightIcon className="w-4 h-4 ml-1" />
                   </Button>
                 ) : (
                   <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer text-sm"
                   >
                     {saving ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Updating Product...
+                        Updating...
                       </>
                     ) : (
                       <>
@@ -1129,13 +1876,13 @@ export default function VendorEditProductPage() {
 
       {/* Bottom Actions */}
       <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
+            <div className="flex items-center space-x-3">
+              <Button variant="ghost" asChild className="cursor-pointer">
                 <Link
                   href="/vendor/products"
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-600 hover:text-gray-800 text-sm"
                 >
                   Cancel
                 </Link>
@@ -1147,8 +1894,8 @@ export default function VendorEditProductPage() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <Button variant="outline" asChild>
-                <Link href={`/products/${product.slug}`}>
+              <Button variant="outline" asChild className="cursor-pointer">
+                <Link href={`/products/${product.slug}`} className="text-sm">
                   <EyeIcon className="w-4 h-4 mr-2" />
                   View Live Product
                 </Link>
@@ -1157,7 +1904,7 @@ export default function VendorEditProductPage() {
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer text-sm"
               >
                 {saving ? (
                   <>
@@ -1194,7 +1941,7 @@ export default function VendorEditProductPage() {
                 setShowSuccessModal(false);
                 router.push("/vendor/products");
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
             >
               Go to Products
             </Button>
@@ -1219,7 +1966,7 @@ export default function VendorEditProductPage() {
             <Button
               variant="outline"
               onClick={() => setShowErrorModal(false)}
-              className="border-gray-300"
+              className="border-gray-300 cursor-pointer"
             >
               Close
             </Button>
@@ -1229,7 +1976,7 @@ export default function VendorEditProductPage() {
                 handleSave();
               }}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
             >
               Try Again
             </Button>

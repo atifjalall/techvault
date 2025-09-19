@@ -78,6 +78,7 @@ model User {
   products       Product[]       @relation("VendorProducts")
   transactions   Transaction[]
   vendorSettings VendorSettings?
+  notifications     Notification[] @relation("UserNotifications")
 }
 
 enum Role {
@@ -96,14 +97,28 @@ model VerificationToken {
 
 // E-commerce Models
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  image       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  id           String       @id @default(cuid())
+  name         String       @unique
+  slug         String       @unique
+  description  String?
+  image        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  subcategories Subcategory[]
+  products      Product[]
+}
+
+model Subcategory {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  categoryId String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  category  Category  @relation(fields: [categoryId], references: [id])
+  products  Product[] @relation("SubcategoryProducts")
 }
 
 model Product {
@@ -115,32 +130,56 @@ model Product {
   comparePrice   Decimal? @db.Decimal(10, 2)
   images         String[]
   brand          String?
-  modelNumber    String? // Product model/SKU
-  specifications Json? // Technical specs as key-value pairs
-  stock          Int      @default(0)
-  lowStockAlert  Int      @default(10) // Alert threshold
-  isActive       Boolean  @default(true)
-  featured       Boolean  @default(false)
-  categoryId     String
-  vendorId       String?
+  modelNumber    String?
+  specifications Json?
+  stock          Int       @default(0)
+  lowStockAlert  Int       @default(10)
+  isActive       Boolean   @default(true)
+  featured       Boolean   @default(false)
+  newArrival     Boolean   @default(false)
+  storage        String?
+  length         String?
+  views          Int       @default(0)
+  sold           Int       @default(0)
+  returnable     Boolean   @default(true)
+  deliveryDays   Int?
+  warranty       String?
+  weight         String?
+  dimensions     String?
+  tags           String[]
+  color          String?
+  material       String?
 
-  // Additional product details
-  warranty   String? // Warranty period (e.g., "2 years")
-  weight     String? // Product weight (e.g., "1.5 kg")
-  dimensions String? // Product dimensions (e.g., "25 x 15 x 8 cm")
-  tags       String[] // Search tags
-  color      String? // Product color
-  material   String? // Product material
+  categoryId    String
+  subcategoryId String?
+  vendorId      String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   category      Category       @relation(fields: [categoryId], references: [id])
+  subcategory   Subcategory?   @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
   vendor        User?          @relation("VendorProducts", fields: [vendorId], references: [id])
   reviews       Review[]
   cartItems     CartItem[]
   orderItems    OrderItem[]
   wishlistItems WishlistItem[] @relation("ProductWishlistItems")
+  notifications  Notification[] @relation("ProductNotifications")
+  colors ProductColor[]
+}
+
+// New model for product colors
+model ProductColor {
+  id        String   @id @default(cuid())
+  productId String
+  color     String      // e.g., "Red", "Blue", "Black"
+  image     String      // URL to color image (Cloudinary)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, color]) // Each product can have a color only once
 }
 
 model CartItem {
@@ -180,6 +219,7 @@ model Order {
 
   user  User        @relation(fields: [userId], references: [id])
   items OrderItem[]
+  notifications  Notification[] @relation("OrderNotifications")
 }
 
 model OrderItem {
@@ -205,6 +245,37 @@ model Review {
   product Product @relation(fields: [productId], references: [id])
 
   @@unique([userId, productId])
+}
+
+model Notification {
+  id          String      @id @default(cuid())
+  userId      String?     // Who should receive the notification (optional for admin-wide notifications)
+  productId   String?     // Optional, for product-related notifications
+  orderId     String?     // Optional, for order-related notifications
+  type        NotificationType
+  severity    NotificationSeverity @default(INFO)
+  message     String
+  isRead      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user    User?    @relation("UserNotifications", fields: [userId], references: [id])
+  product Product? @relation("ProductNotifications", fields: [productId], references: [id])
+  order   Order?   @relation("OrderNotifications", fields: [orderId], references: [id])
+}
+
+enum NotificationType {
+  LOW_STOCK
+  NEW_ORDER
+  ORDER_UPDATED
+  NEW_REVIEW
+  SYSTEM_ALERT
+}
+
+enum NotificationSeverity {
+  INFO       // General info
+  WARNING    // Needs attention (like low stock)
+  CRITICAL   // Urgent (like stock=0 or order failed)
 }
 
 // Vendor-specific models
