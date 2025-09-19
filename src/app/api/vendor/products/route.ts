@@ -4,12 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
-// Validation schema
+// Updated validation schema with new fields
 const createProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
   description: z.string().optional(),
   brand: z.string().optional(),
   categoryId: z.string().min(1, "Category is required"),
+  subcategoryId: z.string().optional(), // NEW FIELD
   modelNumber: z.string().optional(),
   price: z.number().positive("Price must be positive"),
   comparePrice: z.number().positive().optional(),
@@ -18,10 +19,15 @@ const createProductSchema = z.object({
   images: z.array(z.string()).default([]),
   specifications: z.record(z.string()).optional(),
   featured: z.boolean().default(false),
+  newArrival: z.boolean().default(false), // NEW FIELD
+  returnable: z.boolean().default(true), // NEW FIELD
   isActive: z.boolean().default(true),
   warranty: z.string().optional(),
   weight: z.string().optional(),
   dimensions: z.string().optional(),
+  storage: z.string().optional(), // NEW FIELD
+  length: z.string().optional(), // NEW FIELD
+  deliveryDays: z.number().int().positive().optional(), // NEW FIELD
   tags: z.array(z.string()).default([]),
   color: z.string().optional(),
   material: z.string().optional(),
@@ -86,10 +92,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
 
+    // Check if subcategory exists (if provided)
+    if (validatedData.subcategoryId) {
+      const subcategory = await db.subcategory.findUnique({
+        where: { id: validatedData.subcategoryId },
+      });
+
+      if (!subcategory || subcategory.categoryId !== validatedData.categoryId) {
+        return NextResponse.json(
+          { error: "Invalid subcategory for selected category" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Generate unique slug
     const slug = await generateUniqueSlug(validatedData.name);
 
-    // Create the product
+    // Create the product with ALL fields
     const product = await db.product.create({
       data: {
         name: validatedData.name,
@@ -104,18 +124,25 @@ export async function POST(request: NextRequest) {
         images: validatedData.images,
         specifications: validatedData.specifications || {},
         featured: validatedData.featured,
+        newArrival: validatedData.newArrival, // NEW FIELD
+        returnable: validatedData.returnable, // NEW FIELD
         isActive: validatedData.isActive,
         warranty: validatedData.warranty,
         weight: validatedData.weight,
         dimensions: validatedData.dimensions,
+        storage: validatedData.storage, // NEW FIELD
+        length: validatedData.length, // NEW FIELD
+        deliveryDays: validatedData.deliveryDays, // NEW FIELD
         tags: validatedData.tags,
         color: validatedData.color,
         material: validatedData.material,
         categoryId: validatedData.categoryId,
+        subcategoryId: validatedData.subcategoryId, // NEW FIELD
         vendorId: session.user.id,
       },
       include: {
         category: true,
+        subcategory: true, // Include subcategory in response
         vendor: {
           select: {
             id: true,
@@ -218,11 +245,12 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const totalCount = await db.product.count({ where });
 
-    // Get products
+    // Get products with enhanced includes
     const products = await db.product.findMany({
       where,
       include: {
         category: true,
+        subcategory: true, // Include subcategory
         _count: {
           select: {
             reviews: true,

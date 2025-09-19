@@ -342,40 +342,48 @@ function ProductRow({
       {/* Stock */}
       <TableCell className="py-3">
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">{product.stock}</p>
-          <div className="mt-1">
-            <Badge className={`text-xs px-2 py-0.5 ${stockStatus.color}`}>
+          <div className="flex flex-col items-center space-y-1">
+            <span className="text-sm font-medium text-gray-900">
+              {product.stock}
+            </span>
+            <span
+              className={`inline-block text-xs px-2 py-0.5 rounded-md border ${stockStatus.color}`}
+            >
               {stockStatus.label}
-            </Badge>
+            </span>
           </div>
         </div>
       </TableCell>
 
       {/* Status */}
       <TableCell className="py-3">
-        <button
-          onClick={() => onToggleStatus(product)}
-          className="cursor-pointer"
-        >
-          <Badge
-            className={`text-xs px-2 py-0.5 ${
-              product.isActive 
-                ? "bg-green-100 text-green-800 border-green-200" 
-                : "bg-red-100 text-red-800 border-red-200"
-            }`}
+        <div className="text-center">
+          <button
+            onClick={() => onToggleStatus(product)}
+            className="cursor-pointer"
           >
-            {product.isActive ? "Active" : "Draft"}
-          </Badge>
-        </button>
+            <span
+              className={`inline-block text-xs px-2 py-0.5 rounded-md border ${
+                product.isActive
+                  ? "bg-green-100 text-green-800 border-green-200"
+                  : "bg-red-100 text-red-800 border-red-200"
+              }`}
+            >
+              {product.isActive ? "Active" : "Draft"}
+            </span>
+          </button>
+        </div>
       </TableCell>
 
       {/* Sales */}
       <TableCell className="py-3">
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">
-            {product._count?.orderItems || 0}
-          </p>
-          <p className="text-xs text-gray-500">sold</p>
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-medium text-gray-900">
+              {product._count?.orderItems || 0}
+            </span>
+            <span className="text-xs text-gray-500">sold</span>
+          </div>
         </div>
       </TableCell>
 
@@ -832,7 +840,7 @@ export default function VendorProductsPage() {
                         Price
                       </SortButton>
                     </TableHead>
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-center">
                       <SortButton
                         field="stock"
                         currentSort={sortBy}
@@ -842,8 +850,8 @@ export default function VendorProductsPage() {
                         Stock
                       </SortButton>
                     </TableHead>
-                    <TableHead className="h-10">Status</TableHead>
-                    <TableHead className="h-10">Sales</TableHead>
+                    <TableHead className="h-10 text-center">Status</TableHead>
+                    <TableHead className="h-10 text-center">Sales</TableHead>
                     <TableHead className="w-[50px] h-10">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -863,40 +871,71 @@ export default function VendorProductsPage() {
           </Card>
         )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-600">
-            Showing {(currentPage - 1) * 20 + 1} to{" "}
-            {Math.min(currentPage * 20, totalCount)} of {totalCount} products
-          </p>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="cursor-pointer"
-            >
-              Previous
-            </Button>
-            <span className="text-xs text-gray-600">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="cursor-pointer"
-            >
-              Next
-            </Button>
+        {/* Pagination - matching customers page style */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-700">
+              Showing {(currentPage - 1) * 10 + 1} to{" "}
+              {Math.min(currentPage * 10, totalCount)} of {totalCount} products
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Previous
+              </Button>
+
+              <div className="flex space-x-1">
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 7) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNumber = totalPages - 6 + i;
+                  } else {
+                    pageNumber = currentPage - 3 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        currentPage === pageNumber ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-8 h-8 text-xs cursor-pointer ${
+                        currentPage === pageNumber
+                          ? "bg-slate-900 hover:bg-slate-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Next
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
@@ -928,7 +967,6 @@ export default function VendorProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
     </div>
   );
 }

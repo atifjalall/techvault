@@ -17,7 +17,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CloudArrowUpIcon,
+  SparklesIcon,
+  TagIcon,
+  CubeIcon,
+  HeartIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 
 // UI Components
 import { Button } from "@/components/ui/buttonSidebar";
@@ -51,6 +57,7 @@ interface FormData {
   name: string;
   brand: string;
   categoryId: string;
+  subcategoryId: string;
   modelNumber: string;
   description: string;
   price: string;
@@ -61,6 +68,8 @@ interface FormData {
   imagePreviews: string[];
   specifications: { key: string; value: string }[];
   featured: boolean;
+  newArrival: boolean;
+  returnable: boolean;
   isActive: boolean;
   warranty: string;
   weight: string;
@@ -68,6 +77,9 @@ interface FormData {
   tags: string;
   color: string;
   material: string;
+  storage: string;
+  length: string;
+  deliveryDays: string;
 }
 
 interface Category {
@@ -75,6 +87,172 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  subcategories: Subcategory[];
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+  categoryId: string;
+}
+
+// ProductCard Preview Component (matching UI ProductCard exactly)
+function ProductCardPreview({
+  formData,
+  selectedCategory,
+}: {
+  formData: FormData;
+  selectedCategory: Category | null;
+}) {
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const discountPercentage =
+    formData.comparePrice && formData.price
+      ? Math.round(
+          ((parseFloat(formData.comparePrice) - parseFloat(formData.price)) /
+            parseFloat(formData.comparePrice)) *
+            100
+        )
+      : 0;
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWishlisted(!isWishlisted);
+  };
+
+  return (
+    <div className="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 hover:border-white/30 hover:-translate-y-1">
+      {/* Product Image */}
+      <div className="relative aspect-square bg-gradient-to-br from-gray-50/80 to-gray-100/60 backdrop-blur-sm overflow-hidden">
+        {/* Left side badges */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+          {formData.newArrival && (
+            <span className="bg-black text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              NEW
+            </span>
+          )}
+          {formData.featured && (
+            <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              FEATURED
+            </span>
+          )}
+        </div>
+
+        {/* Top right elements */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+          {/* Discount badge */}
+          {discountPercentage > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
+              -{discountPercentage}%
+            </span>
+          )}
+
+          {/* Heart icon */}
+          <button
+            onClick={handleWishlistToggle}
+            className="p-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl border border-white/30 transition-all duration-300 hover:scale-110 hover:bg-white/95 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+            title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            {isWishlisted ? (
+              <HeartIconSolid className="h-3.5 w-3.5 text-red-500" />
+            ) : (
+              <HeartIcon className="h-3.5 w-3.5 text-gray-600 hover:text-red-500" />
+            )}
+          </button>
+        </div>
+
+        {/* Product Image */}
+        <div className="w-full h-full bg-gradient-to-br from-gray-100/80 to-gray-200/60 backdrop-blur-sm flex items-center justify-center group-hover:scale-105 transition-transform duration-700">
+          {formData.imagePreviews.length > 0 ? (
+            <img
+              src={formData.imagePreviews[0]}
+              alt={formData.name || "Product preview"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-center text-gray-400">
+              <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-xl shadow-md mx-auto mb-2 flex items-center justify-center border border-white/20">
+                <div className="w-8 h-8 bg-gray-300/70 rounded-lg"></div>
+              </div>
+              <p className="text-xs font-medium">
+                {selectedCategory?.name || "Product"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Add to Cart - slides up from bottom */}
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+          <button
+            className="w-full bg-black/90 backdrop-blur-md text-white py-2.5 px-3 rounded-lg text-xs font-semibold hover:bg-black/95 transition-all duration-300 flex items-center justify-center border border-white/20 cursor-pointer"
+            disabled
+          >
+            <ShoppingBagIcon className="h-3.5 w-3.5 mr-1.5" />
+            Quick Add
+          </button>
+        </div>
+      </div>
+
+      {/* Product Info */}
+      <div className="p-4">
+        <div className="space-y-1.5">
+          {/* Brand & Name */}
+          <div>
+            {formData.brand && (
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
+                {formData.brand}
+              </p>
+            )}
+            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight">
+              {formData.name || "Untitled Product"}
+            </h3>
+          </div>
+
+          {/* Rating */}
+          <div className="flex items-center space-x-1">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className="h-2.5 w-2.5 fill-gray-200"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs text-gray-400">(0)</span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-base font-bold text-gray-900">
+                {formData.price ? `€${formData.price}` : "€0.00"}
+              </span>
+              {formData.comparePrice &&
+                parseFloat(formData.comparePrice) >
+                  parseFloat(formData.price || "0") && (
+                  <span className="text-sm text-gray-500 line-through">
+                    €{formData.comparePrice}
+                  </span>
+                )}
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            {formData.stock && <span>{formData.stock} in stock</span>}
+            {formData.deliveryDays && (
+              <span>{formData.deliveryDays}d delivery</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function VendorAddProductPage() {
@@ -91,6 +269,7 @@ export default function VendorAddProductPage() {
     name: "",
     brand: "",
     categoryId: "",
+    subcategoryId: "",
     modelNumber: "",
     description: "",
     price: "",
@@ -101,6 +280,8 @@ export default function VendorAddProductPage() {
     imagePreviews: [],
     specifications: [{ key: "", value: "" }],
     featured: false,
+    newArrival: false,
+    returnable: true,
     isActive: true,
     warranty: "2",
     weight: "",
@@ -108,9 +289,15 @@ export default function VendorAddProductPage() {
     tags: "",
     color: "",
     material: "",
+    storage: "",
+    length: "",
+    deliveryDays: "3",
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string>("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -120,18 +307,18 @@ export default function VendorAddProductPage() {
     {
       id: 1,
       name: "Basic Info",
-      description: "Product name, brand, and description",
+      description: "Product name, brand, and category",
     },
-    { id: 2, name: "Pricing", description: "Set price and manage inventory" },
-    { id: 3, name: "Media", description: "Add images and specifications" },
     {
-      id: 4,
-      name: "Settings",
-      description: "Configure visibility and features",
+      id: 2,
+      name: "Details",
+      description: "Description, specifications, and attributes",
     },
+    { id: 3, name: "Pricing", description: "Set price and manage inventory" },
+    { id: 4, name: "Media", description: "Add images and configure settings" },
   ];
 
-  // Load categories
+  // Load categories with subcategories
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
@@ -142,6 +329,22 @@ export default function VendorAddProductPage() {
       })
       .catch((err) => console.error("Error loading categories:", err));
   }, []);
+
+  // Update selected category when categoryId changes
+  useEffect(() => {
+    if (formData.categoryId && categories.length > 0) {
+      const category = categories.find((c) => c.id === formData.categoryId);
+      setSelectedCategory(category || null);
+      // Reset subcategory when category changes
+      if (
+        formData.subcategoryId &&
+        category &&
+        !category.subcategories.find((s) => s.id === formData.subcategoryId)
+      ) {
+        setFormData((prev) => ({ ...prev, subcategoryId: "" }));
+      }
+    }
+  }, [formData.categoryId, categories]);
 
   // Auto-save simulation
   useEffect(() => {
@@ -167,21 +370,27 @@ export default function VendorAddProductPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    if (files.length + formData.images.length > 5) {
+      setErrors({ images: "Maximum 5 images allowed" });
+      return;
+    }
+
+    const newImages = [...formData.images, ...files];
+    const newPreviews = [...formData.imagePreviews];
 
     files.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, file],
-            imagePreviews: [...prev.imagePreviews, result],
-          }));
-        };
-        reader.readAsDataURL(file);
-      }
+      const reader = new FileReader();
+      reader.onload = () => newPreviews.push(reader.result as string);
+      reader.readAsDataURL(file);
     });
+
+    setTimeout(() => {
+      setFormData((prev) => ({
+        ...prev,
+        images: newImages,
+        imagePreviews: newPreviews,
+      }));
+    }, 100);
   };
 
   const removeImage = (index: number) => {
@@ -219,47 +428,39 @@ export default function VendorAddProductPage() {
     }));
   };
 
-  const validateStep = (step: number) => {
-    const newErrors: Record<string, string> = {};
+  const validateCurrentStep = () => {
+    const stepErrors: Record<string, string> = {};
 
-    if (step === 1) {
-      if (!formData.name.trim()) newErrors.name = "Product name is required";
-      if (!formData.brand.trim()) newErrors.brand = "Brand is required";
-      if (!formData.categoryId) newErrors.categoryId = "Category is required";
+    if (currentStep === 1) {
+      if (!formData.name.trim()) stepErrors.name = "Product name is required";
+      if (!formData.categoryId) stepErrors.categoryId = "Category is required";
+      if (!formData.brand.trim()) stepErrors.brand = "Brand is required";
+    } else if (currentStep === 2) {
       if (!formData.description.trim())
-        newErrors.description = "Description is required";
+        stepErrors.description = "Description is required";
+    } else if (currentStep === 3) {
+      if (!formData.price || parseFloat(formData.price) <= 0) {
+        stepErrors.price = "Valid price is required";
+      }
+      if (!formData.stock || parseInt(formData.stock) < 0) {
+        stepErrors.stock = "Valid stock quantity is required";
+      }
     }
 
-    if (step === 2) {
-      if (!formData.price || parseFloat(formData.price) <= 0)
-        newErrors.price = "Valid price is required";
-      if (!formData.stock || parseInt(formData.stock) < 0)
-        newErrors.stock = "Valid stock quantity is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
   };
 
   const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(Math.min(currentStep + 1, steps.length));
+    if (validateCurrentStep() && currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
-    setCurrentStep(Math.max(currentStep - 1, 1));
-  };
-
-  const calculateDiscount = () => {
-    if (formData.price && formData.comparePrice) {
-      const price = parseFloat(formData.price);
-      const comparePrice = parseFloat(formData.comparePrice);
-      if (comparePrice > price) {
-        return Math.round(((comparePrice - price) / comparePrice) * 100);
-      }
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
-    return 0;
   };
 
   const getCompletionPercentage = () => {
@@ -278,22 +479,13 @@ export default function VendorAddProductPage() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(1) || !validateStep(2)) {
-      setCurrentStep(1);
-      return;
-    }
-
-    if (!session?.user) {
-      setApiError("You must be logged in to create products");
-      setShowErrorModal(true);
-      return;
-    }
+    if (!validateCurrentStep()) return;
 
     setIsLoading(true);
     setApiError("");
 
     try {
-      // Simulate image upload
+      // Process images
       const uploadedImageUrls =
         formData.images.length > 0
           ? formData.images.map((img) => `/products/${Date.now()}-${img.name}`)
@@ -319,6 +511,7 @@ export default function VendorAddProductPage() {
         description: formData.description.trim() || undefined,
         brand: formData.brand.trim() || undefined,
         categoryId: formData.categoryId,
+        subcategoryId: formData.subcategoryId || undefined,
         modelNumber: formData.modelNumber.trim() || undefined,
         price: parseFloat(formData.price),
         comparePrice: formData.comparePrice
@@ -332,10 +525,17 @@ export default function VendorAddProductPage() {
             ? specificationsObj
             : undefined,
         featured: formData.featured,
+        newArrival: formData.newArrival,
+        returnable: formData.returnable,
         isActive: formData.isActive,
         warranty: formData.warranty || undefined,
         weight: formData.weight.trim() || undefined,
         dimensions: formData.dimensions.trim() || undefined,
+        storage: formData.storage.trim() || undefined,
+        length: formData.length.trim() || undefined,
+        deliveryDays: formData.deliveryDays
+          ? parseInt(formData.deliveryDays)
+          : undefined,
         tags: tagsArray,
         color: formData.color.trim() || undefined,
         material: formData.material.trim() || undefined,
@@ -354,7 +554,6 @@ export default function VendorAddProductPage() {
       }
 
       setShowSuccessModal(true);
-      // Reset form after successful creation
       setTimeout(() => {
         setShowSuccessModal(false);
         router.push("/vendor/products");
@@ -371,13 +570,13 @@ export default function VendorAddProductPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header with Glassmorphism */}
+    <div className="p-4 space-y-4">
+      {/* Header */}
       <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900">
                 Add New Product
               </h1>
               <p className="text-sm text-gray-600">
@@ -385,8 +584,7 @@ export default function VendorAddProductPage() {
               </p>
             </div>
 
-            {/* Auto-save Status */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <AnimatePresence>
                 {autoSaveStatus !== "idle" && (
                   <motion.div
@@ -413,15 +611,18 @@ export default function VendorAddProductPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+              <Badge
+                variant="secondary"
+                className="bg-blue-50 text-blue-700 text-xs"
+              >
                 {getCompletionPercentage()}% Complete
               </Badge>
             </div>
           </div>
 
-          {/* Progress Bar - Blue Glassmorphism */}
-          <div className="mt-6">
-            <div className="bg-white/30 backdrop-blur-sm rounded-full h-3 overflow-hidden">
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="bg-white/30 backdrop-blur-sm rounded-full h-2 overflow-hidden">
               <motion.div
                 className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
                 initial={{ width: 0 }}
@@ -429,14 +630,14 @@ export default function VendorAddProductPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
               />
             </div>
-            <div className="flex justify-between mt-3">
-              {steps.map((step, index) => (
+            <div className="flex justify-between mt-2">
+              {steps.map((step) => (
                 <Button
                   key={step.id}
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentStep(step.id)}
-                  className={`text-xs ${
+                  className={`text-xs cursor-pointer ${
                     currentStep >= step.id
                       ? "text-blue-600 font-medium"
                       : "text-gray-500"
@@ -453,9 +654,9 @@ export default function VendorAddProductPage() {
       {/* API Error */}
       {apiError && (
         <Card className="bg-red-50/80 backdrop-blur-md border-red-200">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center">
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 mr-2" />
+              <ExclamationTriangleIcon className="w-4 h-4 text-red-600 mr-2" />
               <p className="text-red-600 text-sm font-medium">{apiError}</p>
             </div>
           </CardContent>
@@ -463,119 +664,20 @@ export default function VendorAddProductPage() {
       )}
 
       {/* Main Form */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Preview Sidebar */}
         <Card className="lg:col-span-1 bg-white/70 backdrop-blur-md border border-white/20">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg">Live Preview</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Original ProductCard Live Preview */}
-            <div className="max-w-sm">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                {/* Product Image */}
-                <div className="relative aspect-square bg-gray-100">
-                  {formData.imagePreviews.length > 0 ? (
-                    <img
-                      src={formData.imagePreviews[0]}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PhotoIcon className="w-16 h-16 text-gray-400" />
-                    </div>
-                  )}
-
-                  {/* Featured Badge */}
-                  {formData.featured && (
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-blue-600 text-white text-xs">
-                        Featured
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Discount Badge */}
-                  {calculateDiscount() > 0 && (
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-red-500 text-white text-xs">
-                        -{calculateDiscount()}%
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="p-4">
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate">
-                      {formData.name || "Product Name"}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      {formData.brand || "Brand"}
-                    </p>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-lg font-bold text-blue-600">
-                      {formData.price
-                        ? formatPrice(parseFloat(formData.price))
-                        : "€0.00"}
-                    </span>
-                    {formData.comparePrice && calculateDiscount() > 0 && (
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(parseFloat(formData.comparePrice))}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Category */}
-                  {formData.categoryId && (
-                    <p className="text-xs text-gray-600 mb-3">
-                      {categories.find((c) => c.id === formData.categoryId)
-                        ?.name || "Category"}
-                    </p>
-                  )}
-
-                  {/* Rating Placeholder */}
-                  <div className="flex items-center space-x-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-3 h-3 bg-gray-200 rounded-full"
-                      ></div>
-                    ))}
-                    <span className="text-xs text-gray-500 ml-1">
-                      (0 reviews)
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    <Button
-                      size="sm"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      disabled
-                    >
-                      Add to Cart
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-gray-600 border-gray-200"
-                      disabled
-                    >
-                      Add to Wishlist
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <ProductCardPreview
+              formData={formData}
+              selectedCategory={selectedCategory}
+            />
 
             {/* Stats */}
-            <div className="space-y-3 pt-4 border-t">
+            <div className="space-y-2 pt-3 border-t">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Images</span>
                 <span className="font-medium">
@@ -617,16 +719,18 @@ export default function VendorAddProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Basic Information</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Basic Information</CardTitle>
                     <p className="text-sm text-gray-600">
                       Tell us about your product
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Product Name *</Label>
+                        <Label htmlFor="name" className="text-sm">
+                          Product Name *
+                        </Label>
                         <Input
                           id="name"
                           value={formData.name}
@@ -634,15 +738,17 @@ export default function VendorAddProductPage() {
                             handleInputChange("name", e.target.value)
                           }
                           placeholder="e.g. Wireless Gaming Headset Pro"
-                          className={errors.name ? "border-red-500" : ""}
+                          className={`text-sm ${errors.name ? "border-red-500" : ""}`}
                         />
                         {errors.name && (
-                          <p className="text-red-500 text-sm">{errors.name}</p>
+                          <p className="text-red-500 text-xs">{errors.name}</p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="brand">Brand *</Label>
+                        <Label htmlFor="brand" className="text-sm">
+                          Brand *
+                        </Label>
                         <Input
                           id="brand"
                           value={formData.brand}
@@ -650,15 +756,17 @@ export default function VendorAddProductPage() {
                             handleInputChange("brand", e.target.value)
                           }
                           placeholder="e.g. Sony, Apple, Samsung"
-                          className={errors.brand ? "border-red-500" : ""}
+                          className={`text-sm ${errors.brand ? "border-red-500" : ""}`}
                         />
                         {errors.brand && (
-                          <p className="text-red-500 text-sm">{errors.brand}</p>
+                          <p className="text-red-500 text-xs">{errors.brand}</p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="category">Category *</Label>
+                        <Label htmlFor="category" className="text-sm">
+                          Category *
+                        </Label>
                         <Select
                           value={formData.categoryId || "select"}
                           onValueChange={(value) =>
@@ -669,9 +777,7 @@ export default function VendorAddProductPage() {
                           }
                         >
                           <SelectTrigger
-                            className={
-                              errors.categoryId ? "border-red-500" : ""
-                            }
+                            className={`text-sm ${errors.categoryId ? "border-red-500" : ""}`}
                           >
                             <SelectValue placeholder="Select a category" />
                           </SelectTrigger>
@@ -687,49 +793,71 @@ export default function VendorAddProductPage() {
                           </SelectContent>
                         </Select>
                         {errors.categoryId && (
-                          <p className="text-red-500 text-sm">
+                          <p className="text-red-500 text-xs">
                             {errors.categoryId}
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="modelNumber">Model Number / SKU</Label>
-                        <Input
-                          id="modelNumber"
-                          value={formData.modelNumber}
-                          onChange={(e) =>
-                            handleInputChange("modelNumber", e.target.value)
+                        <Label htmlFor="subcategory" className="text-sm">
+                          Subcategory
+                        </Label>
+                        <Select
+                          value={formData.subcategoryId || "select"}
+                          onValueChange={(value) =>
+                            handleInputChange(
+                              "subcategoryId",
+                              value === "select" ? "" : value
+                            )
                           }
-                          placeholder="e.g. WH-1000XM5"
-                        />
+                          disabled={
+                            !selectedCategory ||
+                            selectedCategory.subcategories.length === 0
+                          }
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Select a subcategory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">
+                              Select a subcategory
+                            </SelectItem>
+                            {selectedCategory?.subcategories.map(
+                              (subcategory) => (
+                                <SelectItem
+                                  key={subcategory.id}
+                                  value={subcategory.id}
+                                >
+                                  {subcategory.name}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description *</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
+                      <Label htmlFor="modelNumber" className="text-sm">
+                        Model Number / SKU
+                      </Label>
+                      <Input
+                        id="modelNumber"
+                        value={formData.modelNumber}
                         onChange={(e) =>
-                          handleInputChange("description", e.target.value)
+                          handleInputChange("modelNumber", e.target.value)
                         }
-                        rows={4}
-                        placeholder="Describe your product features, benefits, and specifications..."
-                        className={errors.description ? "border-red-500" : ""}
+                        placeholder="e.g. WH-1000XM5"
+                        className="text-sm"
                       />
-                      {errors.description && (
-                        <p className="text-red-500 text-sm">
-                          {errors.description}
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
             )}
 
-            {/* Step 2: Pricing & Stock */}
+            {/* Step 2: Details */}
             {currentStep === 2 && (
               <motion.div
                 key="step2"
@@ -739,170 +867,135 @@ export default function VendorAddProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Pricing & Stock</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Product Details</CardTitle>
                     <p className="text-sm text-gray-600">
-                      Set your pricing and inventory levels
+                      Description, specifications, and attributes
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="description" className="text-sm">
+                        Description *
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
+                        rows={4}
+                        placeholder="Describe your product features, benefits, and specifications..."
+                        className={`text-sm ${errors.description ? "border-red-500" : ""}`}
+                      />
+                      {errors.description && (
+                        <p className="text-red-500 text-xs">
+                          {errors.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Physical Attributes */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="price">Price (€) *</Label>
+                        <Label htmlFor="color" className="text-sm">
+                          Color
+                        </Label>
                         <Input
-                          id="price"
-                          type="number"
-                          step="0.01"
-                          value={formData.price}
+                          id="color"
+                          value={formData.color}
                           onChange={(e) =>
-                            handleInputChange("price", e.target.value)
+                            handleInputChange("color", e.target.value)
                           }
-                          placeholder="299.99"
-                          className={errors.price ? "border-red-500" : ""}
+                          placeholder="Black"
+                          className="text-sm"
                         />
-                        {errors.price && (
-                          <p className="text-red-500 text-sm">{errors.price}</p>
-                        )}
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="comparePrice">Compare Price (€)</Label>
+                        <Label htmlFor="material" className="text-sm">
+                          Material
+                        </Label>
                         <Input
-                          id="comparePrice"
-                          type="number"
-                          step="0.01"
-                          value={formData.comparePrice}
+                          id="material"
+                          value={formData.material}
                           onChange={(e) =>
-                            handleInputChange("comparePrice", e.target.value)
+                            handleInputChange("material", e.target.value)
                           }
-                          placeholder="399.99"
+                          placeholder="Aluminum"
+                          className="text-sm"
                         />
-                        <p className="text-xs text-gray-500">
-                          Original price for showing discount
-                        </p>
                       </div>
-
                       <div className="space-y-2">
-                        <Label>Discount</Label>
-                        <div className="px-3 py-2 bg-blue-50 border rounded-md text-sm text-blue-700 font-medium">
-                          {calculateDiscount()}% off
-                        </div>
+                        <Label htmlFor="weight" className="text-sm">
+                          Weight (kg)
+                        </Label>
+                        <Input
+                          id="weight"
+                          value={formData.weight}
+                          onChange={(e) =>
+                            handleInputChange("weight", e.target.value)
+                          }
+                          placeholder="1.5"
+                          className="text-sm"
+                        />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="stock">Stock Quantity *</Label>
+                        <Label htmlFor="dimensions" className="text-sm">
+                          Dimensions (L x W x H cm)
+                        </Label>
                         <Input
-                          id="stock"
-                          type="number"
-                          value={formData.stock}
+                          id="dimensions"
+                          value={formData.dimensions}
                           onChange={(e) =>
-                            handleInputChange("stock", e.target.value)
+                            handleInputChange("dimensions", e.target.value)
                           }
-                          placeholder="50"
-                          className={errors.stock ? "border-red-500" : ""}
+                          placeholder="25 x 15 x 8"
+                          className="text-sm"
                         />
-                        {errors.stock && (
-                          <p className="text-red-500 text-sm">{errors.stock}</p>
-                        )}
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="lowStockAlert">Low Stock Alert</Label>
+                        <Label htmlFor="length" className="text-sm">
+                          Length (if applicable)
+                        </Label>
                         <Input
-                          id="lowStockAlert"
-                          type="number"
-                          value={formData.lowStockAlert}
+                          id="length"
+                          value={formData.length}
                           onChange={(e) =>
-                            handleInputChange("lowStockAlert", e.target.value)
+                            handleInputChange("length", e.target.value)
                           }
-                          placeholder="10"
+                          placeholder="Cable length, etc."
+                          className="text-sm"
                         />
-                        <p className="text-xs text-gray-500">
-                          Alert when stock falls below this number
-                        </p>
                       </div>
                     </div>
 
-                    {calculateDiscount() > 0 && (
-                      <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-center">
-                          <CheckCircleIcon className="w-5 h-5 text-blue-600 mr-2" />
-                          <span className="text-sm font-medium text-blue-800">
-                            {calculateDiscount()}% discount applied - Great for
-                            attracting customers!
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Step 3: Media & Details */}
-            {currentStep === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Media & Details</CardTitle>
-                    <p className="text-sm text-gray-600">
-                      Add images and technical specifications
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Product Images */}
-                    <div className="space-y-4">
-                      <Label>Product Images</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {formData.imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={preview}
-                              alt={`Product ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg border"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                              onClick={() => removeImage(index)}
-                            >
-                              <XMarkIcon className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
-
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
-                          <CloudArrowUpIcon className="w-6 h-6 text-gray-400" />
-                          <span className="text-xs text-gray-500 mt-1">
-                            Add Images
-                          </span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
+                    {/* Storage for electronics */}
+                    <div className="space-y-2">
+                      <Label htmlFor="storage" className="text-sm">
+                        Storage/Memory
+                      </Label>
+                      <Input
+                        id="storage"
+                        value={formData.storage}
+                        onChange={(e) =>
+                          handleInputChange("storage", e.target.value)
+                        }
+                        placeholder="128GB, 16GB RAM, etc."
+                        className="text-sm"
+                      />
                     </div>
 
                     {/* Specifications */}
-                    <div className="space-y-4">
-                      <Label>Technical Specifications</Label>
-                      <div className="space-y-3">
+                    <div className="space-y-3">
+                      <Label className="text-sm">
+                        Technical Specifications
+                      </Label>
+                      <div className="space-y-2">
                         {formData.specifications.map((spec, index) => (
-                          <div key={index} className="grid grid-cols-5 gap-3">
+                          <div key={index} className="grid grid-cols-5 gap-2">
                             <div className="col-span-2">
                               <Input
                                 value={spec.key}
@@ -914,6 +1007,7 @@ export default function VendorAddProductPage() {
                                   )
                                 }
                                 placeholder="Feature name"
+                                className="text-sm"
                               />
                             </div>
                             <div className="col-span-2">
@@ -927,6 +1021,7 @@ export default function VendorAddProductPage() {
                                   )
                                 }
                                 placeholder="Feature value"
+                                className="text-sm"
                               />
                             </div>
                             <Button
@@ -934,9 +1029,9 @@ export default function VendorAddProductPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => removeSpecification(index)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                             >
-                              <XMarkIcon className="w-4 h-4" />
+                              <XMarkIcon className="w-3 h-3" />
                             </Button>
                           </div>
                         ))}
@@ -946,9 +1041,9 @@ export default function VendorAddProductPage() {
                           variant="outline"
                           size="sm"
                           onClick={addSpecification}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
                         >
-                          <PlusIcon className="w-4 h-4 mr-2" />
+                          <PlusIcon className="w-3 h-3 mr-1" />
                           Add Specification
                         </Button>
                       </div>
@@ -958,7 +1053,172 @@ export default function VendorAddProductPage() {
               </motion.div>
             )}
 
-            {/* Step 4: Settings */}
+            {/* Step 3: Pricing & Stock */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="bg-white/70 backdrop-blur-md border border-white/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Pricing & Stock</CardTitle>
+                    <p className="text-sm text-gray-600">
+                      Set your pricing and inventory levels
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="price" className="text-sm">
+                          Price (€) *
+                        </Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={formData.price}
+                          onChange={(e) =>
+                            handleInputChange("price", e.target.value)
+                          }
+                          placeholder="299.99"
+                          className={`text-sm ${errors.price ? "border-red-500" : ""}`}
+                        />
+                        {errors.price && (
+                          <p className="text-red-500 text-xs">{errors.price}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="comparePrice" className="text-sm">
+                          Compare Price (€)
+                        </Label>
+                        <Input
+                          id="comparePrice"
+                          type="number"
+                          step="0.01"
+                          value={formData.comparePrice}
+                          onChange={(e) =>
+                            handleInputChange("comparePrice", e.target.value)
+                          }
+                          placeholder="399.99"
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Original price for showing discount
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm">Discount</Label>
+                        <div className="px-3 py-2 bg-blue-50 border rounded-md text-sm text-blue-700 font-medium">
+                          {formData.comparePrice &&
+                          formData.price &&
+                          parseFloat(formData.comparePrice) >
+                            parseFloat(formData.price)
+                            ? Math.round(
+                                ((parseFloat(formData.comparePrice) -
+                                  parseFloat(formData.price)) /
+                                  parseFloat(formData.comparePrice)) *
+                                  100
+                              )
+                            : 0}
+                          % off
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stock" className="text-sm">
+                          Stock Quantity *
+                        </Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          value={formData.stock}
+                          onChange={(e) =>
+                            handleInputChange("stock", e.target.value)
+                          }
+                          placeholder="50"
+                          className={`text-sm ${errors.stock ? "border-red-500" : ""}`}
+                        />
+                        {errors.stock && (
+                          <p className="text-red-500 text-xs">{errors.stock}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="lowStockAlert" className="text-sm">
+                          Low Stock Alert
+                        </Label>
+                        <Input
+                          id="lowStockAlert"
+                          type="number"
+                          value={formData.lowStockAlert}
+                          onChange={(e) =>
+                            handleInputChange("lowStockAlert", e.target.value)
+                          }
+                          placeholder="10"
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Alert when stock falls below this number
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="warranty" className="text-sm">
+                          Warranty (years)
+                        </Label>
+                        <Select
+                          value={formData.warranty}
+                          onValueChange={(value) =>
+                            handleInputChange("warranty", value)
+                          }
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">No Warranty</SelectItem>
+                            <SelectItem value="1">1 Year</SelectItem>
+                            <SelectItem value="2">2 Years</SelectItem>
+                            <SelectItem value="3">3 Years</SelectItem>
+                            <SelectItem value="5">5 Years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="deliveryDays" className="text-sm">
+                          Delivery Days
+                        </Label>
+                        <Input
+                          id="deliveryDays"
+                          type="number"
+                          value={formData.deliveryDays}
+                          onChange={(e) =>
+                            handleInputChange("deliveryDays", e.target.value)
+                          }
+                          placeholder="3"
+                          className="text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Expected delivery time in days
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Step 4: Media & Settings */}
             {currentStep === 4 && (
               <motion.div
                 key="step4"
@@ -968,17 +1228,59 @@ export default function VendorAddProductPage() {
                 transition={{ duration: 0.2 }}
               >
                 <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-                  <CardHeader>
-                    <CardTitle>Settings & Launch</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Media & Settings</CardTitle>
                     <p className="text-sm text-gray-600">
-                      Configure visibility and additional details
+                      Add images and configure product settings
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Quick Settings with Glass Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <CardContent className="space-y-4">
+                    {/* Product Images */}
+                    <div className="space-y-3">
+                      <Label className="text-sm">Product Images</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {formData.imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-1 -right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer"
+                              onClick={() => removeImage(index)}
+                            >
+                              <XMarkIcon className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+
+                        <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
+                          <CloudArrowUpIcon className="w-5 h-5 text-gray-400" />
+                          <span className="text-xs text-gray-500 mt-1">
+                            Add Images
+                          </span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      {errors.images && (
+                        <p className="text-red-500 text-xs">{errors.images}</p>
+                      )}
+                    </div>
+
+                    {/* Product Settings */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <Label className="text-sm font-medium">
@@ -1001,7 +1303,7 @@ export default function VendorAddProductPage() {
                       </Card>
 
                       <Card className="bg-blue-50/50 backdrop-blur-sm border border-blue-100">
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <Label className="text-sm font-medium">
@@ -1022,88 +1324,71 @@ export default function VendorAddProductPage() {
                           </div>
                         </CardContent>
                       </Card>
-                    </div>
 
-                    {/* Additional Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="color">Color</Label>
-                        <Input
-                          id="color"
-                          value={formData.color}
-                          onChange={(e) =>
-                            handleInputChange("color", e.target.value)
-                          }
-                          placeholder="Black"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="material">Material</Label>
-                        <Input
-                          id="material"
-                          value={formData.material}
-                          onChange={(e) =>
-                            handleInputChange("material", e.target.value)
-                          }
-                          placeholder="Aluminum"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="weight">Weight (kg)</Label>
-                        <Input
-                          id="weight"
-                          value={formData.weight}
-                          onChange={(e) =>
-                            handleInputChange("weight", e.target.value)
-                          }
-                          placeholder="1.5"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="warranty">Warranty (years)</Label>
-                        <Select
-                          value={formData.warranty}
-                          onValueChange={(value) =>
-                            handleInputChange("warranty", value)
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">No Warranty</SelectItem>
-                            <SelectItem value="1">1 Year</SelectItem>
-                            <SelectItem value="2">2 Years</SelectItem>
-                            <SelectItem value="3">3 Years</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Card className="bg-green-50/50 backdrop-blur-sm border border-green-100">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                <SparklesIcon className="w-4 h-4 inline mr-1" />
+                                New Arrival
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formData.newArrival
+                                  ? "Marked as new arrival"
+                                  : "Regular product"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={formData.newArrival}
+                              onCheckedChange={(checked) =>
+                                handleInputChange("newArrival", checked)
+                              }
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-yellow-50/50 backdrop-blur-sm border border-yellow-100">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm font-medium">
+                                Returnable
+                              </Label>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formData.returnable
+                                  ? "Customers can return"
+                                  : "No returns allowed"}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={formData.returnable}
+                              onCheckedChange={(checked) =>
+                                handleInputChange("returnable", checked)
+                              }
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="dimensions">
-                        Dimensions (L x W x H cm)
+                      <Label htmlFor="tags" className="text-sm">
+                        Tags (comma separated)
                       </Label>
-                      <Input
-                        id="dimensions"
-                        value={formData.dimensions}
-                        onChange={(e) =>
-                          handleInputChange("dimensions", e.target.value)
-                        }
-                        placeholder="25 x 15 x 8"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="tags">Tags (comma separated)</Label>
                       <Input
                         id="tags"
                         value={formData.tags}
                         onChange={(e) =>
                           handleInputChange("tags", e.target.value)
                         }
-                        placeholder="wireless, gaming, bluetooth"
+                        placeholder="wireless, gaming, bluetooth, premium"
+                        className="text-sm"
                       />
+                      <p className="text-xs text-gray-500">
+                        Help customers find your product with relevant tags
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1112,41 +1397,44 @@ export default function VendorAddProductPage() {
           </AnimatePresence>
 
           {/* Step Navigation */}
-          <Card className="mt-6 bg-white/70 backdrop-blur-md border border-white/20">
-            <CardContent className="p-4">
+          <Card className="mt-4 bg-white/70 backdrop-blur-md border border-white/20">
+            <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <Button
                   variant="outline"
                   onClick={prevStep}
                   disabled={currentStep === 1}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50 cursor-pointer text-sm"
                 >
-                  <ChevronLeftIcon className="w-4 h-4 mr-2" />
+                  <ChevronLeftIcon className="w-4 h-4 mr-1" />
                   Previous
                 </Button>
 
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-50 text-blue-700 text-xs"
+                >
                   Step {currentStep} of {steps.length}
                 </Badge>
 
                 {currentStep < steps.length ? (
                   <Button
                     onClick={nextStep}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer text-sm"
                   >
                     Next
-                    <ChevronRightIcon className="w-4 h-4 ml-2" />
+                    <ChevronRightIcon className="w-4 h-4 ml-1" />
                   </Button>
                 ) : (
                   <Button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer text-sm"
                   >
                     {isLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Creating Product...
+                        Creating...
                       </>
                     ) : (
                       <>
@@ -1164,13 +1452,13 @@ export default function VendorAddProductPage() {
 
       {/* Bottom Actions */}
       <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-        <CardContent className="p-4">
+        <CardContent className="p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
+            <div className="flex items-center space-x-3">
+              <Button variant="ghost" asChild className="cursor-pointer">
                 <Link
                   href="/vendor/products"
-                  className="text-gray-600 hover:text-gray-800"
+                  className="text-gray-600 hover:text-gray-800 text-sm"
                 >
                   Cancel
                 </Link>
@@ -1187,26 +1475,6 @@ export default function VendorAddProductPage() {
                   ? `"${formData.name.slice(0, 30)}${formData.name.length > 30 ? "..." : ""}"`
                   : "Untitled Product"}
               </span>
-
-              {currentStep === steps.length && (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <CloudArrowUpIcon className="w-4 h-4 mr-2" />
-                      Create Product
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
@@ -1231,7 +1499,7 @@ export default function VendorAddProductPage() {
                 setShowSuccessModal(false);
                 router.push("/vendor/products");
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
             >
               Go to Products
             </Button>
@@ -1256,7 +1524,7 @@ export default function VendorAddProductPage() {
             <Button
               variant="outline"
               onClick={() => setShowErrorModal(false)}
-              className="border-gray-300"
+              className="border-gray-300 cursor-pointer"
             >
               Close
             </Button>
@@ -1266,7 +1534,7 @@ export default function VendorAddProductPage() {
                 handleSubmit();
               }}
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
             >
               Try Again
             </Button>
