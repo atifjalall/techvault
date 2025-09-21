@@ -3,58 +3,76 @@
 import { useState, useEffect } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { formatPrice } from "@/lib/utils";
+import Image from "next/image";
 
 const heroSlides = [
   {
     id: 1,
-    title: "Sound On The Go",
-    subtitle: "Premium audio that moves with your lifestyle",
+    title: "Portable Power",
+    subtitle: "Elevate your tunes anywhere",
     description:
-      "Discover our latest collection of wireless speakers and headphones designed for the modern lifestyle.",
+      "Meet the ThunderBlast Speaker crafted for bold audio, rich bass, and durability. Take your music outdoors or enjoy room filling sound wherever you go.",
     ctaPrimary: "Shop Speakers",
-    ctaSecondary: "Browse All Categories",
-    image: "/api/placeholder/600/400",
+    ctaSecondary: "Browse All Audio",
+    image: "/carousel/speaker.png",
     product: {
       name: "ThunderBlast Speaker",
       price: 729.0,
       originalPrice: 899.0,
-      image: "/api/placeholder/200/200",
+      image: "/carousel/blaster.jpg",
     },
     background: "bg-gradient-to-r from-gray-50 to-gray-100",
   },
   {
     id: 2,
-    title: "Gaming Revolution",
-    subtitle: "Next-level gaming experiences await",
+    title: "Wireless Beats",
+    subtitle: "Long battery, lightweight comfort",
     description:
-      "Immerse yourself in cutting-edge gaming technology with our premium collection.",
-    ctaPrimary: "Shop Gaming",
-    ctaSecondary: "View Consoles",
-    image: "/api/placeholder/600/400",
+      "The Sony WH CH520 delivers up to 50 hours of playtime with sleek wireless design, reliable Bluetooth connection, and balanced sound for daily listening needs.",
+    ctaPrimary: "Shop Headphones",
+    ctaSecondary: "View All Audio",
+    image: "/carousel/sonyheadphonesmodel.png",
     product: {
-      name: "Pro Gaming Headset",
-      price: 299.0,
-      originalPrice: 399.0,
-      image: "/api/placeholder/200/200",
+      name: "Sony WH CH520",
+      price: 69.99,
+      originalPrice: 99.99,
+      image: "/carousel/sonyheadphones.webp",
     },
     background: "bg-gradient-to-r from-blue-50 to-indigo-100",
   },
   {
     id: 3,
-    title: "Work From Anywhere",
-    subtitle: "Professional computing solutions",
+    title: "Flagship Excellence",
+    subtitle: "Innovation in every detail",
     description:
-      "Power up your productivity with our range of laptops and workstation accessories.",
-    ctaPrimary: "Shop Laptops",
-    ctaSecondary: "View Accessories",
-    image: "/api/placeholder/600/400",
+      "Power meets craftsmanship in the HUAWEI Pura 70 Ultra ultra fast display, premium cameras, and a beautiful design for those who demand top tier performance.",
+    ctaPrimary: "Shop Phones",
+    ctaSecondary: "See Smartphones",
+    image: "/carousel/huaweipuramodel.png",
     product: {
-      name: "UltraBook Pro",
-      price: 1299.0,
-      originalPrice: 1499.0,
-      image: "/api/placeholder/200/200",
+      name: "HUAWEI Pura 70 Ultra",
+      price: 859.0,
+      originalPrice: 1_199.0,
+      image: "/carousel/huaweipura70.jpg",
     },
     background: "bg-gradient-to-r from-green-50 to-emerald-100",
+  },
+  {
+    id: 4,
+    title: "Gaming Power",
+    subtitle: "Power & portability in balance",
+    description:
+      "The Razer Blade 16 blends premium build with extreme performance, delivering fast graphics, advanced cooling, and stunning visuals for both gamers and creators.",
+    ctaPrimary: "Shop Laptops",
+    ctaSecondary: "Explore Gaming",
+    image: "/carousel/razerblademodel.png",
+    product: {
+      name: "Razer Blade 16",
+      price: 3_005.94,
+      originalPrice: 3_499.99,
+      image: "/carousel/razerblade16.webp",
+    },
+    background: "bg-gradient-to-r from-purple-50 to-violet-100",
   },
 ];
 
@@ -127,33 +145,42 @@ export default function HeroCarousel() {
             </div>
 
             {/* Right Content - Product Showcase */}
-            <div className="relative flex justify-center items-center">
+            <div className="relative flex justify-center items-center lg:justify-end">
               <div className="relative">
-                {/* Main product image placeholder */}
-                <div className="w-96 h-96 bg-gray-200 rounded-2xl flex items-center justify-center mb-8">
-                  <div className="text-gray-400 text-center">
-                    <div className="w-32 h-32 bg-gray-300 rounded-lg mx-auto mb-4"></div>
-                    <p className="text-xs">Product Image</p>
-                  </div>
+                {/* Main product image */}
+                <div className="w-[450px] h-[450px] lg:w-[550px] lg:h-[550px] relative">
+                  <Image
+                    src={slide.image}
+                    alt={slide.title}
+                    fill
+                    className="object-contain"
+                  />
                 </div>
 
-                {/* Product Info Card */}
-                <div className="absolute bottom-0 right-4 bg-white rounded-lg shadow-xl p-6 max-w-xs">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">
+                {/* Product Info Card - Positioned further right to avoid covering image */}
+                <div className="absolute bottom-8 -right-4 lg:bottom-12 lg:-right-8 bg-white rounded-lg shadow-xl p-4 w-64 z-10 border border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 relative flex-shrink-0">
+                      <Image
+                        src={slide.product.image}
+                        alt={slide.product.name}
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">
                         {slide.product.name}
                       </h3>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-base font-bold text-gray-900">
+                        <span className="text-sm font-bold text-gray-900">
                           {formatPrice(slide.product.price)}
                         </span>
                         <span className="text-xs text-gray-500 line-through">
                           {formatPrice(slide.product.originalPrice)}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">From</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Featured</p>
                     </div>
                   </div>
                 </div>
@@ -186,7 +213,7 @@ export default function HeroCarousel() {
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`transition-all duration-300 rounded-full ${
+            className={`transition-all duration-300 rounded-full cursor-pointer ${
               index === currentSlide
                 ? "w-8 h-2 bg-black"
                 : "w-2 h-2 bg-black/50 hover:bg-black/70"

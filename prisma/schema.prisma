@@ -78,7 +78,10 @@ model User {
   products       Product[]       @relation("VendorProducts")
   transactions   Transaction[]
   vendorSettings VendorSettings?
-  notifications     Notification[] @relation("UserNotifications")
+  notifications  Notification[]  @relation("UserNotifications")
+  
+  // Payment methods
+  savedPaymentMethods SavedPaymentMethod[]
 }
 
 enum Role {
@@ -93,6 +96,37 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Payment Methods Model - ADD THIS
+model SavedPaymentMethod {
+  id            String   @id @default(cuid())
+  userId        String
+  
+  // SAFE DATA ONLY - No sensitive card info stored
+  stripePaymentMethodId String // Stripe's tokenized payment method ID
+  last4Digits   String   // Only last 4 digits for display (e.g., "4242")
+  cardBrand     String   // Visa, Mastercard, Amex, etc.
+  expiryMonth   Int      // For display/validation (1-12)
+  expiryYear    Int      // For display/validation (e.g., 2025)
+  
+  // Billing information (safe to store)
+  billingName   String
+  billingEmail  String?
+  billingAddress Json?   // {street, city, postalCode, country}
+  
+  // Metadata
+  isDefault     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  nickname      String?  // User-friendly name like "Personal Card"
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([stripePaymentMethodId])
 }
 
 // E-commerce Models
@@ -121,15 +155,24 @@ model Subcategory {
   products  Product[] @relation("SubcategoryProducts")
 }
 
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[] // relation back to products
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Product {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
-  slug           String   @unique
+  slug           String    @unique
   description    String?
-  price          Decimal  @db.Decimal(10, 2)
-  comparePrice   Decimal? @db.Decimal(10, 2)
+  price          Decimal   @db.Decimal(10, 2)
+  comparePrice   Decimal?  @db.Decimal(10, 2)
   images         String[]
-  brand          String?
+  brandId        String?
+  brand          Brand?    @relation(fields: [brandId], references: [id])
   modelNumber    String?
   specifications Json?
   stock          Int       @default(0)
@@ -149,23 +192,24 @@ model Product {
   tags           String[]
   color          String?
   material       String?
+  deletedAt      DateTime? // ADD THIS LINE
 
   categoryId    String
   subcategoryId String?
-  vendorId      String?
-
+  vendorId      String
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   category      Category       @relation(fields: [categoryId], references: [id])
   subcategory   Subcategory?   @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
-  vendor        User?          @relation("VendorProducts", fields: [vendorId], references: [id])
+  vendor        User           @relation("VendorProducts", fields: [vendorId], references: [id]) // Make vendorId required
   reviews       Review[]
   cartItems     CartItem[]
   orderItems    OrderItem[]
   wishlistItems WishlistItem[] @relation("ProductWishlistItems")
-  notifications  Notification[] @relation("ProductNotifications")
-  colors ProductColor[]
+  notifications Notification[] @relation("ProductNotifications")
+  colors        ProductColor[]
 }
 
 // New model for product colors
@@ -209,6 +253,7 @@ model WishlistItem {
 
 model Order {
   id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid()) // ADD THIS LINE
   userId          String
   status          OrderStatus @default(PENDING)
   total           Decimal     @db.Decimal(10, 2)

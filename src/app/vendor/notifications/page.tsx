@@ -47,15 +47,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface Notification {
   id: string;
-  type: "order" | "product" | "system" | "payment";
-  title: string;
+  type:
+    | "NEW_ORDER"
+    | "ORDER_UPDATED"
+    | "LOW_STOCK"
+    | "SYSTEM_ALERT"
+    | "NEW_REVIEW";
+  severity: "INFO" | "WARNING" | "CRITICAL";
   message: string;
   isRead: boolean;
   createdAt: string;
   actionUrl?: string;
   orderId?: string;
   productId?: string;
-  priority: "low" | "medium" | "high";
 }
 
 interface NotificationsResponse {
@@ -71,11 +75,11 @@ interface NotificationsResponse {
     totalNotifications: number;
     unreadCount: number;
     todayCount: number;
-    highPriorityCount: number;
+    criticalCount: number;
   };
 }
 
-// Compact Stats Card Component - matching dashboard style
+// Compact Stats Card Component
 function StatCard({
   title,
   value,
@@ -137,18 +141,27 @@ function StatCard({
 // Notification Icon Component
 function NotificationIcon({ type }: { type: string }) {
   const iconConfig = {
-    order: { icon: ShoppingBagIcon, color: "text-blue-600", bg: "bg-blue-50" },
-    product: { icon: CubeIcon, color: "text-orange-600", bg: "bg-orange-50" },
-    payment: {
-      icon: CurrencyEuroIcon,
-      color: "text-green-600",
-      bg: "bg-green-50",
+    NEW_ORDER: {
+      icon: ShoppingBagIcon,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
     },
-    system: { icon: Cog6ToothIcon, color: "text-gray-600", bg: "bg-gray-50" },
+    ORDER_UPDATED: {
+      icon: ShoppingBagIcon,
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    LOW_STOCK: { icon: CubeIcon, color: "text-orange-600", bg: "bg-orange-50" },
+    NEW_REVIEW: { icon: CheckIcon, color: "text-green-600", bg: "bg-green-50" },
+    SYSTEM_ALERT: {
+      icon: Cog6ToothIcon,
+      color: "text-gray-600",
+      bg: "bg-gray-50",
+    },
   };
 
   const config =
-    iconConfig[type as keyof typeof iconConfig] || iconConfig.system;
+    iconConfig[type as keyof typeof iconConfig] || iconConfig.SYSTEM_ALERT;
   const IconComponent = config.icon;
 
   return (
@@ -161,23 +174,23 @@ function NotificationIcon({ type }: { type: string }) {
 }
 
 // Priority Badge Component
-function PriorityBadge({ priority }: { priority: string }) {
+function SeverityBadge({ severity }: { severity: string }) {
   const variants = {
-    high: {
+    CRITICAL: {
       className: "bg-red-100 text-red-700 border-red-200",
-      label: "High",
+      label: "Critical",
     },
-    medium: {
+    WARNING: {
       className: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      label: "Medium",
+      label: "Warning",
     },
-    low: {
+    INFO: {
       className: "bg-gray-100 text-gray-700 border-gray-200",
-      label: "Low",
+      label: "Info",
     },
   };
 
-  const config = variants[priority as keyof typeof variants];
+  const config = variants[severity as keyof typeof variants];
   if (!config) return null;
 
   return (
@@ -187,7 +200,7 @@ function PriorityBadge({ priority }: { priority: string }) {
   );
 }
 
-// Loading Skeletons - matching dashboard style
+// Loading Skeletons
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -251,11 +264,11 @@ export default function VendorNotificationsPage() {
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get("status") || ""
   );
-  const [priorityFilter, setPriorityFilter] = useState(
-    searchParams.get("priority") || ""
+  const [severityFilter, setSeverityFilter] = useState(
+    searchParams.get("severity") || ""
   );
   const [currentPage, setCurrentPage] = useState(
-    parseInt(searchParams.get("page") || "1")
+    Math.max(1, parseInt(searchParams.get("page") || "1"))
   );
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -263,13 +276,13 @@ export default function VendorNotificationsPage() {
     totalNotifications: 0,
     unreadCount: 0,
     todayCount: 0,
-    highPriorityCount: 0,
+    criticalCount: 0,
   });
 
   // Load notifications
   useEffect(() => {
     loadNotifications();
-  }, [currentPage, searchTerm, typeFilter, statusFilter, priorityFilter]);
+  }, [currentPage, searchTerm, typeFilter, statusFilter, severityFilter]);
 
   const loadNotifications = async () => {
     try {
@@ -282,19 +295,29 @@ export default function VendorNotificationsPage() {
       if (searchTerm) params.append("search", searchTerm);
       if (typeFilter) params.append("type", typeFilter);
       if (statusFilter) params.append("status", statusFilter);
-      if (priorityFilter) params.append("priority", priorityFilter);
+      if (severityFilter) params.append("severity", severityFilter);
 
       const response = await fetch(`/api/vendor/notifications?${params}`);
       const data: NotificationsResponse = await response.json();
 
       if (data.success) {
-        setNotifications(data.notifications);
-        setTotalPages(data.pagination.totalPages);
-        setTotalCount(data.pagination.totalCount);
-        setStats(data.stats);
+        setNotifications(
+          Array.isArray(data.notifications) ? data.notifications : []
+        );
+        setTotalPages(Math.max(1, data.pagination?.totalPages || 1));
+        setTotalCount(Math.max(0, data.pagination?.totalCount || 0));
+        setStats({
+          totalNotifications: Math.max(0, data.stats?.totalNotifications || 0),
+          unreadCount: Math.max(0, data.stats?.unreadCount || 0),
+          todayCount: Math.max(0, data.stats?.todayCount || 0),
+          criticalCount: Math.max(0, data.stats?.criticalCount || 0),
+        });
       }
     } catch (error) {
       console.error("Error loading notifications:", error);
+      setNotifications([]);
+      setTotalPages(1);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -310,18 +333,19 @@ export default function VendorNotificationsPage() {
     setSearchTerm("");
     setTypeFilter("");
     setStatusFilter("");
-    setPriorityFilter("");
+    setSeverityFilter("");
     setCurrentPage(1);
   };
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(
-        `/api/vendor/notifications/${notificationId}/read`,
-        {
-          method: "PATCH",
-        }
-      );
+      const response = await fetch("/api/vendor/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notificationId }),
+      });
 
       if (response.ok) {
         setNotifications((prev) =>
@@ -329,6 +353,10 @@ export default function VendorNotificationsPage() {
             notif.id === notificationId ? { ...notif, isRead: true } : notif
           )
         );
+        setStats((prev) => ({
+          ...prev,
+          unreadCount: Math.max(0, prev.unreadCount - 1),
+        }));
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -337,8 +365,12 @@ export default function VendorNotificationsPage() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch("/api/vendor/notifications/mark-all-read", {
+      const response = await fetch("/api/vendor/notifications", {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ markAllRead: true }),
       });
 
       if (response.ok) {
@@ -355,7 +387,7 @@ export default function VendorNotificationsPage() {
   const deleteNotification = async (notificationId: string) => {
     try {
       const response = await fetch(
-        `/api/vendor/notifications/${notificationId}`,
+        `/api/vendor/notifications?id=${notificationId}`,
         {
           method: "DELETE",
         }
@@ -365,7 +397,7 @@ export default function VendorNotificationsPage() {
         setNotifications((prev) =>
           prev.filter((notif) => notif.id !== notificationId)
         );
-        setTotalCount((prev) => prev - 1);
+        setTotalCount((prev) => Math.max(0, prev - 1));
       }
     } catch (error) {
       console.error("Error deleting notification:", error);
@@ -373,31 +405,76 @@ export default function VendorNotificationsPage() {
   };
 
   const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInHours = diffInMs / (1000 * 60 * 60);
-    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
 
-    if (diffInHours < 1) {
-      const minutes = Math.floor(diffInMs / (1000 * 60));
-      return `${minutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else if (diffInDays < 7) {
-      return `${Math.floor(diffInDays)}d ago`;
-    } else {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
+      if (isNaN(date.getTime())) {
+        return "Unknown";
+      }
+
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInHours = diffInMs / (1000 * 60 * 60);
+      const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+      if (diffInHours < 1) {
+        const minutes = Math.floor(diffInMs / (1000 * 60));
+        return `${Math.max(0, minutes)}m ago`;
+      } else if (diffInHours < 24) {
+        return `${Math.floor(diffInHours)}h ago`;
+      } else if (diffInDays < 7) {
+        return `${Math.floor(diffInDays)}d ago`;
+      } else {
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+    } catch (error) {
+      return "Unknown";
     }
   };
+
+  // Safe pagination calculation
+  const generatePaginationNumbers = () => {
+    if (totalPages <= 1) return [];
+
+    const maxPages = Math.min(totalPages, 7);
+    const pages: number[] = [];
+
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else if (currentPage <= 4) {
+      // Show first 7 pages
+      for (let i = 1; i <= 7; i++) {
+        pages.push(i);
+      }
+    } else if (currentPage >= totalPages - 3) {
+      // Show last 7 pages
+      for (let i = Math.max(1, totalPages - 6); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show pages around current page
+      for (let i = currentPage - 3; i <= currentPage + 3; i++) {
+        if (i >= 1 && i <= totalPages) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
+  };
+
+  const paginationNumbers = generatePaginationNumbers();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
       <div className="p-6 space-y-6">
-        {/* Header - matching dashboard style */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
@@ -419,7 +496,7 @@ export default function VendorNotificationsPage() {
           </div>
         </div>
 
-        {/* Stats Grid - matching dashboard style */}
+        {/* Stats Grid */}
         {loading ? (
           <StatsSkeleton />
         ) : (
@@ -454,8 +531,8 @@ export default function VendorNotificationsPage() {
               bgColor="bg-green-50"
             />
             <StatCard
-              title="High Priority"
-              value={stats.highPriorityCount.toString()}
+              title="Critical"
+              value={stats.criticalCount.toString()}
               change={-5.7}
               icon={ExclamationTriangleIcon}
               iconColor="text-red-600"
@@ -464,7 +541,7 @@ export default function VendorNotificationsPage() {
           </motion.div>
         )}
 
-        {/* Filters - compact style */}
+        {/* Filters */}
         <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-4">
             <form onSubmit={handleSearch} className="space-y-4">
@@ -509,10 +586,15 @@ export default function VendorNotificationsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="order">Orders</SelectItem>
-                      <SelectItem value="product">Products</SelectItem>
-                      <SelectItem value="payment">Payments</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
+                      <SelectItem value="NEW_ORDER">New Orders</SelectItem>
+                      <SelectItem value="ORDER_UPDATED">
+                        Order Updates
+                      </SelectItem>
+                      <SelectItem value="LOW_STOCK">Low Stock</SelectItem>
+                      <SelectItem value="NEW_REVIEW">New Reviews</SelectItem>
+                      <SelectItem value="SYSTEM_ALERT">
+                        System Alerts
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -542,28 +624,28 @@ export default function VendorNotificationsPage() {
                   </Select>
                 </div>
 
-                {/* Priority Filter */}
+                {/* Severity Filter */}
                 <div className="space-y-2">
                   <Label
-                    htmlFor="priority"
+                    htmlFor="severity"
                     className="text-xs font-medium text-gray-700"
                   >
-                    Priority
+                    Severity
                   </Label>
                   <Select
-                    value={priorityFilter || "all"}
+                    value={severityFilter || "all"}
                     onValueChange={(value) =>
-                      setPriorityFilter(value === "all" ? "" : value)
+                      setSeverityFilter(value === "all" ? "" : value)
                     }
                   >
                     <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="All Priorities" />
+                      <SelectValue placeholder="All Severities" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="high">High Priority</SelectItem>
-                      <SelectItem value="medium">Medium Priority</SelectItem>
-                      <SelectItem value="low">Low Priority</SelectItem>
+                      <SelectItem value="all">All Severities</SelectItem>
+                      <SelectItem value="CRITICAL">Critical</SelectItem>
+                      <SelectItem value="WARNING">Warning</SelectItem>
+                      <SelectItem value="INFO">Info</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -577,7 +659,7 @@ export default function VendorNotificationsPage() {
                     {(searchTerm ||
                       typeFilter ||
                       statusFilter ||
-                      priorityFilter) && (
+                      severityFilter) && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -641,7 +723,10 @@ export default function VendorNotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
                         <h3 className="text-sm font-medium text-gray-900 truncate">
-                          {notification.title}
+                          {notification.type
+                            .replace(/_/g, " ")
+                            .toLowerCase()
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
                         </h3>
                         {!notification.isRead && (
                           <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
@@ -653,8 +738,10 @@ export default function VendorNotificationsPage() {
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
                         <span>{getTimeAgo(notification.createdAt)}</span>
                         <span>•</span>
-                        <span className="capitalize">{notification.type}</span>
-                        <PriorityBadge priority={notification.priority} />
+                        <span className="capitalize">
+                          {notification.type.replace(/_/g, " ").toLowerCase()}
+                        </span>
+                        <SeverityBadge severity={notification.severity} />
                       </div>
                     </div>
 
@@ -712,11 +799,11 @@ export default function VendorNotificationsPage() {
           </Card>
         )}
 
-        {/* Pagination - compact style */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-700">
-              Showing {(currentPage - 1) * 15 + 1} to{" "}
+              Showing {Math.max(1, (currentPage - 1) * 15 + 1)} to{" "}
               {Math.min(currentPage * 15, totalCount)} of {totalCount}{" "}
               notifications
             </p>
@@ -725,7 +812,7 @@ export default function VendorNotificationsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="h-8 px-3 text-xs cursor-pointer"
               >
@@ -733,42 +820,29 @@ export default function VendorNotificationsPage() {
               </Button>
 
               <div className="flex space-x-1">
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNumber;
-                  if (totalPages <= 7) {
-                    pageNumber = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNumber = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNumber = totalPages - 6 + i;
-                  } else {
-                    pageNumber = currentPage - 3 + i;
-                  }
-
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={
-                        currentPage === pageNumber ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNumber)}
-                      className={`w-8 h-8 text-xs cursor-pointer ${
-                        currentPage === pageNumber
-                          ? "bg-slate-900 hover:bg-slate-800 text-white"
-                          : ""
-                      }`}
-                    >
-                      {pageNumber}
-                    </Button>
-                  );
-                })}
+                {paginationNumbers.map((pageNumber) => (
+                  <Button
+                    key={pageNumber}
+                    variant={currentPage === pageNumber ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`w-8 h-8 text-xs cursor-pointer ${
+                      currentPage === pageNumber
+                        ? "bg-slate-900 hover:bg-slate-800 text-white"
+                        : ""
+                    }`}
+                  >
+                    {pageNumber}
+                  </Button>
+                ))}
               </div>
 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
                 disabled={currentPage === totalPages}
                 className="h-8 px-3 text-xs cursor-pointer"
               >

@@ -1,12 +1,18 @@
 import Link from "next/link";
-
+import Image from "next/image";
+import {
+  DevicePhoneMobileIcon,
+  DeviceTabletIcon,
+  ClockIcon,
+  CubeIcon,
+} from "@heroicons/react/24/outline";
 const featuredCategories = [
   {
     id: 1,
     name: "Gaming",
     description: "Level up your gameplay with premium gaming gear",
     href: "/gaming",
-    image: "/api/placeholder/600/400",
+    image: "/products/gaming.jpg",
     className: "lg:col-span-1 lg:row-span-2",
   },
   {
@@ -14,7 +20,7 @@ const featuredCategories = [
     name: "Audio",
     description: "Premium sound systems and headphones",
     href: "/audio",
-    image: "/api/placeholder/600/300",
+    image: "/products/audio.jpg",
     className: "lg:col-span-1",
   },
   {
@@ -22,7 +28,7 @@ const featuredCategories = [
     name: "Computing",
     description: "Professional laptops and workstation setups",
     href: "/computing",
-    image: "/api/placeholder/600/300",
+    image: "/products/computing.jpg",
     className: "lg:col-span-1",
   },
 ];
@@ -45,8 +51,12 @@ function CategoryCard({ category }: CategoryCardProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-gray-400">
-            <div className="w-32 h-32 bg-gray-600 rounded-lg mx-auto mb-4 opacity-50"></div>
-            <p className="text-sm opacity-50">{category.name} Image</p>
+            <Image
+              src={category.image}
+              alt={category.name}
+              fill
+              className="object-cover rounded-2xl"
+            />
           </div>
         </div>
       </div>
@@ -115,10 +125,14 @@ export default function FeaturedCategories() {
         {/* Additional Categories Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { name: "Smartphones", href: "/smartphones", icon: "📱" },
-            { name: "Tablets", href: "/tablets", icon: "💻" },
-            { name: "Wearables", href: "/wearables", icon: "⌚" },
-            { name: "Accessories", href: "/accessories", icon: "🔌" },
+            {
+              name: "Smartphones",
+              href: "/smartphones",
+              icon: DevicePhoneMobileIcon,
+            },
+            { name: "Tablets", href: "/tablets", icon: DeviceTabletIcon },
+            { name: "Wearables", href: "/wearables", icon: ClockIcon },
+            { name: "Accessories", href: "/accessories", icon: CubeIcon },
           ].map((category) => (
             <Link
               key={category.name}
@@ -126,7 +140,7 @@ export default function FeaturedCategories() {
               className="group bg-white rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-gray-200"
             >
               <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                {category.icon}
+                <category.icon className="h-8 w-8 mx-auto text-gray-600" />
               </div>
               <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-600 transition-colors">
                 {category.name}

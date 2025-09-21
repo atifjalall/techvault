@@ -109,6 +109,23 @@ function StatCard({
   );
 }
 
+// Safe date formatting helper
+function formatOrderDate(dateString: string) {
+  try {
+    if (!dateString) return "Unknown date";
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Unknown date";
+  }
+}
+
 // Recent Orders Component
 function RecentOrders({
   orders,
@@ -148,6 +165,8 @@ function RecentOrders({
   }
 
   const getStatusColor = (status: string) => {
+    if (!status) return "bg-gray-100 text-gray-800";
+
     switch (status.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
@@ -181,7 +200,7 @@ function RecentOrders({
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-3">
-          {orders.length === 0 ? (
+          {!orders || orders.length === 0 ? (
             <div className="text-center py-6">
               <ShoppingBagIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
               <p className="text-xs text-gray-500">No recent orders</p>
@@ -196,24 +215,24 @@ function RecentOrders({
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     <p className="text-xs font-medium text-gray-900">
-                      #{order.orderNumber}
+                      #{order.orderNumber || "Unknown"}
                     </p>
                     <Badge
                       className={`text-xs px-2 py-0.5 ${getStatusColor(order.status)}`}
                     >
-                      {order.status}
+                      {order.status || "Unknown"}
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-600">{order.customerName}</p>
+                  <p className="text-xs text-gray-600">
+                    {order.customerName || "Unknown Customer"}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(order.createdAt), {
-                      addSuffix: true,
-                    })}
+                    {formatOrderDate(order.createdAt)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-gray-900">
-                    €{order.total.toFixed(2)}
+                    €{(order.total || 0).toFixed(2)}
                   </p>
                   <ChevronRightIcon className="h-3 w-3 text-gray-400 ml-auto" />
                 </div>
@@ -264,7 +283,7 @@ function TopProducts({
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-3">
-          {products.length === 0 ? (
+          {!products || products.length === 0 ? (
             <div className="text-center py-6">
               <CubeIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
               <p className="text-xs text-gray-500">No products yet</p>
@@ -278,16 +297,16 @@ function TopProducts({
               >
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-gray-900 flex-1 truncate">
-                    #{index + 1} {product.name}
+                    #{index + 1} {product.name || "Unknown Product"}
                   </p>
                   <p className="text-xs font-semibold text-gray-900">
-                    €{product.price}
+                    €{(product.price || 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>{product.sold} sold</span>
+                  <span>{product.sold || 0} sold</span>
                   <span className="font-medium text-green-600">
-                    €{product.revenue.toFixed(0)} revenue
+                    €{(product.revenue || 0).toFixed(0)} revenue
                   </span>
                 </div>
               </motion.div>
@@ -406,16 +425,38 @@ export default function VendorDashboard() {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const response = await fetch("/api/vendor/dashboard");
 
         if (!response.ok) {
-          throw new Error("Failed to fetch dashboard data");
+          throw new Error(
+            `HTTP ${response.status}: Failed to fetch dashboard data`
+          );
         }
 
         const result = await response.json();
 
         if (result.success) {
-          setData(result.data);
+          // Validate and set data with fallbacks
+          setData({
+            stats: {
+              totalRevenue: Number(result.data?.stats?.totalRevenue) || 0,
+              totalOrders: Number(result.data?.stats?.totalOrders) || 0,
+              totalProducts: Number(result.data?.stats?.totalProducts) || 0,
+              productViews: Number(result.data?.stats?.productViews) || 0,
+              revenueChange: Number(result.data?.stats?.revenueChange) || 0,
+              ordersChange: Number(result.data?.stats?.ordersChange) || 0,
+              productsChange: Number(result.data?.stats?.productsChange) || 0,
+              viewsChange: Number(result.data?.stats?.viewsChange) || 0,
+            },
+            recentOrders: Array.isArray(result.data?.recentOrders)
+              ? result.data.recentOrders
+              : [],
+            topProducts: Array.isArray(result.data?.topProducts)
+              ? result.data.topProducts
+              : [],
+          });
         } else {
           throw new Error(result.error || "Failed to load dashboard data");
         }
@@ -426,19 +467,26 @@ export default function VendorDashboard() {
             ? error.message
             : "An unexpected error occurred"
         );
+        setData(null);
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboardData();
-  }, []);
+    if (session?.user) {
+      loadDashboardData();
+    }
+  }, [session]);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      return "00:00";
+    }
   };
 
   if (error) {

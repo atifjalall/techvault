@@ -12,11 +12,14 @@ export default function PromoBar() {
 
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="relative overflow-hidden bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 h-16"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{
+        duration: 0.4,
+        ease: "easeOut",
+      }}
+      className="relative overflow-hidden bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 py-1.5"
     >
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-20">
@@ -38,13 +41,17 @@ export default function PromoBar() {
       </div>
 
       {/* Main content */}
-      <div className="relative w-full h-full">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-full flex items-center justify-center">
+      <div className="relative w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.1,
+              ease: "easeOut",
+            }}
             className="flex items-center justify-center space-x-2"
           >
             {/* Icon */}
@@ -60,12 +67,14 @@ export default function PromoBar() {
               }}
               className="flex-shrink-0"
             >
-              <FireIcon className="h-5 w-5 text-white" />
+              <FireIcon className="h-4 w-4 text-white" />
             </motion.div>
 
             {/* Text content */}
             <div className="flex items-center space-x-2 text-white">
-              <span className="text-sm font-medium">Winter Sale: Up to</span>
+              <span className="text-[11px] font-medium">
+                Winter Sale: Up to
+              </span>
 
               {/* Highlighted text */}
               <motion.span
@@ -77,20 +86,23 @@ export default function PromoBar() {
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
-                className="text-sm font-bold text-white bg-white/20 px-3 py-1 flex items-center justify-center rounded-full border border-white/30 backdrop-blur-sm"
+                className="text-[11px] font-bold text-white bg-white/20 px-2 py-0.5 flex items-center justify-center rounded-full border border-white/30 backdrop-blur-sm"
               >
                 50% OFF
               </motion.span>
 
-              <span className="text-sm font-medium">Electronics</span>
+              <span className="text-[11px] font-medium">Electronics</span>
             </div>
 
             {/* CTA Button (identical pill style) */}
-            <Link href="/sale" className="group relative flex items-center">
+            <Link
+              href="/products?onlyOnSale=true"
+              className="group relative flex items-center"
+            >
               <motion.span
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="text-sm font-bold text-white bg-white/20 px-3 py-1 flex items-center justify-center rounded-full border border-white/30 backdrop-blur-sm cursor-pointer"
+                className="text-[11px] font-bold text-white bg-white/20 px-2 py-0.5 flex items-center justify-center rounded-full border border-white/30 backdrop-blur-sm cursor-pointer"
               >
                 Shop Now
               </motion.span>
@@ -100,7 +112,7 @@ export default function PromoBar() {
           {/* Close button */}
           <motion.button
             onClick={() => setIsVisible(false)}
-            className="absolute right-3 text-white/80 hover:text-white transition-colors cursor-pointer"
+            className="absolute right-4 text-white/80 hover:text-white transition-colors cursor-pointer"
             aria-label="Close promotion banner"
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import {
@@ -21,128 +21,323 @@ import {
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
-
-// Mock cart items (replace with actual cart state management)
-const mockCartItems = [
-  {
-    id: 1,
-    name: "Wireless Gaming Headset Pro",
-    brand: "AudioTech",
-    price: 189.99,
-    originalPrice: 249.99,
-    image: "/api/placeholder/300/300",
-    quantity: 2,
-    variant: "Black",
-    inStock: true,
-    isWishlisted: true,
-  },
-  {
-    id: 2,
-    name: 'UltraSlim Laptop 15"',
-    brand: "TechFlow",
-    price: 1299.99,
-    originalPrice: 1499.99,
-    image: "/api/placeholder/300/300",
-    quantity: 1,
-    variant: "Space Gray, 512GB",
-    inStock: true,
-    isWishlisted: false,
-  },
-  {
-    id: 3,
-    name: "Smart Fitness Watch",
-    brand: "HealthTech",
-    price: 299.99,
-    originalPrice: 399.99,
-    image: "/api/placeholder/300/300",
-    quantity: 1,
-    variant: "Blue",
-    inStock: false,
-    isWishlisted: false,
-  },
-];
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface CartItem {
-  id: number;
+  id: string;
+  productId: string;
   name: string;
-  brand: string;
+  brand?: string;
   price: number;
   originalPrice?: number;
   image: string;
   quantity: number;
-  variant?: string;
-  inStock: boolean;
-  isWishlisted?: boolean;
+  stock: number;
+  slug: string;
+  category: string;
+  dateAdded: string;
+}
+
+interface CartData {
+  items: CartItem[];
+  count: number;
+  subtotal: number;
+}
+
+// Loading Skeleton Component
+function CartSkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-4">
+        {[...Array(3)].map((_, index) => (
+          <div
+            key={index}
+            className="backdrop-blur-xl bg-white/70 border border-white/50 rounded-2xl p-4"
+          >
+            <div className="flex gap-3">
+              <div className="w-16 h-16 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="lg:col-span-1">
+        <div className="backdrop-blur-xl bg-white/70 border border-white/50 rounded-2xl p-4">
+          <div className="space-y-3">
+            <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(mockCartItems);
-  const [isLoading, setIsLoading] = useState<number | null>(null);
+  const { data: session } = useSession();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const [cartData, setCartData] = useState<CartData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
 
-  // Calculate totals (only for in-stock items)
-  const inStockItems = cartItems.filter((item) => item.inStock);
-  const subtotal = inStockItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const savings = inStockItems.reduce((sum, item) => {
-    if (item.originalPrice) {
-      return sum + (item.originalPrice - item.price) * item.quantity;
+  // Fetch cart data
+  const fetchCart = async () => {
+    if (!session?.user) {
+      setCartData({ items: [], count: 0, subtotal: 0 });
+      setLoading(false);
+      return;
     }
-    return sum;
-  }, 0);
-  const shipping = subtotal > 50 ? 0 : 9.99;
-  const tax = subtotal * 0.19; // 19% VAT for Germany
-  const total = subtotal + shipping + tax;
 
-  const outOfStockItems = cartItems.filter((item) => !item.inStock);
+    try {
+      const response = await fetch("/api/cart");
+      if (response.ok) {
+        const data = await response.json();
+        setCartData(data);
+        setError(null);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to fetch cart");
+      }
+    } catch (err) {
+      setError("Failed to fetch cart");
+      console.error("Cart fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const updateQuantity = (id: number, newQuantity: number) => {
+  // Load cart on component mount and session change
+  useEffect(() => {
+    fetchCart();
+  }, [session]);
+
+  // Listen for cart update events from other components
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCart();
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
+  }, []);
+
+  const updateQuantity = async (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
 
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+    setUpdatingItems((prev) => new Set(prev).add(productId));
+
+    try {
+      const response = await fetch("/api/cart", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId,
+          quantity: newQuantity,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchCart(); // Refresh cart data
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to update quantity");
+      }
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+      alert("Failed to update quantity");
+    } finally {
+      setUpdatingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
   };
 
-  const toggleWishlist = (id: number) => {
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, isWishlisted: !item.isWishlisted } : item
-      )
-    );
+  const handleWishlistToggle = async (productId: string) => {
+    try {
+      await toggleWishlist(productId);
+    } catch (error) {
+      console.error("Failed to update wishlist:", error);
+      alert("Failed to update wishlist");
+    }
   };
 
-  const removeItem = (id: number) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
+  const removeItem = async (productId: string) => {
+    setUpdatingItems((prev) => new Set(prev).add(productId));
+
+    try {
+      const response = await fetch("/api/cart", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productId }),
+      });
+
+      if (response.ok) {
+        await fetchCart(); // Refresh cart data
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to remove item");
+      }
+    } catch (error) {
+      console.error("Error removing item:", error);
+      alert("Failed to remove item");
+    } finally {
+      setUpdatingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
   };
 
   const handleCheckout = () => {
+    if (!session?.user) {
+      window.location.href = "/signin";
+      return;
+    }
+
+    const outOfStockItems =
+      cartData?.items.filter((item) => item.stock <= 0) || [];
+
     if (outOfStockItems.length > 0) {
       setShowOutOfStockModal(true);
     } else {
-      // Proceed to checkout
       window.location.href = "/checkout";
     }
   };
 
-  const handleRemoveOutOfStockItems = () => {
-    setCartItems((items) => items.filter((item) => item.inStock));
-    setShowOutOfStockModal(false);
-    // Proceed to checkout after removing items
-    setTimeout(() => {
-      window.location.href = "/checkout";
-    }, 300);
+  const handleRemoveOutOfStockItems = async () => {
+    const outOfStockItems =
+      cartData?.items.filter((item) => item.stock <= 0) || [];
+
+    try {
+      // Remove all out of stock items
+      const promises = outOfStockItems.map((item) =>
+        fetch("/api/cart", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ productId: item.productId }),
+        })
+      );
+
+      await Promise.all(promises);
+      await fetchCart(); // Refresh cart
+      setShowOutOfStockModal(false);
+
+      // Proceed to checkout after a brief delay
+      setTimeout(() => {
+        window.location.href = "/checkout";
+      }, 300);
+    } catch (error) {
+      console.error("Error removing out of stock items:", error);
+      alert("Failed to remove out of stock items");
+    }
   };
 
-  if (cartItems.length === 0) {
+  // Show sign-in prompt for non-authenticated users
+  if (!session?.user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
         <Navbar />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <div className="w-12 h-12 backdrop-blur-xl bg-white/70 border border-white/50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingBagIcon className="w-6 h-6 text-slate-400" />
+            </div>
+            <h1 className="text-base font-semibold text-slate-900 mb-1">
+              Sign in to view your cart
+            </h1>
+            <p className="text-sm text-slate-500 mb-4">
+              Create an account or sign in to save items in your cart.
+            </p>
+            <Link
+              href="/signin"
+              className="inline-flex items-center px-4 py-2.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              Sign In
+            </Link>
+          </motion.div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <Navbar />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <div className="h-6 bg-gray-200 rounded w-48 mb-3 animate-pulse"></div>
+            <div className="h-5 bg-gray-200 rounded w-32 mb-1 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+          </div>
+          <CartSkeleton />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <div className="w-12 h-12 backdrop-blur-xl bg-red-50/70 border border-red-200/50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />
+            </div>
+            <h1 className="text-base font-semibold text-slate-900 mb-1">
+              Error loading cart
+            </h1>
+            <p className="text-sm text-slate-500 mb-4">{error}</p>
+            <button
+              onClick={fetchCart}
+              className="inline-flex items-center px-4 py-2.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show empty cart
+  if (!cartData || cartData.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <Navbar />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -159,18 +354,35 @@ export default function CartPage() {
               Discover our latest tech and add items to your cart.
             </p>
             <Link
-              href="/"
-              className="inline-flex items-center px-4 py-2.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors"
+              href="/products"
+              className="inline-flex items-center px-4 py-2.5 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Continue Shopping
             </Link>
           </motion.div>
         </div>
-
         <Footer />
       </div>
     );
   }
+
+  // Calculate totals
+  const inStockItems = cartData.items.filter((item) => item.stock > 0);
+  const subtotal = inStockItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const savings = inStockItems.reduce((sum, item) => {
+    if (item.originalPrice) {
+      return sum + (item.originalPrice - item.price) * item.quantity;
+    }
+    return sum;
+  }, 0);
+  const shipping = subtotal > 50 ? 0 : 9.99;
+  const tax = subtotal * 0.19; // 19% VAT for Germany
+  const total = subtotal + shipping + tax;
+
+  const outOfStockItems = cartData.items.filter((item) => item.stock <= 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -180,8 +392,8 @@ export default function CartPage() {
         {/* Header */}
         <div className="mb-6">
           <Link
-            href="/"
-            className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors mb-3 text-sm group"
+            href="/products"
+            className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors mb-3 text-sm group cursor-pointer"
           >
             <ArrowLeftIcon className="w-4 h-4 mr-1.5 group-hover:-translate-x-0.5 transition-transform" />
             Continue Shopping
@@ -190,7 +402,8 @@ export default function CartPage() {
             Shopping Cart
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
+            {cartData.items.length}{" "}
+            {cartData.items.length === 1 ? "item" : "items"}
           </p>
         </div>
 
@@ -199,7 +412,7 @@ export default function CartPage() {
           <div className="lg:col-span-2">
             <div className="space-y-4">
               <AnimatePresence>
-                {cartItems.map((item) => (
+                {cartData.items.map((item) => (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, scale: 0.98, y: 10 }}
@@ -211,47 +424,68 @@ export default function CartPage() {
                   >
                     <div className="flex gap-3">
                       {/* Product Image */}
-                      <div className="flex-shrink-0 w-16 h-16 bg-slate-100 rounded-lg overflow-hidden">
-                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                          <div className="w-8 h-8 bg-slate-300 rounded"></div>
+                      <Link
+                        href={`/products/${item.slug}`}
+                        className="flex-shrink-0"
+                      >
+                        <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                              <span className="text-xs font-bold text-slate-400">
+                                {item.name.substring(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      </Link>
 
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h3 className="font-medium text-slate-900 text-sm leading-tight">
-                              {item.name}
-                            </h3>
-                            <p className="text-slate-600 text-xs">
-                              {item.brand}
-                            </p>
-                            {item.variant && (
-                              <p className="text-slate-500 text-xs mt-0.5">
-                                {item.variant}
+                            <Link href={`/products/${item.slug}`}>
+                              <h3 className="font-medium text-slate-900 text-sm leading-tight hover:text-slate-700 transition-colors">
+                                {item.name}
+                              </h3>
+                            </Link>
+                            {item.brand && (
+                              <p className="text-slate-600 text-xs">
+                                {item.brand}
                               </p>
                             )}
+                            <p className="text-slate-500 text-xs mt-0.5">
+                              {item.category}
+                            </p>
                           </div>
 
                           <div className="flex items-center gap-1">
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => toggleWishlist(item.id)}
-                              className="p-1 hover:bg-white/50 rounded-lg transition-colors"
+                              onClick={() =>
+                                handleWishlistToggle(item.productId)
+                              }
+                              className="p-1 hover:bg-white/50 rounded-lg transition-colors cursor-pointer"
                               title={
-                                item.isWishlisted
+                                isInWishlist(item.productId)
                                   ? "Remove from wishlist"
                                   : "Add to wishlist"
                               }
                             >
                               <motion.div
                                 initial={{ scale: 1 }}
-                                animate={{ scale: item.isWishlisted ? 1.1 : 1 }}
+                                animate={{
+                                  scale: isInWishlist(item.productId) ? 1.1 : 1,
+                                }}
                                 transition={{ duration: 0.15 }}
                               >
-                                {item.isWishlisted ? (
+                                {isInWishlist(item.productId) ? (
                                   <HeartIconSolid className="w-3.5 h-3.5 text-red-500" />
                                 ) : (
                                   <HeartIcon className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
@@ -261,11 +495,15 @@ export default function CartPage() {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              onClick={() => removeItem(item.id)}
-                              disabled={isLoading === item.id}
-                              className="p-1 hover:bg-red-50 rounded-lg transition-colors text-slate-400 hover:text-red-500"
+                              onClick={() => removeItem(item.productId)}
+                              disabled={updatingItems.has(item.productId)}
+                              className="p-1 hover:bg-red-50 rounded-lg transition-colors text-slate-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
                             >
-                              <TrashIcon className="w-3.5 h-3.5" />
+                              {updatingItems.has(item.productId) ? (
+                                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <TrashIcon className="w-3.5 h-3.5" />
+                              )}
                             </motion.button>
                           </div>
                         </div>
@@ -273,12 +511,12 @@ export default function CartPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {/* Stock Status */}
-                            {item.inStock ? (
+                            {item.stock > 0 ? (
                               <span className="text-emerald-600 text-xs font-medium">
-                                In Stock
+                                In Stock ({item.stock} left)
                               </span>
                             ) : (
-                              <span className="text-slate-600 text-xs font-medium">
+                              <span className="text-red-600 text-xs font-medium">
                                 Out of Stock
                               </span>
                             )}
@@ -289,24 +527,40 @@ export default function CartPage() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() =>
-                                  updateQuantity(item.id, item.quantity - 1)
+                                  updateQuantity(
+                                    item.productId,
+                                    item.quantity - 1
+                                  )
                                 }
-                                disabled={item.quantity <= 1}
-                                className="p-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg"
+                                disabled={
+                                  item.quantity <= 1 ||
+                                  updatingItems.has(item.productId)
+                                }
+                                className="p-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-lg cursor-pointer"
                               >
                                 <MinusIcon className="w-3 h-3" />
                               </motion.button>
                               <div className="px-2.5 py-1.5 text-xs font-medium min-w-[2rem] text-center bg-white/20">
-                                {item.quantity}
+                                {updatingItems.has(item.productId) ? (
+                                  <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                                ) : (
+                                  item.quantity
+                                )}
                               </div>
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() =>
-                                  updateQuantity(item.id, item.quantity + 1)
+                                  updateQuantity(
+                                    item.productId,
+                                    item.quantity + 1
+                                  )
                                 }
-                                disabled={!item.inStock}
-                                className="p-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-lg"
+                                disabled={
+                                  item.stock <= item.quantity ||
+                                  updatingItems.has(item.productId)
+                                }
+                                className="p-1.5 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-lg cursor-pointer"
                               >
                                 <PlusIcon className="w-3 h-3" />
                               </motion.button>
@@ -423,9 +677,12 @@ export default function CartPage() {
               {/* Checkout Button */}
               <button
                 onClick={handleCheckout}
-                className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-lg text-xs font-medium hover:bg-slate-800 transition-colors mb-3 shadow-lg hover:shadow-xl cursor-pointer"
+                disabled={inStockItems.length === 0}
+                className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-lg text-xs font-medium hover:bg-slate-800 transition-colors mb-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                Proceed to Checkout
+                {inStockItems.length === 0
+                  ? "No items available"
+                  : "Proceed to Checkout"}
               </button>
 
               {/* Trust Indicators */}
@@ -512,13 +769,13 @@ export default function CartPage() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowOutOfStockModal(false)}
-                      className="flex-1 px-4 py-2.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                      className="flex-1 px-4 py-2.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleRemoveOutOfStockItems}
-                      className="flex-1 px-4 py-2.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
+                      className="flex-1 px-4 py-2.5 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                     >
                       Remove & Checkout
                     </button>
