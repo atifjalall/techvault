@@ -16,7 +16,6 @@ import {
   CreditCardIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-import Navbar from "@/components/layout/Navbar";
 import { Suspense } from "react";
 
 function CheckoutSuccessPageSkeleton() {
@@ -130,6 +129,17 @@ function CheckoutSuccessPageContent() {
     }
   }, [orderData]);
 
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Don't render content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("de-DE", {
       style: "currency",
@@ -158,7 +168,6 @@ function CheckoutSuccessPageContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center">
@@ -175,7 +184,6 @@ function CheckoutSuccessPageContent() {
   if (error || !orderData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <motion.div
@@ -213,8 +221,6 @@ function CheckoutSuccessPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      <Navbar />
-
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">

@@ -1,7 +1,11 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import Navbar from "@/components/layout/Navbar";
+import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,10 +17,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "TechVault - Premium Electronics Store",
-  description: "Discover the latest in premium electronics and tech essentials",
-};
+// Pages where Navbar should be hidden
+const hideNavbarRoutes = [
+  "/signin",
+  "/signup",
+  "/forgot-password",
+  "/vendor", // Vendor pages have their own layout
+];
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  // Check if current route should hide navbar
+  const shouldHideNavbar = hideNavbarRoutes.some(
+    (route) =>
+      pathname === route ||
+      (route === "/vendor" && pathname.startsWith("/vendor"))
+  );
+
+  return (
+    <>
+      {!shouldHideNavbar && <Navbar />}
+      {children}
+    </>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -28,7 +53,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </SessionProvider>
       </body>
     </html>
   );

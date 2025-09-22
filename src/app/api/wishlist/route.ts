@@ -15,6 +15,10 @@ export async function GET() {
       );
     }
 
+    if (session.user.role === "VENDOR") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
     // Get user
     const user = await db.user.findUnique({
       where: { email: session.user.email },
@@ -100,6 +104,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (session.user.role === "VENDOR") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
     const { productId } = await request.json();
 
     if (!productId) {
@@ -178,6 +186,10 @@ export async function DELETE(request: NextRequest) {
         { error: "Authentication required" },
         { status: 401 }
       );
+    }
+
+    if (session.user.role === "VENDOR") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const { productId } = await request.json();

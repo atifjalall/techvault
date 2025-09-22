@@ -650,16 +650,6 @@ export default function VendorTopBar({
                 <div className="p-1">
                   <DropdownMenuItem asChild>
                     <Link
-                      href="/"
-                      className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
-                    >
-                      <HomeIcon className="h-3 w-3 mr-2 text-gray-400" />
-                      Visit Store
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem asChild>
-                    <Link
                       href="/vendor/settings"
                       className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
                     >

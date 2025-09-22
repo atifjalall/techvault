@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   EyeIcon,
@@ -30,8 +30,29 @@ interface FormErrors {
   submit?: string;
 }
 
+// -----------------------------
+// Loading Component
+// -----------------------------
+function LoadingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+      <motion.div
+        className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-xs text-slate-600">Loading...</p>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function SignUpPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,23 +73,13 @@ export default function SignUpPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+  // Redirect authenticated users away from signup page
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/");
     }
+  }, [status, session, router]);
 
-    if (errors.submit) {
-      setErrors((prev) => ({ ...prev, submit: "" }));
-    }
-  };
-
-  // Email availability check with debounce
   useEffect(() => {
     const checkEmailAvailability = async () => {
       if (!formData.email || formData.email.length < 5) {
@@ -87,7 +98,7 @@ export default function SignUpPage() {
         const response = await fetch("/api/auth/check-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: formData.email }),
+          body: JSON.stringify({ email: formData.email.trim() }),
         });
 
         const data = await response.json();
@@ -103,6 +114,31 @@ export default function SignUpPage() {
     const debounceTimer = setTimeout(checkEmailAvailability, 800);
     return () => clearTimeout(debounceTimer);
   }, [formData.email]);
+
+  // Don't render signup form if user is already authenticated
+  if (status === "loading") {
+    return <LoadingPage />;
+  }
+
+  if (status === "authenticated") {
+    return null; // Don't render anything while redirecting
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+
+    if (errors.submit) {
+      setErrors((prev) => ({ ...prev, submit: "" }));
+    }
+  };
 
   const validatePassword = (password: string): PasswordStrength => {
     let score = 0;
@@ -135,36 +171,48 @@ export default function SignUpPage() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
+    // First name validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
     } else if (formData.firstName.trim().length < 2) {
       newErrors.firstName = "First name must be at least 2 characters";
+    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.firstName.trim())) {
+      newErrors.firstName = "First name contains invalid characters";
     }
 
+    // Last name validation
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Last name is required";
     } else if (formData.lastName.trim().length < 2) {
       newErrors.lastName = "Last name must be at least 2 characters";
+    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.lastName.trim())) {
+      newErrors.lastName = "Last name contains invalid characters";
     }
 
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = "Please enter a valid email address";
     } else if (emailAvailable === false) {
       newErrors.email = "This email is already registered";
     }
 
+    // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (passwordStrength.score < 3) {
       newErrors.password = "Password is too weak";
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
+    // Terms agreement validation
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the Terms and Conditions";
     }
@@ -182,10 +230,16 @@ export default function SignUpPage() {
     setErrors({});
 
     try {
+      // Step 1: Create the account
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
+        }),
       });
 
       const data = await response.json();
@@ -194,12 +248,26 @@ export default function SignUpPage() {
         throw new Error(data.error || "Signup failed");
       }
 
-      setSubmitSuccess(true);
+      // Step 2: Automatically sign in the user
+      const signInResult = await signIn("credentials", {
+        email: formData.email.trim(),
+        password: formData.password,
+        redirect: false,
+      });
 
-      setTimeout(() => {
+      if (signInResult?.error) {
+        // Account was created but signin failed, redirect to signin page
         router.push(
           "/signin?message=Account created successfully! Please sign in."
         );
+        return;
+      }
+
+      // Step 3: Show success and redirect to homepage
+      setSubmitSuccess(true);
+
+      setTimeout(() => {
+        router.push("/"); // Redirect to homepage instead of signin
       }, 2000);
     } catch (error) {
       console.error("Signup error:", error);
@@ -340,7 +408,7 @@ export default function SignUpPage() {
                 className="mb-4 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3"
               >
                 <div className="flex items-center">
-                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2" />
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
                   <p className="text-xs text-red-700 font-medium">
                     {errors.submit}
                   </p>
@@ -415,6 +483,7 @@ export default function SignUpPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             onSubmit={handleSubmit}
             className="space-y-4"
+            noValidate
           >
             {/* Name Fields */}
             <motion.div
@@ -662,7 +731,7 @@ export default function SignUpPage() {
                               transition={{ delay: index * 0.1 }}
                               className="flex items-center text-xs text-slate-500"
                             >
-                              <XMarkIcon className="h-3 w-3 text-red-400 mr-1" />
+                              <XMarkIcon className="h-3 w-3 text-red-400 mr-1 flex-shrink-0" />
                               {item}
                             </motion.div>
                           ))}

@@ -18,7 +18,6 @@ import {
   PlusIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import Navbar from "@/components/layout/Navbar";
 import { formatPrice } from "@/lib/utils";
 
 // Initialize Stripe
@@ -209,11 +208,21 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Don't render content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
+
   // Show loading state
   if (status === "loading" || (status === "authenticated" && cartLoading)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center">
@@ -230,7 +239,6 @@ export default function CheckoutPage() {
   if (authError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <motion.div
@@ -270,7 +278,6 @@ export default function CheckoutPage() {
   if (cartError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <motion.div
@@ -308,7 +315,6 @@ export default function CheckoutPage() {
   if (!cartData || cartData.items.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Navbar />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <motion.div
@@ -567,8 +573,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      <Navbar />
-
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div

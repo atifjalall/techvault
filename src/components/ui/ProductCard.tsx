@@ -22,10 +22,10 @@ export interface Product {
   category?: string;
   rating?: number;
   reviewCount?: number;
-  slug?: string;
+  slug: string;
   description?: string;
-  stock?: number; // Added stock field
-  isActive?: boolean; // Added active status
+  stock?: number;
+  isActive?: boolean;
 }
 
 interface ProductCardProps {

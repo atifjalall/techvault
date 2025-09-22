@@ -40,6 +40,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate name fields
+    if (firstName.trim().length < 2) {
+      return NextResponse.json(
+        { error: "First name must be at least 2 characters long" },
+        { status: 400 }
+      );
+    }
+
+    if (lastName.trim().length < 2) {
+      return NextResponse.json(
+        { error: "Last name must be at least 2 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Validate name characters (only letters, spaces, hyphens, apostrophes)
+    const nameRegex = /^[a-zA-Z\s'-]+$/;
+    if (!nameRegex.test(firstName.trim())) {
+      return NextResponse.json(
+        { error: "First name contains invalid characters" },
+        { status: 400 }
+      );
+    }
+
+    if (!nameRegex.test(lastName.trim())) {
+      return NextResponse.json(
+        { error: "Last name contains invalid characters" },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -62,13 +93,14 @@ export async function POST(request: NextRequest) {
     // Create user
     const newUser = await db.user.create({
       data: {
-        name: `${firstName} ${lastName}`,
-        email: email.toLowerCase(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         image: randomAvatar,
-        isVerified: false, // Email verification required
+        isVerified: false, // Keep email verification for tomorrow
         // Set deletion date for unverified accounts (7 days from now)
         deleteAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        role: "CUSTOMER", // Default role
       },
     });
 
@@ -79,6 +111,7 @@ export async function POST(request: NextRequest) {
       {
         message: "Account created successfully",
         user: userWithoutPassword,
+        shouldAutoSignIn: true, // Flag for client to auto-signin
       },
       { status: 201 }
     );
@@ -90,6 +123,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
         { status: 409 }
+      );
+    }
+
+    // Handle Prisma validation errors
+    if (error instanceof Error && error.message.includes("Argument")) {
+      return NextResponse.json(
+        { error: "Invalid data provided. Please check your input." },
+        { status: 400 }
+      );
+    }
+
+    // Handle database connection errors
+    if (error instanceof Error && error.message.includes("connect")) {
+      return NextResponse.json(
+        { error: "Database connection failed. Please try again later." },
+        { status: 503 }
       );
     }
 

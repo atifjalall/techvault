@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -14,10 +15,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/components/ui/Button";
 
 // -----------------------------
+// Loading Component
+// -----------------------------
+function LoadingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+      <motion.div
+        className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-xs text-slate-600">Loading...</p>
+      </motion.div>
+    </div>
+  );
+}
+
+// -----------------------------
 // Sign In Form Component
 // -----------------------------
 function SignInForm() {
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -31,14 +54,31 @@ function SignInForm() {
     rememberMe: false,
   });
 
+  // Redirect authenticated users away from signin page
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/");
+    }
+  }, [status, session, router]);
+
   // Show message if redirected from signup or reset password
   useEffect(() => {
     const message = searchParams.get("message");
     if (message) {
       setSuccessMessage(message);
-      setTimeout(() => setSuccessMessage(null), 5000);
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
     }
   }, [searchParams]);
+
+  // Don't render signin form if user is already authenticated
+  if (status === "loading") {
+    return <LoadingPage />;
+  }
+
+  if (status === "authenticated") {
+    return null; // Don't render anything while redirecting
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -50,22 +90,60 @@ function SignInForm() {
     if (error) setError(null);
   };
 
+  const validateForm = () => {
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+
+    if (!formData.password) {
+      setError("Password is required");
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await signIn("credentials", {
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
-        redirect: false,
+        redirect: false, // Keep this false for custom handling
       });
 
       if (result?.error) {
         setError("Invalid email or password");
       } else if (result?.ok) {
-        window.location.href = "/";
+        // ADD THIS: Get fresh session to check role
+        const response = await fetch("/api/auth/session");
+        const sessionData = await response.json();
+
+        if (sessionData?.user?.role === "VENDOR") {
+          // Redirect vendors to dashboard
+          window.location.href = "/vendor/dashboard";
+        } else {
+          // Redirect customers to home or callback URL
+          const callbackUrl = searchParams.get("callbackUrl") || "/";
+          window.location.href = callbackUrl;
+        }
       }
     } catch (err) {
       console.error("Sign in error:", err);
@@ -80,7 +158,23 @@ function SignInForm() {
     setError(null);
 
     try {
-      await signIn("google", { callbackUrl: "/" });
+      // Let Google sign-in complete, then check role
+      const result = await signIn("google", {
+        redirect: false,
+      });
+
+      if (result?.ok) {
+        // Get session to check role
+        const response = await fetch("/api/auth/session");
+        const sessionData = await response.json();
+
+        if (sessionData?.user?.role === "VENDOR") {
+          window.location.href = "/vendor/dashboard";
+        } else {
+          const callbackUrl = searchParams.get("callbackUrl") || "/";
+          window.location.href = callbackUrl;
+        }
+      }
     } catch (err) {
       console.error("Google sign in error:", err);
       setError("Google sign in failed. Please try again.");
@@ -137,7 +231,7 @@ function SignInForm() {
               className="bg-emerald-50/80 backdrop-blur-sm border border-emerald-200/50 rounded-xl p-3 mb-6"
             >
               <div className="flex items-center">
-                <CheckIcon className="w-4 h-4 text-emerald-500 mr-2" />
+                <CheckIcon className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" />
                 <p className="text-xs text-emerald-700 font-medium">
                   {successMessage}
                 </p>
@@ -164,7 +258,7 @@ function SignInForm() {
                 className="mb-4 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3"
               >
                 <div className="flex items-center">
-                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2" />
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
                   <p className="text-xs text-red-700 font-medium">{error}</p>
                 </div>
               </motion.div>
@@ -231,7 +325,7 @@ function SignInForm() {
           </div>
 
           {/* Email + Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Email */}
             <motion.div
               initial={{ x: -10, opacity: 0 }}
@@ -295,7 +389,7 @@ function SignInForm() {
                 />
                 <motion.button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -451,7 +545,7 @@ function SignInForm() {
 // -----------------------------
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<LoadingPage />}>
       <SignInForm />
     </Suspense>
   );

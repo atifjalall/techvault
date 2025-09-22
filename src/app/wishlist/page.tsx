@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   HeartIcon,
   ShoppingBagIcon,
@@ -14,7 +16,6 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -115,6 +116,7 @@ function WishlistSkeleton() {
 }
 
 export default function WishlistPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
   const {
     items: wishlistItems,
@@ -126,6 +128,16 @@ export default function WishlistPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
 
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Don't render content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
   // Get unique categories from actual data
   const categories = [
     "all",
@@ -239,7 +251,6 @@ export default function WishlistPage() {
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <div className="h-6 bg-gray-200 rounded w-48 mb-3 animate-pulse"></div>
@@ -257,7 +268,6 @@ export default function WishlistPage() {
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -290,7 +300,6 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div className="h-6 bg-gray-200 rounded w-48 mb-4 animate-pulse"></div>
@@ -308,7 +317,6 @@ export default function WishlistPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -339,7 +347,6 @@ export default function WishlistPage() {
   if (wishlistItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -370,8 +377,6 @@ export default function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

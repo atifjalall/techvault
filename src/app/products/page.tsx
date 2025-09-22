@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { useSession } from "next-auth/react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -17,7 +18,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import ProductCard, {
   Product as ProductCardType,
 } from "@/components/ui/ProductCard";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/buttonSidebar";
 
@@ -455,9 +455,6 @@ function ProductsPageSkeleton() {
   );
 }
 
-// Transform database product to ProductCard format
-// Transform database product to ProductCard format
-// Transform database product to ProductCard format
 function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
   const avgRating =
     dbProduct.reviews.length > 0
@@ -471,7 +468,7 @@ function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
     brand: dbProduct.brand?.name,
     price: dbProduct.price,
     originalPrice: dbProduct.comparePrice,
-    image: dbProduct.images[0] || "",
+    image: dbProduct.images[0] || "/api/placeholder/400/400",
     images: dbProduct.images,
     variants:
       dbProduct.images.length > 1
@@ -483,7 +480,7 @@ function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
     rating: avgRating > 0 ? avgRating : undefined,
     reviewCount:
       dbProduct._count.reviews > 0 ? dbProduct._count.reviews : undefined,
-    slug: dbProduct.slug,
+    slug: dbProduct.slug, // Ensure this is always present
     description: dbProduct.description,
     stock: dbProduct.stock,
     isActive: dbProduct.isActive,
@@ -493,7 +490,7 @@ function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
 function ProductsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const { data: session, status } = useSession();
   // State
   const [products, setProducts] = useState<DatabaseProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -512,6 +509,11 @@ function ProductsPageContent() {
   const [minRating, setMinRating] = useState(0);
   const [onlyInStock, setOnlyInStock] = useState(false);
 
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
   // Initialize filters from URL params
   useEffect(() => {
     const category = searchParams.get("category");
@@ -859,8 +861,6 @@ function ProductsPageContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
-
         {/* Header Skeleton */}
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
@@ -905,10 +905,22 @@ function ProductsPageContent() {
     );
   }
 
+  // Loading state
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Don't render content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       {/* Header with smooth entrance */}
       <motion.div
         className="relative overflow-hidden"

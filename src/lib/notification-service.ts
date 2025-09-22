@@ -40,7 +40,6 @@ export class NotificationService {
           order: {
             select: {
               id: true,
-              orderNumber: true,
               status: true,
             },
           },
@@ -54,7 +53,9 @@ export class NotificationService {
     }
   }
 
-  // Create notifications for new orders
+  // ============ VENDOR NOTIFICATIONS ============
+
+  // Create notifications for new orders (vendor-focused)
   static async createOrderNotifications(orderId: string) {
     try {
       if (!orderId) {
@@ -222,7 +223,7 @@ export class NotificationService {
     }
   }
 
-  // Create order update notifications
+  // Create order update notifications for vendors
   static async createOrderUpdateNotification(
     orderId: string,
     newStatus: string
@@ -342,6 +343,329 @@ export class NotificationService {
       throw error;
     }
   }
+
+  // ============ CUSTOMER NOTIFICATIONS ============
+
+  // Create customer order confirmation notification
+  static async createCustomerOrderConfirmation(
+    orderId: string,
+    customerId: string
+  ) {
+    try {
+      if (!orderId || !customerId) {
+        throw new Error("Order ID and customer ID are required");
+      }
+
+      const order = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            take: 3,
+            include: {
+              product: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      const itemCount = order.items.length;
+      const firstItem = order.items[0]?.product?.name || "items";
+      const orderRef = order.id.slice(-8).toUpperCase();
+
+      let message = `Order #${orderRef} confirmed! `;
+      if (itemCount === 1) {
+        message += `Your ${firstItem} will be processed shortly.`;
+      } else {
+        message += `Your ${itemCount} items including ${firstItem} will be processed shortly.`;
+      }
+
+      return await this.createNotification({
+        userId: customerId,
+        type: NotificationType.ORDER_CONFIRMED,
+        severity: NotificationSeverity.INFO,
+        message,
+        orderId: order.id,
+      });
+    } catch (error) {
+      console.error("Error creating customer order confirmation:", error);
+      throw error;
+    }
+  }
+
+  // Create customer order status update notification
+  static async createCustomerOrderStatusUpdate(
+    orderId: string,
+    customerId: string,
+    status: string
+  ) {
+    try {
+      if (!orderId || !customerId || !status) {
+        throw new Error("Order ID, customer ID and status are required");
+      }
+
+      const orderRef = orderId.slice(-8).toUpperCase();
+
+      const statusMessages: Record<
+        string,
+        {
+          type: NotificationType;
+          message: string;
+          severity?: NotificationSeverity;
+        }
+      > = {
+        PROCESSING: {
+          type: NotificationType.ORDER_PROCESSING,
+          message: `Order #${orderRef} is now being processed. We'll pack your items soon!`,
+        },
+        PACKED: {
+          type: NotificationType.ORDER_PACKED,
+          message: `Order #${orderRef} has been packed and is ready for shipment.`,
+        },
+        SHIPPED: {
+          type: NotificationType.ORDER_SHIPPED,
+          message: `Order #${orderRef} has been shipped! Track your package for delivery updates.`,
+        },
+        OUT_FOR_DELIVERY: {
+          type: NotificationType.ORDER_OUT_FOR_DELIVERY,
+          message: `Order #${orderRef} is out for delivery! It should arrive today.`,
+          severity: NotificationSeverity.WARNING,
+        },
+        DELIVERED: {
+          type: NotificationType.ORDER_DELIVERED,
+          message: `Order #${orderRef} has been delivered! We hope you love your purchase.`,
+          severity: NotificationSeverity.INFO,
+        },
+        CANCELLED: {
+          type: NotificationType.ORDER_CANCELLED,
+          message: `Order #${orderRef} has been cancelled. If you didn't request this, please contact support.`,
+          severity: NotificationSeverity.WARNING,
+        },
+      };
+
+      const statusInfo = statusMessages[status.toUpperCase()];
+      if (!statusInfo) {
+        return await this.createNotification({
+          userId: customerId,
+          type: NotificationType.ORDER_UPDATED,
+          severity: NotificationSeverity.INFO,
+          message: `Order #${orderRef} status updated to ${status}.`,
+          orderId,
+        });
+      }
+
+      return await this.createNotification({
+        userId: customerId,
+        type: statusInfo.type,
+        severity: statusInfo.severity || NotificationSeverity.INFO,
+        message: statusInfo.message,
+        orderId,
+      });
+    } catch (error) {
+      console.error("Error creating customer order status update:", error);
+      throw error;
+    }
+  }
+
+  // Create payment notification
+  static async createPaymentNotification(
+    customerId: string,
+    orderId: string,
+    type: "processed" | "failed" | "refunded"
+  ) {
+    try {
+      if (!customerId || !orderId || !type) {
+        throw new Error("Customer ID, order ID and type are required");
+      }
+
+      const orderRef = orderId.slice(-8).toUpperCase();
+
+      const paymentMessages = {
+        processed: {
+          type: NotificationType.PAYMENT_PROCESSED,
+          message: `Payment for order #${orderRef} processed successfully.`,
+          severity: NotificationSeverity.INFO,
+        },
+        failed: {
+          type: NotificationType.PAYMENT_FAILED,
+          message: `Payment for order #${orderRef} failed. Please update your payment method.`,
+          severity: NotificationSeverity.CRITICAL,
+        },
+        refunded: {
+          type: NotificationType.PAYMENT_REFUNDED,
+          message: `Refund for order #${orderRef} has been processed to your original payment method.`,
+          severity: NotificationSeverity.INFO,
+        },
+      };
+
+      const paymentInfo = paymentMessages[type];
+
+      return await this.createNotification({
+        userId: customerId,
+        type: paymentInfo.type,
+        severity: paymentInfo.severity,
+        message: paymentInfo.message,
+        orderId,
+      });
+    } catch (error) {
+      console.error("Error creating payment notification:", error);
+      throw error;
+    }
+  }
+
+  // Create wishlist notifications
+  static async createWishlistNotification(
+    customerId: string,
+    productId: string,
+    type: "back_in_stock" | "price_drop" | "low_stock"
+  ) {
+    try {
+      if (!customerId || !productId || !type) {
+        throw new Error("Customer ID, product ID and type are required");
+      }
+
+      const product = await db.product.findUnique({
+        where: { id: productId },
+        select: {
+          name: true,
+          price: true,
+          stock: true,
+        },
+      });
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      const wishlistMessages = {
+        back_in_stock: {
+          type: NotificationType.WISHLIST_ITEM_BACK_IN_STOCK,
+          message: `Good news! ${product.name} is back in stock. Order now before it sells out again!`,
+          severity: NotificationSeverity.INFO,
+        },
+        price_drop: {
+          type: NotificationType.WISHLIST_ITEM_PRICE_DROP,
+          message: `Price drop alert! ${product.name} is now available for €${product.price}.`,
+          severity: NotificationSeverity.INFO,
+        },
+        low_stock: {
+          type: NotificationType.WISHLIST_ITEM_LOW_STOCK,
+          message: `Hurry! Only ${product.stock} left of ${product.name} in your wishlist.`,
+          severity: NotificationSeverity.WARNING,
+        },
+      };
+
+      const wishlistInfo = wishlistMessages[type];
+
+      return await this.createNotification({
+        userId: customerId,
+        type: wishlistInfo.type,
+        severity: wishlistInfo.severity,
+        message: wishlistInfo.message,
+        productId,
+      });
+    } catch (error) {
+      console.error("Error creating wishlist notification:", error);
+      throw error;
+    }
+  }
+
+  // Create promotional notification
+  static async createPromotionalNotification(
+    customerId: string,
+    type:
+      | "flash_sale"
+      | "discount_expiring"
+      | "birthday_offer"
+      | "loyalty_reward",
+    message: string,
+    productId?: string
+  ) {
+    try {
+      if (!customerId || !type || !message) {
+        throw new Error("Customer ID, type and message are required");
+      }
+
+      const promotionalTypes = {
+        flash_sale: NotificationType.FLASH_SALE_ALERT,
+        discount_expiring: NotificationType.DISCOUNT_EXPIRING,
+        birthday_offer: NotificationType.BIRTHDAY_OFFER,
+        loyalty_reward: NotificationType.LOYALTY_REWARD,
+      };
+
+      return await this.createNotification({
+        userId: customerId,
+        type: promotionalTypes[type],
+        severity: NotificationSeverity.INFO,
+        message,
+        productId,
+      });
+    } catch (error) {
+      console.error("Error creating promotional notification:", error);
+      throw error;
+    }
+  }
+
+  // Create security notification
+  static async createSecurityNotification(
+    customerId: string,
+    type:
+      | "password_changed"
+      | "email_changed"
+      | "suspicious_login"
+      | "account_locked",
+    additionalInfo?: string
+  ) {
+    try {
+      if (!customerId || !type) {
+        throw new Error("Customer ID and type are required");
+      }
+
+      const securityMessages = {
+        password_changed: {
+          type: NotificationType.PASSWORD_CHANGED,
+          message: `Your password was changed successfully. If this wasn't you, contact support immediately.`,
+          severity: NotificationSeverity.INFO,
+        },
+        email_changed: {
+          type: NotificationType.EMAIL_CHANGED,
+          message: `Your email address was updated. If this wasn't you, contact support immediately.`,
+          severity: NotificationSeverity.INFO,
+        },
+        suspicious_login: {
+          type: NotificationType.LOGIN_SUSPICIOUS,
+          message: `Suspicious login detected from ${additionalInfo || "unknown location"}. Review your account security.`,
+          severity: NotificationSeverity.WARNING,
+        },
+        account_locked: {
+          type: NotificationType.ACCOUNT_LOCKED,
+          message: `Your account has been temporarily locked due to suspicious activity. Contact support to unlock.`,
+          severity: NotificationSeverity.CRITICAL,
+        },
+      };
+
+      const securityInfo = securityMessages[type];
+
+      return await this.createNotification({
+        userId: customerId,
+        type: securityInfo.type,
+        severity: securityInfo.severity,
+        message: securityInfo.message,
+      });
+    } catch (error) {
+      console.error("Error creating security notification:", error);
+      throw error;
+    }
+  }
+
+  // ============ UTILITY METHODS ============
 
   // Cleanup old notifications
   static async cleanupOldNotifications(daysToKeep: number = 30) {

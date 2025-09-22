@@ -19,7 +19,7 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
-// GET /api/orders - Get user's orders
+// GET /api/orders - Get user's orders with enhanced tracking info
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,6 +29,10 @@ export async function GET(request: NextRequest) {
         { error: "Authentication required" },
         { status: 401 }
       );
+    }
+
+    if (session.user.role === "VENDOR") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -46,13 +50,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Build where clause
+    // Build where clause with status mapping
     const where: any = { userId: user.id };
     if (status && status !== "all") {
-      where.status = status.toUpperCase();
+      // Map simplified customer statuses to database statuses
+      switch (status.toLowerCase()) {
+        case "pending":
+          where.status = { in: ["PENDING", "PAYMENT_PENDING", "CONFIRMED"] };
+          break;
+        case "processing":
+          where.status = { in: ["PROCESSING", "PACKAGING", "READY_TO_SHIP"] };
+          break;
+        case "shipped":
+          where.status = { in: ["SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY"] };
+          break;
+        case "delivered":
+          where.status = { in: ["DELIVERED", "COMPLETED"] };
+          break;
+        case "cancelled":
+          where.status = { in: ["CANCELLED", "REFUNDED", "RETURNED"] };
+          break;
+        default:
+          where.status = status.toUpperCase();
+      }
     }
 
-    // Get orders with pagination
+    // Get orders with pagination and enhanced tracking info
     const [orders, totalCount] = await Promise.all([
       db.order.findMany({
         where,
@@ -68,6 +91,17 @@ export async function GET(request: NextRequest) {
                   brand: {
                     select: { name: true },
                   },
+                  vendor: {
+                    select: {
+                      id: true,
+                      name: true,
+                      vendorSettings: {
+                        select: {
+                          storeName: true,
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -80,27 +114,69 @@ export async function GET(request: NextRequest) {
       db.order.count({ where }),
     ]);
 
-    // Transform orders
-    const transformedOrders = orders.map((order) => ({
-      id: order.id,
-      status: order.status,
-      total: Number(order.total),
-      shippingAddress: order.shippingAddress,
-      paymentIntentId: order.paymentIntentId,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      items: order.items.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        name: item.product.name,
-        brand: item.product.brand?.name,
-        image: item.product.images[0] || "",
-        slug: item.product.slug,
-        quantity: item.quantity,
-        price: Number(item.price),
-      })),
-      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    }));
+    // Transform orders with enhanced tracking information
+    const transformedOrders = orders.map((order) => {
+      const subtotal = order.subtotal
+        ? Number(order.subtotal)
+        : order.items.reduce(
+            (sum, item) => sum + Number(item.price) * item.quantity,
+            0
+          );
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        total: Number(order.total),
+
+        // Enhanced tracking info
+        trackingNumber: order.trackingNumber,
+        shippingCarrier: order.shippingCarrier,
+        estimatedDelivery: order.estimatedDelivery,
+        shippedAt: order.shippedAt,
+        deliveredAt: order.deliveredAt,
+
+        // Payment info
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        priority: order.priority,
+
+        // Addresses
+        shippingAddress: order.shippingAddress,
+        billingAddress: order.billingAddress,
+        paymentIntentId: order.paymentIntentId,
+
+        // Timestamps
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+
+        // Items with vendor info
+        items: order.items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          name: item.product.name,
+          brand: item.product.brand?.name,
+          image: item.product.images[0] || "",
+          slug: item.product.slug,
+          quantity: item.quantity,
+          price: Number(item.price),
+          vendor: {
+            name:
+              item.product.vendor?.vendorSettings?.storeName ||
+              item.product.vendor?.name ||
+              "TechVault",
+          },
+        })),
+
+        // Summary info
+        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        vendorCount: new Set(order.items.map((item) => item.product.vendor?.id))
+          .size,
+
+        // Delivery estimate
+        deliveryEstimate: getQuickDeliveryEstimate(order),
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -121,7 +197,67 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/orders - Create new order
+// Helper function for quick delivery estimates in list view
+function getQuickDeliveryEstimate(order: any) {
+  const now = new Date();
+
+  if (order.deliveredAt) {
+    return {
+      status: "delivered",
+      message: "Delivered",
+    };
+  }
+
+  if (order.estimatedDelivery) {
+    const estimatedDate = new Date(order.estimatedDelivery);
+    const diffDays = Math.ceil(
+      (estimatedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diffDays <= 0) {
+      return {
+        status: "today",
+        message: "Expected today",
+      };
+    } else if (diffDays === 1) {
+      return {
+        status: "tomorrow",
+        message: "Expected tomorrow",
+      };
+    } else {
+      return {
+        status: "scheduled",
+        message: `Expected in ${diffDays} days`,
+      };
+    }
+  }
+
+  // Default based on status
+  switch (order.status) {
+    case "PENDING":
+    case "CONFIRMED":
+      return { status: "processing", message: "Being processed" };
+    case "PROCESSING":
+    case "PACKAGING":
+      return { status: "processing", message: "Preparing for shipment" };
+    case "SHIPPED":
+    case "IN_TRANSIT":
+      return {
+        status: "shipped",
+        message: order.shippingCarrier
+          ? `In transit via ${order.shippingCarrier}`
+          : "In transit",
+      };
+    case "OUT_FOR_DELIVERY":
+      return { status: "today", message: "Out for delivery" };
+    case "CANCELLED":
+      return { status: "cancelled", message: "Cancelled" };
+    default:
+      return { status: "unknown", message: "Processing" };
+  }
+}
+
+// POST /api/orders - Create new order with correct payment status
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -131,6 +267,10 @@ export async function POST(request: NextRequest) {
         { error: "Authentication required" },
         { status: 401 }
       );
+    }
+
+    if (session.user.role === "VENDOR") {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const {
@@ -253,6 +393,7 @@ export async function POST(request: NextRequest) {
     }
 
     let paymentIntentId: string | null = null;
+    let paymentSuccessful = false;
 
     // Process payment with Stripe
     try {
@@ -286,7 +427,7 @@ export async function POST(request: NextRequest) {
           amount: Math.round(total * 100), // Convert to cents
           currency: "eur",
           payment_method: paymentMethod.stripePaymentMethodId,
-          customer: customerId, // Include customer ID
+          customer: customerId,
           confirm: true,
           automatic_payment_methods: {
             enabled: true,
@@ -308,9 +449,11 @@ export async function POST(request: NextRequest) {
         }
 
         paymentIntentId = paymentIntent.id;
+        paymentSuccessful = true;
       } else {
         // Mock payment for development
         paymentIntentId = `pi_mock_${Date.now()}`;
+        paymentSuccessful = true;
       }
     } catch (stripeError: any) {
       console.error("Stripe payment error:", stripeError);
@@ -320,16 +463,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Only create order if payment was successful
+    if (!paymentSuccessful) {
+      return NextResponse.json(
+        { error: "Payment was not completed successfully" },
+        { status: 400 }
+      );
+    }
+
     // Create order in database transaction
     const order = await db.$transaction(async (tx) => {
-      // Create order
+      // Create order with CONFIRMED status and COMPLETED payment status
       const newOrder = await tx.order.create({
         data: {
           userId: user.id,
-          status: "PROCESSING",
+          status: "CONFIRMED", // Order is confirmed since payment succeeded
           total,
+          subtotal, // Add subtotal
+          taxAmount: tax, // Add tax amount
+          shippingCost: shipping, // Add shipping cost
           shippingAddress,
           paymentIntentId,
+          paymentStatus: "COMPLETED", // Payment is completed since we only reach here if payment succeeded
+          paymentMethod: paymentMethod.cardBrand || "Card",
           items: {
             create: orderItems,
           },
@@ -345,6 +501,16 @@ export async function POST(request: NextRequest) {
               },
             },
           },
+        },
+      });
+
+      // Create initial status history entry
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: newOrder.id,
+          status: "CONFIRMED",
+          notes: "Order confirmed and payment completed successfully",
+          changedBy: "System",
         },
       });
 
@@ -422,9 +588,9 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           orderId: newOrder.id,
-          type: "ORDER_UPDATED",
+          type: "ORDER_CONFIRMED",
           severity: "INFO",
-          message: `Order confirmed! Your order #${newOrder.id.slice(-8).toUpperCase()} has been placed successfully. Total: ${formatPrice(total)}`,
+          message: `Order confirmed! Your order #${newOrder.orderNumber?.slice(-8).toUpperCase() || newOrder.id.slice(-8).toUpperCase()} has been placed successfully. Payment completed. Total: ${formatPrice(total)}`,
         },
       });
 
@@ -456,16 +622,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trigger cart update event
-    // In a real app, you might want to send webhooks or notifications here
-
     // Transform order response
     const transformedOrder = {
       id: order.id,
+      orderNumber: order.orderNumber,
       status: order.status,
       total: Number(order.total),
       shippingAddress: order.shippingAddress,
       paymentIntentId: order.paymentIntentId,
+      paymentStatus: "COMPLETED", // Always completed if we reach here
       createdAt: order.createdAt,
       items: order.items.map((item) => ({
         id: item.id,

@@ -64,6 +64,19 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Handle role-based redirects after sign in
+      if (url.startsWith("/api/auth/signin") || url.startsWith("/signin")) {
+        // Let client-side handle the redirect based on role
+        return baseUrl;
+      }
+
+      // Default redirect behavior
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
+
     async jwt({ token, user, account }) {
       if (user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

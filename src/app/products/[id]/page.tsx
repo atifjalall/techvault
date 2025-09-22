@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import {
   StarIcon,
   HeartIcon,
@@ -16,323 +18,163 @@ import {
   ShareIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  XMarkIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
 import {
   StarIcon as StarIconSolid,
   HeartIcon as HeartIconSolid,
 } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
 
-// Mock product data - in real app, this would come from your database
-const mockProducts = {
-  "iphone-15-pro-max": {
-    id: 1,
-    name: "iPhone 15 Pro Max",
-    brand: "Apple",
-    price: 1199.99,
-    originalPrice: 1299.99,
-    images: [
-      "/products/iphone_16_pro_max.jpg",
-      "/products/iphone_16_pro_max.jpg",
-      "/products/iphone_16_pro_max.jpg",
-      "/products/iphone_16_pro_max.jpg",
-      "/products/iphone_16_pro_max.jpg",
-    ],
-    category: "Smartphones",
-    rating: 4.8,
-    reviewCount: 2847,
-    isNew: true,
-    inStock: true,
-    stockCount: 12,
-    slug: "iphone-15-pro-max",
-    description:
-      "The iPhone 15 Pro Max pushes the boundaries of what's possible in a smartphone. Built with aerospace-grade titanium for exceptional durability and a remarkably light feel.",
-    longDescription:
-      "Experience the most advanced iPhone ever created. The iPhone 15 Pro Max features a stunning 6.7-inch Super Retina XDR display with ProMotion technology, delivering incredibly smooth and responsive interactions.",
-    specifications: [
-      { label: "Display", value: "6.7-inch Super Retina XDR" },
-      { label: "Chip", value: "A17 Pro" },
-      {
-        label: "Camera",
-        value: "48MP Main, 12MP Ultra Wide, 12MP 2x Telephoto",
-      },
-      { label: "Storage", value: "256GB, 512GB, 1TB" },
-      { label: "Battery", value: "Up to 29 hours video playback" },
-      { label: "Material", value: "Titanium with textured matte glass back" },
-      {
-        label: "Colors",
-        value:
-          "Natural Titanium, Blue Titanium, White Titanium, Black Titanium",
-      },
-      { label: "Water Resistance", value: "IP68 (6 meters up to 30 minutes)" },
-    ],
-    features: [
-      "Action Button for quick access to features",
-      "48MP Main camera with 2x Telephoto",
-      "A17 Pro chip with 6-core GPU",
-      "USB-C connectivity",
-      "Face ID facial recognition",
-      "5G connectivity",
-      "Ceramic Shield front",
-      "MagSafe and Qi wireless charging",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-  "macbook-pro-16-m3": {
-    id: 2,
-    name: "MacBook Pro 16-inch M3",
-    brand: "Apple",
-    price: 2499.99,
-    originalPrice: 2699.99,
-    images: [
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-    ],
-    category: "Laptops",
-    rating: 4.9,
-    reviewCount: 1523,
-    isNew: true,
-    inStock: true,
-    stockCount: 5,
-    slug: "macbook-pro-16-m3",
-    description:
-      "The most powerful MacBook Pro ever. With the M3 chip, this laptop delivers exceptional performance for professionals and creatives.",
-    longDescription:
-      "Built for professionals who demand the best. The 16-inch MacBook Pro with M3 chip offers incredible performance, a gorgeous display, and the longest battery life ever in a MacBook Pro.",
-    specifications: [
-      { label: "Chip", value: "Apple M3" },
-      { label: "Display", value: "16.2-inch Liquid Retina XDR" },
-      { label: "Memory", value: "18GB unified memory" },
-      { label: "Storage", value: "512GB SSD" },
-      { label: "Battery", value: "Up to 22 hours" },
-      { label: "Weight", value: "2.16 kg" },
-      { label: "Colors", value: "Space Black, Silver" },
-      { label: "Ports", value: "3x Thunderbolt 4, HDMI, SDXC, MagSafe 3" },
-    ],
-    features: [
-      "M3 chip with 8-core CPU and 10-core GPU",
-      "16.2-inch Liquid Retina XDR display",
-      "1080p FaceTime HD camera",
-      "Six-speaker sound system with force-cancelling woofers",
-      "Studio-quality three-microphone array",
-      "Magic Keyboard with Touch ID",
-      "Force Touch trackpad",
-      "MagSafe 3 charging",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-  "sony-wh-1000xm5": {
-    id: 3,
-    name: "Sony WH-1000XM5",
-    brand: "Sony",
-    price: 299.99,
-    originalPrice: 399.99,
-    images: [
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-    ],
-    category: "Audio",
-    rating: 4.7,
-    reviewCount: 3921,
-    isNew: false,
-    inStock: true,
-    stockCount: 25,
-    slug: "sony-wh-1000xm5",
-    description:
-      "Industry-leading noise canceling wireless headphones with the new lightweight design and improved noise canceling performance.",
-    longDescription:
-      "The Sony WH-1000XM5 headphones rewrite the rules for distraction-free listening. Two processors control 8 microphones for unprecedented noise canceling quality.",
-    specifications: [
-      { label: "Driver Unit", value: "30mm dome type" },
-      {
-        label: "Noise Canceling",
-        value: "Industry Leading with V1 + QN1 processors",
-      },
-      { label: "Battery Life", value: "Up to 30 hours with NC ON" },
-      { label: "Quick Charge", value: "3 min charge = 3 hours playbook" },
-      { label: "Weight", value: "250g" },
-      { label: "Frequency Response", value: "4 Hz-40,000 Hz" },
-      { label: "Bluetooth", value: "Version 5.2" },
-      { label: "Codecs", value: "SBC, AAC, LDAC" },
-    ],
-    features: [
-      "Industry-leading noise canceling with V1 processor",
-      "Crystal clear hands-free calling with precise voice pickup",
-      "Speak-to-Chat technology stops music when you speak",
-      "30-hour battery life with quick charge",
-      "Multipoint connection to two devices simultaneously",
-      "Touch Sensor controls for play/pause/skip tracks",
-      "360 Reality Audio for immersive music experience",
-      "Carry case included for travel",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-  "samsung-galaxy-s24-ultra": {
-    id: 4,
-    name: "Samsung Galaxy S24 Ultra",
-    brand: "Samsung",
-    price: 1099.99,
-    originalPrice: 1199.99,
-    images: [
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-    ],
-    category: "Smartphones",
-    rating: 4.6,
-    reviewCount: 2156,
-    isNew: true,
-    inStock: true,
-    stockCount: 18,
-    slug: "samsung-galaxy-s24-ultra",
-    description:
-      "Ultimate Android flagship with S Pen and 200MP camera. Built with titanium for durability and featuring the most advanced Galaxy AI capabilities.",
-    longDescription:
-      "The Samsung Galaxy S24 Ultra sets a new standard for premium Android smartphones. With its stunning 6.8-inch Dynamic AMOLED 2X display, revolutionary 200MP camera system, and built-in S Pen.",
-    specifications: [
-      { label: "Display", value: "6.8-inch Dynamic AMOLED 2X" },
-      { label: "Processor", value: "Snapdragon 8 Gen 3" },
-      {
-        label: "Camera",
-        value: "200MP Main + 50MP Periscope + 10MP Telephoto + 12MP Ultra Wide",
-      },
-      { label: "Storage", value: "256GB, 512GB, 1TB" },
-      { label: "RAM", value: "12GB" },
-      { label: "Battery", value: "5000mAh with 45W fast charging" },
-      { label: "S Pen", value: "Built-in with Air Actions" },
-      { label: "Water Rating", value: "IP68" },
-    ],
-    features: [
-      "200MP main camera with Space Zoom up to 100x",
-      "Built-in S Pen with Air Actions",
-      "Galaxy AI for enhanced photography and productivity",
-      "6.8-inch QHD+ 120Hz display",
-      "Titanium frame for premium durability",
-      "5000mAh battery with all-day power",
-      "45W super fast charging",
-      "Samsung DeX for desktop experience",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-  "dell-xps-13-plus": {
-    id: 5,
-    name: "Dell XPS 13 Plus",
-    brand: "Dell",
-    price: 1299.99,
-    originalPrice: 1499.99,
-    images: [
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-    ],
-    category: "Laptops",
-    rating: 4.5,
-    reviewCount: 892,
-    isNew: false,
-    inStock: true,
-    stockCount: 8,
-    slug: "dell-xps-13-plus",
-    description:
-      "Premium ultrabook with InfinityEdge display and modern design. Features the latest Intel processors and stunning 13.4-inch OLED display option.",
-    longDescription:
-      "The Dell XPS 13 Plus redefines premium ultrabook design with its seamless glass palm rest, invisible touchpad, and stunning InfinityEdge display.",
-    specifications: [
-      { label: "Processor", value: "12th Gen Intel Core i7-1260P" },
-      { label: "Display", value: "13.4-inch FHD+ InfinityEdge" },
-      { label: "Memory", value: "16GB LPDDR5" },
-      { label: "Storage", value: "512GB PCIe SSD" },
-      { label: "Graphics", value: "Intel Iris Xe Graphics" },
-      { label: "Weight", value: "1.26kg" },
-      { label: "Battery", value: "Up to 12 hours" },
-      { label: "Ports", value: "2x Thunderbolt 4" },
-    ],
-    features: [
-      "13.4-inch InfinityEdge display with minimal bezels",
-      "Seamless glass palm rest with haptic touchpad",
-      "12th Gen Intel Core processors",
-      "Premium machined aluminum construction",
-      "Backlit keyboard with larger keycaps",
-      "Thunderbolt 4 connectivity",
-      "Windows Hello fingerprint reader",
-      "Dell Mobile Connect for smartphone integration",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-  "airpods-pro-2nd-gen": {
-    id: 6,
-    name: "AirPods Pro 2nd Gen",
-    brand: "Apple",
-    price: 199.99,
-    originalPrice: 249.99,
-    images: [
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-      "/api/placeholder/800/800",
-    ],
-    category: "Audio",
-    rating: 4.8,
-    reviewCount: 4127,
-    isNew: false,
-    inStock: true,
-    stockCount: 35,
-    slug: "airpods-pro-2nd-gen",
-    description:
-      "Active noise cancellation with adaptive transparency. The new H2 chip delivers smarter noise cancellation and three-dimensional sound.",
-    longDescription:
-      "AirPods Pro 2nd generation feature up to 2x more Active Noise Cancellation, plus Adaptive Transparency, and Personalized Spatial Audio with dynamic head tracking.",
-    specifications: [
-      { label: "Chip", value: "Apple H2 headphone chip" },
-      { label: "Audio", value: "Adaptive EQ, Personalized Spatial Audio" },
-      { label: "Battery", value: "Up to 6 hours listening (single charge)" },
-      { label: "Case Battery", value: "Up to 30 hours total listening time" },
-      { label: "Charging", value: "Lightning, MagSafe, Qi wireless" },
-      { label: "Water Resistance", value: "IPX4 (earbuds and case)" },
-      { label: "Controls", value: "Force sensor, Siri voice control" },
-      {
-        label: "Compatibility",
-        value: "iPhone, iPad, Mac, Apple Watch, Apple TV",
-      },
-    ],
-    features: [
-      "Up to 2x more Active Noise Cancellation",
-      "Adaptive Transparency lets outside sound in",
-      "Personalized Spatial Audio with dynamic head tracking",
-      "Multiple ear tip sizes (XS, S, M, L)",
-      "Touch control for music and calls",
-      "Hey Siri always listening",
-      "Audio Sharing between two sets of AirPods",
-      "MagSafe charging case with speaker and lanyard loop",
-    ],
-    warranty: "1 year limited warranty",
-    returnPolicy: "30-day return policy",
-    shipping: "Free shipping on orders over €50",
-  },
-};
+// Define types based on your database schema
+interface Brand {
+  id: string;
+  name: string;
+}
 
-type Product = (typeof mockProducts)[keyof typeof mockProducts];
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Vendor {
+  id: string;
+  name: string;
+  vendorSettings: {
+    storeName: string | null;
+    businessName: string | null;
+  } | null;
+}
+
+interface ProductColor {
+  id: string;
+  color: string;
+  image: string;
+}
+
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string | null;
+  };
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number;
+  comparePrice: number | null;
+  images: string[];
+  brand: Brand | null;
+  category: Category;
+  subcategory: Subcategory | null;
+  vendor: Vendor;
+  stock: number;
+  lowStockAlert: number;
+  isActive: boolean;
+  featured: boolean;
+  newArrival: boolean;
+  modelNumber: string | null;
+  warranty: string | null;
+  weight: string | null;
+  dimensions: string | null;
+  storage: string | null;
+  length: string | null;
+  deliveryDays: number | null;
+  tags: string[];
+  color: string | null;
+  material: string | null;
+  views: number;
+  sold: number;
+  returnable: boolean;
+  specifications: Record<string, any>;
+  colors: ProductColor[];
+  reviews: Review[];
+  avgRating: number;
+  discountPercentage: number;
+  inStock: boolean;
+  isNew: boolean;
+  reviewCount: number;
+  cartCount: number;
+  wishlistCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Loading skeleton components
+function ProductSkeleton() {
+  return (
+    <div className="min-h-screen bg-white">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Image Gallery Skeleton */}
+          <div className="space-y-3">
+            <div className="aspect-square bg-slate-200 rounded-xl animate-pulse"></div>
+            <div className="flex space-x-2">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-16 h-16 bg-slate-200 rounded-lg animate-pulse"
+                ></div>
+              ))}
+            </div>
+          </div>
+
+          {/* Product Info Skeleton */}
+          <div className="space-y-4">
+            <div className="h-4 bg-slate-200 rounded w-20 animate-pulse"></div>
+            <div className="h-8 bg-slate-200 rounded w-3/4 animate-pulse"></div>
+            <div className="flex space-x-2">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-4 h-4 bg-slate-200 rounded animate-pulse"
+                ></div>
+              ))}
+            </div>
+            <div className="h-6 bg-slate-200 rounded w-1/3 animate-pulse"></div>
+            <div className="h-4 bg-slate-200 rounded w-full animate-pulse"></div>
+            <div className="h-4 bg-slate-200 rounded w-2/3 animate-pulse"></div>
+            <div className="space-y-3 pt-4">
+              <div className="h-10 bg-slate-200 rounded-lg animate-pulse"></div>
+              <div className="h-10 bg-slate-200 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 export default function ProductPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
+  const slug = params.id as string;
+
+  // Component state
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedTab, setSelectedTab] = useState("description");
@@ -341,71 +183,133 @@ export default function ProductPage() {
   const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // In real app, fetch product by id from database
-  const product: Product | undefined =
-    mockProducts[id as keyof typeof mockProducts];
+  // Review form state
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  // Type assertion for user role to fix TypeScript error
+  const userRole = session?.user?.role as
+    | "CUSTOMER"
+    | "VENDOR"
+    | "ADMIN"
+    | undefined;
+
+  // Fetch product data
   useEffect(() => {
-    if (!product) {
-      console.log("Product not found");
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/products/${slug}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("Product not found");
+          } else {
+            setError("Failed to load product");
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.product) {
+          setProduct(data.product);
+          // Set first color as default if colors exist
+          if (data.product.colors && data.product.colors.length > 0) {
+            setSelectedColor(data.product.colors[0].color);
+          }
+        } else {
+          setError("Product not found");
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        setError("Failed to load product");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchProduct();
     }
-  }, [product]);
+  }, [slug]);
 
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-lg font-medium text-slate-900 mb-1">
-            Product Not Found
-          </h1>
-          <p className="text-sm text-slate-600">
-            The product you&apos;re looking for doesn&apos;t exist.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Redirect vendors to dashboard
+  useEffect(() => {
+    if (status === "authenticated" && userRole === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, userRole, router]);
 
+  // Handle quantity changes
   const handleQuantityChange = (action: "increase" | "decrease") => {
-    if (action === "increase" && quantity < product.stockCount) {
+    if (!product) return;
+
+    if (action === "increase" && quantity < product.stock) {
       setQuantity(quantity + 1);
     } else if (action === "decrease" && quantity > 1) {
       setQuantity(quantity - 1);
     }
   };
 
+  // Handle add to cart
   const handleAddToCart = async () => {
+    if (!product) return;
+
     setIsAddingToCart(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsAddingToCart(false);
-    console.log(`Added ${quantity} ${product.name} to cart`);
+
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          quantity,
+          selectedColor,
+        }),
+      });
+
+      if (response.ok) {
+        console.log(`Added ${quantity} ${product.name} to cart`);
+      } else {
+        console.error("Failed to add to cart");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    } finally {
+      setTimeout(() => setIsAddingToCart(false), 800);
+    }
   };
 
+  // Handle buy now
   const handleBuyNow = () => {
+    if (!product) return;
     console.log(`Buy now: ${quantity} ${product.name}`);
+    router.push(`/checkout?product=${product.id}&quantity=${quantity}`);
   };
 
+  // Handle image magnifier
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageLoaded) return;
+    if (!imageLoaded || !product) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Amazon-style magnifier positioning
     const magnifierSize = 180;
     const halfSize = magnifierSize / 2;
 
     let magnifierX = x - halfSize;
     let magnifierY = y - halfSize;
 
-    // Keep magnifier within image bounds
     magnifierX = Math.max(0, Math.min(magnifierX, rect.width - magnifierSize));
     magnifierY = Math.max(0, Math.min(magnifierY, rect.height - magnifierSize));
 
     setMagnifierPosition({ x: magnifierX, y: magnifierY });
 
-    // Calculate background position for zoom effect
     const backgroundX = -((x / rect.width) * (rect.width * 3)) + halfSize;
     const backgroundY = -((y / rect.height) * (rect.height * 3)) + halfSize;
 
@@ -415,26 +319,138 @@ export default function ProductPage() {
     }
   };
 
-  const handleMouseEnter = () => {
-    if (imageLoaded) {
-      setShowMagnifier(true);
+  // Get current image based on selected color or default
+  const getCurrentImage = () => {
+    if (!product) return "";
+
+    if (selectedColor) {
+      const colorVariant = product.colors.find(
+        (c) => c.color === selectedColor
+      );
+      if (colorVariant) return colorVariant.image;
+    }
+
+    return product.images[selectedImage] || product.images[0] || "";
+  };
+
+  // Get current images to display (either product images or color variant image)
+  const getCurrentImages = () => {
+    if (!product) return [];
+
+    if (selectedColor) {
+      const colorVariant = product.colors.find(
+        (c) => c.color === selectedColor
+      );
+      if (colorVariant) return [colorVariant.image];
+    }
+
+    return product.images;
+  };
+
+  // Handle review submission
+  const handleSubmitReview = async () => {
+    if (!product || !session?.user || reviewRating === 0) return;
+
+    setIsSubmittingReview(true);
+
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          rating: reviewRating,
+          comment: reviewText.trim() || null,
+        }),
+      });
+
+      if (response.ok) {
+        // Reset form
+        setReviewText("");
+        setReviewRating(0);
+
+        // Refresh product data to show new review
+        const updatedResponse = await fetch(`/api/products/${slug}`);
+        if (updatedResponse.ok) {
+          const updatedData = await updatedResponse.json();
+          if (updatedData.success && updatedData.product) {
+            setProduct(updatedData.product);
+          }
+        }
+      } else {
+        console.error("Failed to submit review");
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
-  const handleMouseLeave = () => {
-    setShowMagnifier(false);
+  // Parse specifications from JSON
+  const getSpecifications = () => {
+    if (!product?.specifications) return [];
+
+    try {
+      if (typeof product.specifications === "object") {
+        return Object.entries(product.specifications).map(([key, value]) => ({
+          label: key,
+          value: String(value),
+        }));
+      }
+    } catch (error) {
+      console.error("Error parsing specifications:", error);
+    }
+
+    return [];
   };
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(
-        ((product.originalPrice - product.price) / product.originalPrice) * 100
-      )
-    : 0;
+  // Loading state
+  if (loading) {
+    return <ProductSkeleton />;
+  }
+
+  // Error state
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-lg font-medium text-slate-900 mb-1">
+            {error || "Product Not Found"}
+          </h1>
+          <p className="text-sm text-slate-600 mb-4">
+            {error === "Product not found"
+              ? "The product you're looking for doesn't exist."
+              : "Something went wrong while loading the product."}
+          </p>
+          <button
+            onClick={() => router.push("/products")}
+            className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+          >
+            ← Back to Products
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state for session
+  if (status === "loading") {
+    return <ProductSkeleton />;
+  }
+
+  // Don't render content for vendors
+  if (userRole === "VENDOR") {
+    return null;
+  }
+
+  const specifications = getSpecifications();
+  const currentImages = getCurrentImages();
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
@@ -445,19 +461,20 @@ export default function ProductPage() {
               whileHover={{ scale: 1.01 }}
               transition={{ duration: 0.2 }}
               onMouseMove={handleMouseMove}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              onMouseEnter={() => imageLoaded && setShowMagnifier(true)}
+              onMouseLeave={() => setShowMagnifier(false)}
             >
               <Image
-                src={product.images[selectedImage]}
+                src={getCurrentImage()}
                 alt={product.name}
                 fill
                 className="object-cover"
                 priority
                 onLoad={() => setImageLoaded(true)}
+                onError={() => setImageLoaded(false)}
               />
 
-              {/* Amazon-Style Square Magnifier */}
+              {/* Magnifier */}
               <AnimatePresence>
                 {showMagnifier && (
                   <motion.div
@@ -467,7 +484,7 @@ export default function ProductPage() {
                       height: "180px",
                       left: `${magnifierPosition.x}px`,
                       top: `${magnifierPosition.y}px`,
-                      backgroundImage: `url(${product.images[selectedImage]})`,
+                      backgroundImage: `url(${getCurrentImage()})`,
                       backgroundSize: "300% 300%",
                       backgroundRepeat: "no-repeat",
                       zIndex: 15,
@@ -483,6 +500,7 @@ export default function ProductPage() {
                 )}
               </AnimatePresence>
 
+              {/* Badges */}
               {product.isNew && (
                 <motion.div
                   className="absolute top-3 left-3 bg-slate-900 text-white px-2 py-1 rounded-md text-xs font-medium"
@@ -493,72 +511,143 @@ export default function ProductPage() {
                   New
                 </motion.div>
               )}
-              {discountPercentage > 0 && (
+              {product.discountPercentage > 0 && (
                 <motion.div
                   className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  -{discountPercentage}%
+                  -{product.discountPercentage}%
                 </motion.div>
               )}
 
-              {/* Navigation arrows */}
-              <motion.button
-                onClick={() =>
-                  setSelectedImage(
-                    selectedImage > 0
-                      ? selectedImage - 1
-                      : product.images.length - 1
-                  )
-                }
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ChevronLeftIcon className="w-4 h-4 text-slate-700" />
-              </motion.button>
-              <motion.button
-                onClick={() =>
-                  setSelectedImage(
-                    selectedImage < product.images.length - 1
-                      ? selectedImage + 1
-                      : 0
-                  )
-                }
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ChevronRightIcon className="w-4 h-4 text-slate-700" />
-              </motion.button>
+              {/* Navigation arrows - only show if there are multiple images and no color is selected */}
+              {currentImages.length > 1 && !selectedColor && (
+                <>
+                  <motion.button
+                    onClick={() =>
+                      setSelectedImage(
+                        selectedImage > 0
+                          ? selectedImage - 1
+                          : currentImages.length - 1
+                      )
+                    }
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ChevronLeftIcon className="w-4 h-4 text-slate-700" />
+                  </motion.button>
+                  <motion.button
+                    onClick={() =>
+                      setSelectedImage(
+                        selectedImage < currentImages.length - 1
+                          ? selectedImage + 1
+                          : 0
+                      )
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ChevronRightIcon className="w-4 h-4 text-slate-700" />
+                  </motion.button>
+                </>
+              )}
             </motion.div>
 
-            {/* Thumbnail Images */}
-            <div className="flex space-x-2 overflow-x-auto pb-1">
-              {product.images.map((image, index) => (
-                <motion.button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`flex-shrink-0 aspect-square w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                    selectedImage === index
-                      ? "border-slate-900"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Image
-                    src={image}
-                    alt={`${product.name} ${index + 1}`}
-                    width={64}
-                    height={64}
-                    className="object-cover w-full h-full"
-                  />
-                </motion.button>
-              ))}
-            </div>
+            {/* Thumbnail Images - only show if no color is selected */}
+            {currentImages.length > 1 && !selectedColor && (
+              <div className="flex space-x-2 overflow-x-auto pb-1">
+                {currentImages.map((image, index) => (
+                  <motion.button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`flex-shrink-0 aspect-square w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                      selectedImage === index
+                        ? "border-slate-900"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full"
+                    />
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            {/* Color Variants - Show color variant images */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-700">
+                  Available Colors:
+                </p>
+                <div className="flex space-x-3 flex-wrap">
+                  {/* Default product option */}
+                  <motion.button
+                    onClick={() => {
+                      setSelectedColor(null);
+                      setSelectedImage(0);
+                    }}
+                    className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                      selectedColor === null
+                        ? "border-slate-900 ring-2 ring-slate-900 ring-offset-2"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Image
+                      src={product.images[0] || "/api/placeholder/80/80"}
+                      alt="Default"
+                      width={80}
+                      height={80}
+                      className="object-cover w-full h-full"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 text-center">
+                      Default
+                    </div>
+                  </motion.button>
+
+                  {/* Color variant options */}
+                  {product.colors.map((colorVariant) => (
+                    <motion.button
+                      key={colorVariant.id}
+                      onClick={() => {
+                        setSelectedColor(colorVariant.color);
+                        setSelectedImage(0);
+                      }}
+                      className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                        selectedColor === colorVariant.color
+                          ? "border-slate-900 ring-2 ring-slate-900 ring-offset-2"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Image
+                        src={colorVariant.image}
+                        alt={colorVariant.color}
+                        width={80}
+                        height={80}
+                        className="object-cover w-full h-full"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 text-center truncate">
+                        {colorVariant.color}
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Product Information */}
@@ -569,40 +658,49 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                {product.brand}
-              </p>
+              {product.brand && (
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  {product.brand.name}
+                </p>
+              )}
               <h1 className="text-2xl font-semibold text-slate-900 mt-1 leading-tight">
                 {product.name}
               </h1>
+              {product.modelNumber && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Model: {product.modelNumber}
+                </p>
+              )}
             </motion.div>
 
             {/* Rating and Reviews */}
-            <motion.div
-              className="flex items-center space-x-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <StarIconSolid
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.floor(product.rating)
-                        ? "text-yellow-400"
-                        : "text-slate-300"
-                    }`}
-                  />
-                ))}
-                <span className="text-sm font-medium text-slate-900 ml-1">
-                  {product.rating}
+            {product.reviewCount > 0 && (
+              <motion.div
+                className="flex items-center space-x-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <div className="flex items-center space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIconSolid
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(product.avgRating)
+                          ? "text-yellow-400"
+                          : "text-slate-300"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-sm font-medium text-slate-900 ml-1">
+                    {product.avgRating.toFixed(1)}
+                  </span>
+                </div>
+                <span className="text-sm text-slate-500">
+                  ({product.reviewCount.toLocaleString()} reviews)
                 </span>
-              </div>
-              <span className="text-sm text-slate-500">
-                ({product.reviewCount.toLocaleString()} reviews)
-              </span>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* Pricing */}
             <motion.div
@@ -615,19 +713,21 @@ export default function ProductPage() {
                 <span className="text-2xl font-bold text-slate-900">
                   {formatPrice(product.price)}
                 </span>
-                {product.originalPrice && (
+                {product.comparePrice && (
                   <span className="text-lg text-slate-500 line-through">
-                    {formatPrice(product.originalPrice)}
+                    {formatPrice(product.comparePrice)}
                   </span>
                 )}
-                {discountPercentage > 0 && (
+                {product.discountPercentage > 0 && (
                   <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    Save {discountPercentage}%
+                    Save {product.discountPercentage}%
                   </span>
                 )}
               </div>
               <p className="text-xs text-slate-600">
-                Tax included. Shipping calculated at checkout.
+                Tax included.{" "}
+                {product.deliveryDays &&
+                  `Delivery in ${product.deliveryDays} days.`}
               </p>
             </motion.div>
 
@@ -642,12 +742,13 @@ export default function ProductPage() {
                 <>
                   <CheckCircleIcon className="w-4 h-4 text-green-500" />
                   <span className="text-sm font-medium text-green-600">
-                    In stock ({product.stockCount} available)
+                    In stock ({product.stock} available)
+                    {product.stock <= product.lowStockAlert && " - Low stock!"}
                   </span>
                 </>
               ) : (
                 <>
-                  <div className="w-4 h-4 rounded-full bg-red-500" />
+                  <XMarkIcon className="w-4 h-4 text-red-500" />
                   <span className="text-sm font-medium text-red-600">
                     Out of stock
                   </span>
@@ -655,118 +756,155 @@ export default function ProductPage() {
               )}
             </motion.div>
 
+            {/* Selected Color Display */}
+            {selectedColor && (
+              <motion.div
+                className="text-sm text-slate-600"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <span className="font-medium">Selected Color: </span>
+                <span className="text-slate-900">{selectedColor}</span>
+              </motion.div>
+            )}
+
             {/* Description */}
+            {product.description && (
+              <motion.div
+                className="text-sm text-slate-600 leading-relaxed"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+              >
+                <p>{product.description}</p>
+              </motion.div>
+            )}
+
+            {/* Vendor Info */}
             <motion.div
-              className="text-sm text-slate-600 leading-relaxed"
+              className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 }}
+              transition={{ duration: 0.3, delay: 0.45 }}
             >
-              <p>{product.description}</p>
+              <p>
+                Sold by:{" "}
+                <span className="font-medium">
+                  {product.vendor.vendorSettings?.storeName ||
+                    product.vendor.vendorSettings?.businessName ||
+                    product.vendor.name}
+                </span>
+              </p>
+              <p className="mt-1">
+                {product.views.toLocaleString()} views •{" "}
+                {product.sold.toLocaleString()} sold
+              </p>
             </motion.div>
 
             {/* Quantity and Add to Cart */}
-            <motion.div
-              className="space-y-3 pt-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.5 }}
-            >
-              <div className="flex items-center space-x-3">
-                <label className="text-sm font-medium text-slate-700">
-                  Qty:
-                </label>
-                <div className="flex items-center border border-slate-300 rounded-lg">
+            {product.inStock && (
+              <motion.div
+                className="space-y-3 pt-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <div className="flex items-center space-x-3">
+                  <label className="text-sm font-medium text-slate-700">
+                    Qty:
+                  </label>
+                  <div className="flex items-center border border-slate-300 rounded-lg">
+                    <motion.button
+                      onClick={() => handleQuantityChange("decrease")}
+                      disabled={quantity <= 1}
+                      className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg cursor-pointer"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <MinusIcon className="w-3 h-3" />
+                    </motion.button>
+                    <span className="px-3 py-2 text-sm font-medium text-slate-900 min-w-[3rem] text-center">
+                      {quantity}
+                    </span>
+                    <motion.button
+                      onClick={() => handleQuantityChange("increase")}
+                      disabled={quantity >= product.stock}
+                      className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg cursor-pointer"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <PlusIcon className="w-3 h-3" />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3">
                   <motion.button
-                    onClick={() => handleQuantityChange("decrease")}
-                    disabled={quantity <= 1}
-                    className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    onClick={handleAddToCart}
+                    disabled={!product.inStock || isAddingToCart}
+                    className="flex-1 bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                   >
-                    <MinusIcon className="w-3 h-3" />
+                    <AnimatePresence mode="wait">
+                      {isAddingToCart ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                        />
+                      ) : (
+                        <motion.div
+                          key="content"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex items-center space-x-2"
+                        >
+                          <ShoppingCartIcon className="w-4 h-4" />
+                          <span>Add to Cart</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
-                  <span className="px-3 py-2 text-sm font-medium border-x border-slate-300 min-w-[3rem] text-center">
-                    {quantity}
-                  </span>
+
                   <motion.button
-                    onClick={() => handleQuantityChange("increase")}
-                    disabled={quantity >= product.stockCount}
-                    className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setIsWishlisted(!isWishlisted)}
+                    className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <PlusIcon className="w-3 h-3" />
+                    {isWishlisted ? (
+                      <HeartIconSolid className="w-4 h-4 text-red-500" />
+                    ) : (
+                      <HeartIcon className="w-4 h-4" />
+                    )}
+                  </motion.button>
+
+                  <motion.button
+                    className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ShareIcon className="w-4 h-4" />
                   </motion.button>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex space-x-3">
+                {/* Buy Now Button */}
                 <motion.button
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock || isAddingToCart}
-                  className="flex-1 bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  onClick={handleBuyNow}
+                  disabled={!product.inStock}
+                  className="w-full bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                 >
-                  <AnimatePresence mode="wait">
-                    {isAddingToCart ? (
-                      <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
-                      />
-                    ) : (
-                      <motion.div
-                        key="content"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center space-x-2"
-                      >
-                        <ShoppingCartIcon className="w-4 h-4" />
-                        <span>Add to Cart</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  Buy Now
                 </motion.button>
-
-                <motion.button
-                  onClick={() => setIsWishlisted(!isWishlisted)}
-                  className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {isWishlisted ? (
-                    <HeartIconSolid className="w-4 h-4 text-red-500" />
-                  ) : (
-                    <HeartIcon className="w-4 h-4" />
-                  )}
-                </motion.button>
-
-                <motion.button
-                  className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <ShareIcon className="w-4 h-4" />
-                </motion.button>
-              </div>
-
-              {/* Buy Now Button */}
-              <motion.button
-                onClick={handleBuyNow}
-                disabled={!product.inStock}
-                className="w-full bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                Buy Now
-              </motion.button>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* Features */}
             <motion.div
@@ -785,14 +923,18 @@ export default function ProductPage() {
               <div className="text-center">
                 <ArrowPathIcon className="w-5 h-5 mx-auto text-slate-600 mb-1" />
                 <p className="text-xs font-medium text-slate-900">
-                  30-Day Returns
+                  {product.returnable ? "30-Day Returns" : "Non-Returnable"}
                 </p>
-                <p className="text-xs text-slate-500">Money back guarantee</p>
+                <p className="text-xs text-slate-500">
+                  {product.returnable ? "Money back guarantee" : "Final sale"}
+                </p>
               </div>
               <div className="text-center">
                 <ShieldCheckIcon className="w-5 h-5 mx-auto text-slate-600 mb-1" />
                 <p className="text-xs font-medium text-slate-900">Warranty</p>
-                <p className="text-xs text-slate-500">1 year coverage</p>
+                <p className="text-xs text-slate-500">
+                  {product.warranty || "1 year coverage"}
+                </p>
               </div>
             </motion.div>
           </div>
@@ -811,7 +953,7 @@ export default function ProductPage() {
                 <motion.button
                   key={tab}
                   onClick={() => setSelectedTab(tab)}
-                  className={`py-3 px-1 border-b-2 text-sm font-medium capitalize transition-colors ${
+                  className={`py-3 px-1 border-b-2 text-sm font-medium capitalize transition-colors cursor-pointer ${
                     selectedTab === tab
                       ? "border-slate-900 text-slate-900"
                       : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
@@ -841,28 +983,72 @@ export default function ProductPage() {
                   </h3>
                   <div className="prose prose-sm prose-slate max-w-none">
                     <p className="text-slate-600 mb-4 leading-relaxed">
-                      {product.longDescription}
+                      {product.description ||
+                        "No detailed description available."}
                     </p>
 
-                    <h4 className="text-base font-medium text-slate-900 mb-3">
-                      Key Features
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {product.features.map((feature, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-start space-x-2"
-                          initial={{ opacity: 0, x: -5 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
-                        >
-                          <CheckCircleIcon className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-slate-600">
-                            {feature}
+                    {/* Product Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      {product.weight && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-slate-900">
+                            Weight:
                           </span>
-                        </motion.div>
-                      ))}
+                          <span className="text-sm text-slate-600">
+                            {product.weight}
+                          </span>
+                        </div>
+                      )}
+                      {product.dimensions && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-slate-900">
+                            Dimensions:
+                          </span>
+                          <span className="text-sm text-slate-600">
+                            {product.dimensions}
+                          </span>
+                        </div>
+                      )}
+                      {product.material && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-slate-900">
+                            Material:
+                          </span>
+                          <span className="text-sm text-slate-600">
+                            {product.material}
+                          </span>
+                        </div>
+                      )}
+                      {product.storage && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-slate-900">
+                            Storage:
+                          </span>
+                          <span className="text-sm text-slate-600">
+                            {product.storage}
+                          </span>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Tags */}
+                    {product.tags.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-base font-medium text-slate-900 mb-2">
+                          Tags
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {product.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -879,50 +1065,284 @@ export default function ProductPage() {
                   <h3 className="text-lg font-medium text-slate-900 mb-3">
                     Technical Specifications
                   </h3>
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-                      {product.specifications.map((spec, index) => (
-                        <motion.div
-                          key={index}
-                          className="border-b border-slate-200 pb-2 last:border-b-0"
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
-                        >
-                          <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                            {spec.label}
-                          </dt>
-                          <dd className="text-sm text-slate-900 mt-1">
-                            {spec.value}
-                          </dd>
-                        </motion.div>
-                      ))}
-                    </dl>
-                  </div>
+                  {specifications.length > 0 ? (
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+                        {specifications.map((spec, index) => (
+                          <motion.div
+                            key={index}
+                            className="border-b border-slate-200 pb-2 last:border-b-0"
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                          >
+                            <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                              {spec.label}
+                            </dt>
+                            <dd className="text-sm text-slate-900 mt-1">
+                              {spec.value}
+                            </dd>
+                          </motion.div>
+                        ))}
+                      </dl>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 rounded-lg p-6 text-center">
+                      <p className="text-slate-600 text-sm">
+                        No specifications available for this product.
+                      </p>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
               {selectedTab === "reviews" && (
                 <motion.div
-                  className="max-w-3xl"
+                  className="max-w-4xl"
                   key="reviews"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <h3 className="text-lg font-medium text-slate-900 mb-3">
-                    Customer Reviews
+                  <h3 className="text-lg font-medium text-slate-900 mb-6">
+                    Customer Reviews & Ratings
                   </h3>
-                  <div className="bg-slate-50 rounded-lg p-6 text-center">
-                    <p className="text-slate-600 text-sm">
-                      Review system coming soon...
-                    </p>
-                    <p className="text-xs text-slate-500 mt-2">
-                      Current rating: {product.rating}/5 (
-                      {product.reviewCount.toLocaleString()} reviews)
-                    </p>
+
+                  {/* Review Summary */}
+                  <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-6">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-slate-900">
+                            {product.reviewCount > 0
+                              ? product.avgRating.toFixed(1)
+                              : "0.0"}
+                          </div>
+                          <div className="flex justify-center space-x-1 mb-1">
+                            {[...Array(5)].map((_, i) => (
+                              <StarIconSolid
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < Math.floor(product.avgRating)
+                                    ? "text-yellow-400"
+                                    : "text-slate-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <div className="text-sm text-slate-600">
+                            {product.reviewCount} reviews
+                          </div>
+                        </div>
+
+                        {/* Rating Distribution */}
+                        <div className="flex-1 max-w-sm">
+                          {[5, 4, 3, 2, 1].map((rating) => {
+                            const count = product.reviews.filter(
+                              (r) => r.rating === rating
+                            ).length;
+                            const percentage =
+                              product.reviewCount > 0
+                                ? (count / product.reviewCount) * 100
+                                : 0;
+                            return (
+                              <div
+                                key={rating}
+                                className="flex items-center text-sm mb-1"
+                              >
+                                <span className="text-slate-600 w-8">
+                                  {rating}
+                                </span>
+                                <StarIconSolid className="w-3 h-3 text-yellow-400 mr-2" />
+                                <div className="flex-1 bg-slate-200 rounded-full h-2 mr-2">
+                                  <div
+                                    className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${percentage}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-slate-500 w-8 text-right">
+                                  {count}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Write Review Section - Only for authenticated users */}
+                  {session?.user && (
+                    <motion.div
+                      className="bg-white border border-slate-200 rounded-xl p-6 mb-8"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <h4 className="text-base font-medium text-slate-900 mb-4">
+                        Write a Review
+                      </h4>
+
+                      {/* Rating Selection */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Your Rating
+                        </label>
+                        <div className="flex space-x-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <motion.button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="focus:outline-none transition-colors duration-150 cursor-pointer"
+                            >
+                              <StarIconSolid
+                                className={`w-6 h-6 ${
+                                  star <= reviewRating
+                                    ? "text-yellow-400"
+                                    : "text-slate-300"
+                                } hover:text-yellow-400`}
+                              />
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Review Text */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Your Review (Optional)
+                        </label>
+                        <textarea
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          placeholder="Share your thoughts about this product..."
+                          rows={4}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none text-sm"
+                          maxLength={500}
+                        />
+                        <div className="text-right text-xs text-slate-500 mt-1">
+                          {reviewText.length}/500 characters
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <motion.button
+                        onClick={handleSubmitReview}
+                        disabled={reviewRating === 0 || isSubmittingReview}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {isSubmittingReview ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <PaperAirplaneIcon className="w-4 h-4" />
+                        )}
+                        <span>
+                          {isSubmittingReview
+                            ? "Submitting..."
+                            : "Submit Review"}
+                        </span>
+                      </motion.button>
+                    </motion.div>
+                  )}
+
+                  {/* Existing Reviews */}
+                  {product.reviews.length > 0 ? (
+                    <div className="space-y-6">
+                      {product.reviews.slice(0, 10).map((review, index) => (
+                        <motion.div
+                          key={review.id}
+                          className="bg-white border border-slate-200 rounded-xl p-6"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                                <span className="text-slate-600 font-medium text-sm">
+                                  {(review.user.name || "A")
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium text-slate-900">
+                                    {review.user.name || "Anonymous"}
+                                  </span>
+                                  <div className="flex space-x-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <StarIconSolid
+                                        key={i}
+                                        className={`w-3 h-3 ${
+                                          i < review.rating
+                                            ? "text-yellow-400"
+                                            : "text-slate-300"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                  {new Date(
+                                    review.createdAt
+                                  ).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          {review.comment && (
+                            <p className="text-sm text-slate-700 leading-relaxed">
+                              {review.comment}
+                            </p>
+                          )}
+                        </motion.div>
+                      ))}
+
+                      {product.reviews.length > 10 && (
+                        <div className="text-center pt-6">
+                          <motion.button
+                            className="text-sm text-slate-600 hover:text-slate-900 font-medium cursor-pointer"
+                            whileHover={{ scale: 1.02 }}
+                          >
+                            View all {product.reviewCount} reviews →
+                          </motion.button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 rounded-xl p-8 text-center">
+                      <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <StarIcon className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <h4 className="text-base font-medium text-slate-900 mb-2">
+                        No reviews yet
+                      </h4>
+                      <p className="text-sm text-slate-600 mb-4">
+                        Be the first to share your thoughts about this product.
+                      </p>
+                      {session?.user && (
+                        <motion.button
+                          onClick={() => setSelectedTab("reviews")}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="text-sm font-medium text-slate-900 hover:text-slate-700 cursor-pointer"
+                        >
+                          Write the first review
+                        </motion.button>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

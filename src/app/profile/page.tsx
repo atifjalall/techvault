@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -19,7 +18,6 @@ import {
   ExclamationTriangleIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { getUserInitials } from "@/lib/utils";
 
@@ -118,6 +116,17 @@ export default function ProfilePage() {
       router.push("/signin");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Don't render content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
 
   const showSuccessMessage = (message: string) => {
     setSuccessMessage(message);
@@ -318,8 +327,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <motion.div

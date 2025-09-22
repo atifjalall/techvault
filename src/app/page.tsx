@@ -1,19 +1,42 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import PromoBar from "@/components/layout/PromoBar";
-import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroCarousel from "@/components/home/HeroCarousel";
 import NewArrivals from "@/components/home/NewArrivals";
 import FeaturedCategories from "@/components/home/FeaturedCategories";
 
 export default function HomePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Block vendors from accessing store homepage
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, session, router]);
+
+  // Show loading while checking auth
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Don't render store content for vendors
+  if (session?.user?.role === "VENDOR") {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <Navbar />
-
       {/* Promotional Banner */}
       <PromoBar />
 
