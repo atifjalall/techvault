@@ -18,6 +18,8 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   ShoppingBagIcon,
+  ClockIcon,
+  CurrencyEuroIcon,
 } from "@heroicons/react/24/outline";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +41,18 @@ interface VendorTopBarProps {
 
 interface Notification {
   id: string;
-  type: "order" | "product" | "system" | "payment";
-  title: string;
+  type:
+    | "NEW_ORDER"
+    | "ORDER_UPDATED"
+    | "LOW_STOCK"
+    | "SYSTEM_ALERT"
+    | "NEW_REVIEW";
+  severity: "INFO" | "WARNING" | "CRITICAL";
   message: string;
   isRead: boolean;
   createdAt: string;
-  actionUrl?: string;
+  productId?: string;
+  orderId?: string;
 }
 
 // Skeleton Loading Component
@@ -62,80 +70,51 @@ const NotificationSkeleton = () => (
   </div>
 );
 
-// Generate breadcrumbs from pathname
+// Generate breadcrumbs from pathname with error handling
 const generateBreadcrumbs = (pathname: string) => {
-  const segments = pathname.split("/").filter(Boolean);
-  const breadcrumbs = [{ name: "Dashboard", href: "/vendor/dashboard" }];
-
-  if (segments.length > 2) {
-    const currentPage = segments[segments.length - 1];
-    const parentPage = segments[segments.length - 2];
-
-    // Add parent if it's not dashboard
-    if (parentPage !== "dashboard") {
-      breadcrumbs.push({
-        name: parentPage.charAt(0).toUpperCase() + parentPage.slice(1),
-        href: `/vendor/${parentPage}`,
-      });
+  try {
+    if (!pathname || typeof pathname !== "string") {
+      return [{ name: "Dashboard", href: "/vendor/dashboard" }];
     }
 
-    // Add current page
-    if (currentPage !== "dashboard") {
+    const segments = pathname.split("/").filter(Boolean);
+    const breadcrumbs = [{ name: "Dashboard", href: "/vendor/dashboard" }];
+
+    if (segments.length > 2) {
+      const currentPage = segments[segments.length - 1];
+      const parentPage = segments[segments.length - 2];
+
+      // Add parent if it's not dashboard
+      if (parentPage && parentPage !== "dashboard") {
+        breadcrumbs.push({
+          name: parentPage.charAt(0).toUpperCase() + parentPage.slice(1),
+          href: `/vendor/${parentPage}`,
+        });
+      }
+
+      // Add current page
+      if (currentPage && currentPage !== "dashboard") {
+        breadcrumbs.push({
+          name:
+            currentPage === "add"
+              ? "Add New"
+              : currentPage.charAt(0).toUpperCase() + currentPage.slice(1),
+          href: "",
+        });
+      }
+    } else if (segments.length === 2 && segments[1] !== "dashboard") {
       breadcrumbs.push({
-        name:
-          currentPage === "add"
-            ? "Add New"
-            : currentPage.charAt(0).toUpperCase() + currentPage.slice(1),
+        name: segments[1].charAt(0).toUpperCase() + segments[1].slice(1),
         href: "",
       });
     }
-  } else if (segments.length === 2 && segments[1] !== "dashboard") {
-    breadcrumbs.push({
-      name: segments[1].charAt(0).toUpperCase() + segments[1].slice(1),
-      href: "",
-    });
+
+    return breadcrumbs;
+  } catch (error) {
+    console.error("Error generating breadcrumbs:", error);
+    return [{ name: "Dashboard", href: "/vendor/dashboard" }];
   }
-
-  return breadcrumbs;
 };
-
-// Mock notification data - replace with actual API call
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "order",
-    title: "New Order Received",
-    message: "Order #12345 has been placed by John Doe",
-    isRead: false,
-    createdAt: "2025-01-15T10:30:00Z",
-    actionUrl: "/vendor/orders/12345",
-  },
-  {
-    id: "2",
-    type: "product",
-    title: "Low Stock Alert",
-    message: "iPhone 15 Pro is running low on stock (3 remaining)",
-    isRead: false,
-    createdAt: "2025-01-15T09:15:00Z",
-    actionUrl: "/vendor/products",
-  },
-  {
-    id: "3",
-    type: "payment",
-    title: "Payment Received",
-    message: "Payment of €899.99 has been processed successfully",
-    isRead: true,
-    createdAt: "2025-01-14T16:45:00Z",
-  },
-  {
-    id: "4",
-    type: "system",
-    title: "System Maintenance",
-    message: "Scheduled maintenance will occur tonight from 2-4 AM",
-    isRead: true,
-    createdAt: "2025-01-14T12:00:00Z",
-  },
-];
 
 export default function VendorTopBar({
   onMobileMenuToggle,
@@ -147,82 +126,239 @@ export default function VendorTopBar({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const defaultBreadcrumbs = generateBreadcrumbs(pathname);
   const finalBreadcrumbs = breadcrumbs || defaultBreadcrumbs;
 
-  // Fetch notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setIsLoadingNotifications(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setNotifications(mockNotifications);
-      setIsLoadingNotifications(false);
-    };
+  // Fetch notifications from real API with error handling
+  const fetchNotifications = async () => {
+    if (!session?.user) return;
 
-    if (notificationOpen) {
+    setIsLoadingNotifications(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/vendor/notifications?limit=10");
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.notifications)) {
+          setNotifications(data.notifications);
+        } else {
+          setError(data.error || "Failed to fetch notifications");
+          setNotifications([]);
+        }
+      } else {
+        setError("Failed to fetch notifications");
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setError("Network error occurred");
+      setNotifications([]);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  // Initial load and periodic refresh
+  useEffect(() => {
+    if (session?.user) {
+      fetchNotifications();
+
+      // Set up periodic refresh every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session]);
+
+  // Fetch when dropdown opens
+  useEffect(() => {
+    if (notificationOpen && session?.user) {
       fetchNotifications();
     }
-  }, [notificationOpen]);
+  }, [notificationOpen, session]);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" });
+    try {
+      await signOut({ callbackUrl: "/" });
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const getUserInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+    try {
+      if (!name || typeof name !== "string") return "V";
+
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    } catch (error) {
+      console.error("Error generating user initials:", error);
+      return "V";
+    }
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "order":
-        return <ShoppingBagIcon className="h-4 w-4 text-blue-500" />;
-      case "product":
-        return <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />;
-      case "payment":
-        return <CheckIcon className="h-4 w-4 text-green-500" />;
-      case "system":
-        return <InformationCircleIcon className="h-4 w-4 text-purple-500" />;
-      default:
-        return <BellIcon className="h-4 w-4 text-gray-500" />;
+  const getNotificationIcon = (type: string, severity: string) => {
+    const baseClasses = "h-4 w-4";
+
+    try {
+      switch (type) {
+        case "NEW_ORDER":
+          return <ShoppingBagIcon className={`${baseClasses} text-blue-500`} />;
+        case "ORDER_UPDATED":
+          return <ClockIcon className={`${baseClasses} text-purple-500`} />;
+        case "LOW_STOCK":
+          return (
+            <ExclamationTriangleIcon
+              className={`${baseClasses} ${severity === "CRITICAL" ? "text-red-500" : "text-orange-500"}`}
+            />
+          );
+        case "NEW_REVIEW":
+          return <CheckIcon className={`${baseClasses} text-green-500`} />;
+        case "SYSTEM_ALERT":
+          return (
+            <InformationCircleIcon
+              className={`${baseClasses} text-purple-500`}
+            />
+          );
+        default:
+          return <BellIcon className={`${baseClasses} text-gray-500`} />;
+      }
+    } catch (error) {
+      console.error("Error generating notification icon:", error);
+      return <BellIcon className={`${baseClasses} text-gray-500`} />;
+    }
+  };
+
+  const getNotificationTitle = (type: string) => {
+    try {
+      switch (type) {
+        case "NEW_ORDER":
+          return "New Order";
+        case "ORDER_UPDATED":
+          return "Order Update";
+        case "LOW_STOCK":
+          return "Low Stock";
+        case "NEW_REVIEW":
+          return "New Review";
+        case "SYSTEM_ALERT":
+          return "System Alert";
+        default:
+          return "Notification";
+      }
+    } catch (error) {
+      console.error("Error generating notification title:", error);
+      return "Notification";
+    }
+  };
+
+  const getActionUrl = (notification: Notification) => {
+    try {
+      switch (notification.type) {
+        case "NEW_ORDER":
+        case "ORDER_UPDATED":
+          return notification.orderId ? `/vendor/orders` : "/vendor/orders";
+        case "LOW_STOCK":
+          return notification.productId
+            ? `/vendor/products`
+            : "/vendor/products";
+        case "NEW_REVIEW":
+          return notification.productId
+            ? `/vendor/products`
+            : "/vendor/products";
+        default:
+          return "/vendor/notifications";
+      }
+    } catch (error) {
+      console.error("Error generating action URL:", error);
+      return "/vendor/notifications";
     }
   };
 
   const formatTimeAgo = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    );
+    try {
+      if (!dateString) return "Unknown";
 
-    if (diffInHours < 1) return "Just now";
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
+      const now = new Date();
+      const date = new Date(dateString);
+
+      if (isNaN(date.getTime())) {
+        return "Unknown";
+      }
+
+      const diffInMinutes = Math.floor(
+        (now.getTime() - date.getTime()) / (1000 * 60)
+      );
+
+      if (diffInMinutes < 1) return "Just now";
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d ago`;
+    } catch (error) {
+      console.error("Error formatting time ago:", error);
+      return "Unknown";
+    }
   };
 
   const markAsRead = async (notificationId: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === notificationId ? { ...notif, isRead: true } : notif
-      )
-    );
-    // Here you would make an API call to mark as read
+    try {
+      if (!notificationId) return;
+
+      const response = await fetch("/api/vendor/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notificationId }),
+      });
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, isRead: true } : notif
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
   const markAllAsRead = async () => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, isRead: true }))
-    );
-    // Here you would make an API call to mark all as read
+    try {
+      const unreadNotifications = notifications.filter((n) => !n.isRead);
+
+      if (unreadNotifications.length === 0) return;
+
+      const response = await fetch("/api/vendor/notifications", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ markAllRead: true }),
+      });
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, isRead: true }))
+        );
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
   };
 
+  // Safe calculation of unread count
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
@@ -244,7 +380,10 @@ export default function VendorTopBar({
             {/* Breadcrumbs */}
             <nav className="hidden sm:flex items-center space-x-1 text-xs">
               {finalBreadcrumbs.map((crumb, index) => (
-                <div key={crumb.name} className="flex items-center">
+                <div
+                  key={`${crumb.name}-${index}`}
+                  className="flex items-center"
+                >
                   {index > 0 && (
                     <ChevronDownIcon className="h-2.5 w-2.5 text-gray-400 mx-1.5 rotate-[-90deg]" />
                   )}
@@ -267,7 +406,9 @@ export default function VendorTopBar({
             {/* Page title for mobile */}
             <div className="sm:hidden">
               <h1 className="text-sm font-semibold text-gray-900">
-                {title || finalBreadcrumbs[finalBreadcrumbs.length - 1]?.name}
+                {title ||
+                  finalBreadcrumbs[finalBreadcrumbs.length - 1]?.name ||
+                  "Dashboard"}
               </h1>
             </div>
           </div>
@@ -287,16 +428,22 @@ export default function VendorTopBar({
                 >
                   <BellIcon className="h-4 w-4 text-gray-600" />
                   {unreadCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </Badge>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1"
+                    >
+                      <Badge className="h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </Badge>
+                    </motion.div>
                   )}
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 align="end"
-                className="w-72 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0 max-h-80 overflow-hidden"
+                className="w-80 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0 max-h-96 overflow-hidden"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-gray-100">
@@ -324,65 +471,104 @@ export default function VendorTopBar({
                 </div>
 
                 {/* Notifications List */}
-                <div className="max-h-56 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto">
                   {isLoadingNotifications ? (
-                    // Skeleton loading
+                    // Skeleton loading - safe array creation
                     Array.from({ length: 3 }).map((_, i) => (
-                      <NotificationSkeleton key={i} />
+                      <NotificationSkeleton key={`skeleton-${i}`} />
                     ))
-                  ) : notifications.length === 0 ? (
+                  ) : error ? (
+                    // Error state
+                    <div className="p-6 text-center">
+                      <ExclamationTriangleIcon className="h-8 w-8 text-red-300 mx-auto mb-2" />
+                      <p className="text-red-600 text-xs mb-2">{error}</p>
+                      <Button
+                        onClick={fetchNotifications}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-blue-600 cursor-pointer"
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  ) : !notifications || notifications.length === 0 ? (
                     // Empty state
                     <div className="p-6 text-center">
                       <BellIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                       <p className="text-gray-500 text-xs">
                         No notifications yet
                       </p>
+                      <p className="text-gray-400 text-xs mt-1">
+                        You&apos;ll see order updates and alerts here
+                      </p>
                     </div>
                   ) : (
-                    // Notifications
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`px-3 py-2 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                          !notification.isRead ? "bg-blue-50" : ""
-                        }`}
-                        onClick={() => {
-                          if (!notification.isRead) {
-                            markAsRead(notification.id);
-                          }
-                          if (notification.actionUrl) {
-                            // Navigate to action URL
-                            window.location.href = notification.actionUrl;
-                          }
-                        }}
-                      >
-                        <div className="flex items-start space-x-2">
-                          <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            {getNotificationIcon(notification.type)}
+                    // Real notifications
+                    <AnimatePresence>
+                      {notifications.map((notification) => (
+                        <motion.div
+                          key={notification.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={`px-3 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                            !notification.isRead ? "bg-blue-50" : ""
+                          } ${
+                            notification.severity === "CRITICAL"
+                              ? "border-l-2 border-l-red-500"
+                              : notification.severity === "WARNING"
+                                ? "border-l-2 border-l-orange-500"
+                                : ""
+                          }`}
+                          onClick={() => {
+                            if (!notification.isRead) {
+                              markAsRead(notification.id);
+                            }
+                            const actionUrl = getActionUrl(notification);
+                            if (actionUrl) {
+                              setNotificationOpen(false);
+                              window.location.href = actionUrl;
+                            }
+                          }}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                              {getNotificationIcon(
+                                notification.type,
+                                notification.severity
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p
+                                  className={`text-xs font-medium ${
+                                    !notification.isRead
+                                      ? "text-gray-900"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  {getNotificationTitle(notification.type)}
+                                </p>
+                                <p className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                                  {formatTimeAgo(notification.createdAt)}
+                                </p>
+                              </div>
+                              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                {notification.message}
+                              </p>
+                              {notification.severity === "CRITICAL" && (
+                                <Badge className="mt-1 bg-red-100 text-red-800 text-xs">
+                                  Urgent
+                                </Badge>
+                              )}
+                            </div>
+                            {!notification.isRead && (
+                              <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full"></div>
+                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-xs font-medium ${
-                                !notification.isRead
-                                  ? "text-gray-900"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {notification.title}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {formatTimeAgo(notification.createdAt)}
-                            </p>
-                          </div>
-                          {!notification.isRead && (
-                            <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   )}
                 </div>
 
@@ -391,9 +577,10 @@ export default function VendorTopBar({
                   <div className="p-2 border-t border-gray-100 bg-gray-50">
                     <Link
                       href="/vendor/notifications"
-                      className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                      onClick={() => setNotificationOpen(false)}
+                      className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer py-1"
                     >
-                      View all notifications
+                      View all notifications →
                     </Link>
                   </div>
                 )}
@@ -461,16 +648,6 @@ export default function VendorTopBar({
 
                 {/* Quick actions */}
                 <div className="p-1">
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/"
-                      className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
-                    >
-                      <HomeIcon className="h-3 w-3 mr-2 text-gray-400" />
-                      Visit Store
-                    </Link>
-                  </DropdownMenuItem>
-
                   <DropdownMenuItem asChild>
                     <Link
                       href="/vendor/settings"

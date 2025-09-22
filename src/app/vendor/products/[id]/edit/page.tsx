@@ -70,7 +70,12 @@ interface Product {
   price: number;
   comparePrice?: number;
   images: string[];
-  brand?: string;
+  brand?: {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+  };
   modelNumber?: string;
   stock: number;
   lowStockAlert: number;
@@ -95,6 +100,11 @@ interface Product {
     id: string;
     name: string;
   };
+}
+
+interface Brand {
+  id: string;
+  name: string;
 }
 
 interface Category {
@@ -250,7 +260,7 @@ function ProductCardPreview({ product }: { product: Product }) {
           <div>
             {product.brand && (
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
-                {product.brand}
+                {product.brand.name}
               </p>
             )}
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight">
@@ -503,6 +513,7 @@ export default function VendorEditProductPage() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [newCloudinaryUrls, setNewCloudinaryUrls] = useState<string[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const steps = [
     {
@@ -527,9 +538,10 @@ export default function VendorEditProductPage() {
   useEffect(() => {
     const loadProduct = async () => {
       try {
-        const [productRes, categoriesRes] = await Promise.all([
+        const [productRes, categoriesRes, brandsRes] = await Promise.all([
           fetch(`/api/vendor/products/${params.id}`),
           fetch("/api/categories"),
+          fetch("/api/brands"),
         ]);
 
         if (productRes.ok) {
@@ -549,6 +561,12 @@ export default function VendorEditProductPage() {
           const categoriesData = await categoriesRes.json();
           if (categoriesData.success) {
             setCategories(categoriesData.categories);
+          }
+        }
+        if (brandsRes.ok) {
+          const brandsData = await brandsRes.json();
+          if (brandsData.success) {
+            setBrands(brandsData.brands);
           }
         }
       } catch (error) {
@@ -733,8 +751,11 @@ export default function VendorEditProductPage() {
         );
 
       // Prepare color variants for submission
+      // Make sure this matches what your API expects
       const colorVariantsForSubmission = (product.colors || [])
-        .filter((variant) => variant.color && variant.image)
+        .filter(
+          (variant) => variant.color && (variant.cloudinaryUrl || variant.image)
+        )
         .map((variant) => ({
           color: variant.color,
           image: variant.cloudinaryUrl || variant.image,
@@ -744,7 +765,7 @@ export default function VendorEditProductPage() {
       const payload = {
         name: product.name,
         description: product.description,
-        brand: product.brand,
+        brandId: product.brand?.id,
         modelNumber: product.modelNumber,
         categoryId: product.categoryId,
         subcategoryId: product.subcategoryId,
@@ -753,7 +774,8 @@ export default function VendorEditProductPage() {
         stock: product.stock,
         lowStockAlert: product.lowStockAlert,
         images: finalImageUrls,
-        colors: colorVariantsForSubmission, // Include color variants
+        colors: colorVariantsForSubmission,
+        replaceAllColors: false,
         specifications: specificationsObj,
         featured: product.featured,
         newArrival: product.newArrival,
@@ -803,7 +825,7 @@ export default function VendorEditProductPage() {
     if (currentStep === 1) {
       if (!product?.name?.trim()) stepErrors.name = "Product name is required";
       if (!product?.categoryId) stepErrors.categoryId = "Category is required";
-      if (!product?.brand?.trim()) stepErrors.brand = "Brand is required";
+      if (!product?.brand?.name?.trim()) stepErrors.brand = "Brand is required";
     } else if (currentStep === 2) {
       if (!product?.description?.trim())
         stepErrors.description = "Description is required";
@@ -1089,18 +1111,37 @@ export default function VendorEditProductPage() {
                         <Label htmlFor="brand" className="text-sm">
                           Brand *
                         </Label>
-                        <Input
-                          id="brand"
-                          value={product.brand || ""}
-                          onChange={(e) =>
-                            handleFieldChange("brand", e.target.value)
-                          }
-                          placeholder="e.g. Sony, Apple, Samsung"
-                          className={`text-sm ${errors.brand ? "border-red-500" : ""}`}
-                        />
-                        {errors.brand && (
-                          <p className="text-red-500 text-xs">{errors.brand}</p>
-                        )}
+                        <Select
+                          value={product.brand?.id || "select"}
+                          onValueChange={(value) => {
+                            if (value === "select") {
+                              handleFieldChange("brand", undefined);
+                            } else {
+                              const selectedBrand = brands.find(
+                                (b) => b.id === value
+                              );
+                              if (selectedBrand) {
+                                handleFieldChange("brand", selectedBrand);
+                              }
+                            }
+                          }}
+                        >
+                          <SelectTrigger
+                            className={`text-sm ${errors.brand ? "border-red-500" : ""}`}
+                          >
+                            <SelectValue placeholder="Select a brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">
+                              Select a brand
+                            </SelectItem>
+                            {brands.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">

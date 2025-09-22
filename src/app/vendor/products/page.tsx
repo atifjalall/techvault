@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -72,7 +72,12 @@ interface Product {
   price: number;
   comparePrice?: number;
   images: string[];
-  brand?: string;
+  brand?: {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+  };
   stock: number;
   lowStockAlert: number;
   isActive: boolean;
@@ -109,7 +114,7 @@ interface ProductsResponse {
   categories: Category[];
 }
 
-// Stats Card Component - matching customers page
+// Stats Card Component
 function StatCard({
   title,
   value,
@@ -168,7 +173,7 @@ function StatCard({
   );
 }
 
-// Sort Button Component - matching customers page
+// Sort Button Component
 function SortButton({
   field,
   currentSort,
@@ -205,7 +210,7 @@ function SortButton({
   );
 }
 
-// Loading Skeletons - matching customers page
+// Loading Skeletons
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -313,7 +318,7 @@ function ProductRow({
               {product.name}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              {product.brand} • {product.category.name}
+              {product.brand?.name} • {product.category.name}
             </p>
             {product.featured && (
               <div className="flex items-center mt-1">
@@ -444,7 +449,48 @@ function ProductRow({
   );
 }
 
-export default function VendorProductsPage() {
+// Loading skeleton for Suspense fallback
+function VendorProductsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="p-6 space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-6 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+          </div>
+          <div className="h-9 bg-gray-200 rounded w-32 animate-pulse"></div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <StatsSkeleton />
+
+        {/* Filters Skeleton */}
+        <Card className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                    <div className="h-9 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table Skeleton */}
+        <TableSkeleton />
+      </div>
+    </div>
+  );
+}
+
+// Main content component that uses useSearchParams
+function VendorProductsPageContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -629,7 +675,7 @@ export default function VendorProductsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
       <div className="p-6 space-y-6">
-        {/* Header - matching customers page style */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Products</h1>
@@ -648,7 +694,7 @@ export default function VendorProductsPage() {
           </Button>
         </div>
 
-        {/* Stats Grid - matching customers page style */}
+        {/* Stats Grid */}
         {loading ? (
           <StatsSkeleton />
         ) : (
@@ -693,7 +739,7 @@ export default function VendorProductsPage() {
           </motion.div>
         )}
 
-        {/* Filters - matching customers page style */}
+        {/* Filters */}
         <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-4">
             <form onSubmit={handleSearch} className="space-y-4">
@@ -871,7 +917,7 @@ export default function VendorProductsPage() {
           </Card>
         )}
 
-        {/* Pagination - matching customers page style */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-700">
@@ -968,5 +1014,14 @@ export default function VendorProductsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Main page export with Suspense wrapper
+export default function VendorProductsPage() {
+  return (
+    <Suspense fallback={<VendorProductsPageSkeleton />}>
+      <VendorProductsPageContent />
+    </Suspense>
   );
 }

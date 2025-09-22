@@ -4,7 +4,68 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// PATCH /api/vendor/products/[id] - Update product with full debugging
+// GET /api/vendor/products/[id] - Get single product
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const { id } = await params;
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const product = await db.product.findFirst({
+      where: {
+        id: id,
+        vendorId: session.user.id, // Ensure user owns this product
+      },
+      include: {
+        brand: true, // Include brand relation
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        subcategory: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        colors: true, // Include color variants
+        _count: {
+          select: {
+            reviews: true,
+            cartItems: true,
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/vendor/products/[id] - Update product with color variants support
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,6 +87,9 @@ export async function PATCH(
         id: id,
         vendorId: session.user.id,
       },
+      include: {
+        colors: true, // Include existing colors
+      },
     });
 
     if (!existingProduct) {
@@ -44,7 +108,7 @@ export async function PATCH(
     if (body.name !== undefined) updateData.name = body.name;
     if (body.description !== undefined)
       updateData.description = body.description || null;
-    if (body.brand !== undefined) updateData.brand = body.brand || null;
+    if (body.brandId !== undefined) updateData.brandId = body.brandId || null;
     if (body.modelNumber !== undefined)
       updateData.modelNumber = body.modelNumber || null;
     if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
@@ -101,6 +165,17 @@ export async function PATCH(
 
     console.log("🔄 UPDATE DATA:", JSON.stringify(updateData, null, 2));
 
+    // Validate brandId if provided
+    if (updateData.brandId) {
+      const brand = await db.brand.findUnique({
+        where: { id: updateData.brandId },
+      });
+
+      if (!brand) {
+        return NextResponse.json({ error: "Invalid brand" }, { status: 400 });
+      }
+    }
+
     // Validate subcategory if provided
     if (updateData.subcategoryId && updateData.categoryId) {
       const subcategory = await db.subcategory.findUnique({
@@ -135,11 +210,69 @@ export async function PATCH(
       }
     }
 
-    // Update the product
-    const updatedProduct = await db.product.update({
+    console.log("🎨 PROCESSING COLOR VARIANTS:", body.colors);
+
+    // Start a transaction to ensure consistency
+    const result = await db.$transaction(async (tx) => {
+      // Update the main product
+      const updatedProduct = await tx.product.update({
+        where: { id: id },
+        data: updateData,
+      });
+
+      // Handle color variants update if colors are provided
+      // Handle color variants update if colors are provided
+      if (body.colors !== undefined) {
+        console.log("RECEIVED COLORS:", JSON.stringify(body.colors, null, 2));
+
+        if (Array.isArray(body.colors) && body.colors.length > 0) {
+          for (const colorVariant of body.colors) {
+            if (colorVariant.color && colorVariant.image) {
+              try {
+                // Check if this exact combination already exists
+                const existing = await tx.productColor.findFirst({
+                  where: {
+                    productId: id,
+                    color: colorVariant.color,
+                  },
+                });
+
+                if (!existing) {
+                  const result = await tx.productColor.create({
+                    data: {
+                      productId: id,
+                      color: colorVariant.color,
+                      image: colorVariant.image,
+                    },
+                  });
+                  console.log("COLOR CREATED:", result);
+                } else {
+                  console.log("COLOR ALREADY EXISTS:", colorVariant.color);
+                  // Optionally update the image if it's different
+                  if (existing.image !== colorVariant.image) {
+                    await tx.productColor.update({
+                      where: { id: existing.id },
+                      data: { image: colorVariant.image },
+                    });
+                    console.log("COLOR IMAGE UPDATED:", colorVariant.color);
+                  }
+                }
+              } catch (error) {
+                console.error("COLOR CREATION ERROR:", error);
+              }
+            }
+          }
+        }
+      }
+
+      return updatedProduct;
+    });
+
+    // Fetch the final product with all relations including updated colors
+    const finalProduct = await db.product.findUnique({
       where: { id: id },
-      data: updateData,
       include: {
+        brand: true,
         category: {
           select: {
             id: true,
@@ -154,6 +287,7 @@ export async function PATCH(
             slug: true,
           },
         },
+        colors: true, // Include updated color variants
         _count: {
           select: {
             reviews: true,
@@ -163,12 +297,15 @@ export async function PATCH(
       },
     });
 
-    console.log("✅ UPDATED PRODUCT:", JSON.stringify(updatedProduct, null, 2));
+    console.log(
+      "✅ FINAL UPDATED PRODUCT WITH COLORS:",
+      JSON.stringify(finalProduct, null, 2)
+    );
 
     return NextResponse.json({
       success: true,
       message: "Product updated successfully",
-      product: updatedProduct,
+      product: finalProduct,
     });
   } catch (error) {
     console.error("❌ UPDATE ERROR:", error);
@@ -177,71 +314,12 @@ export async function PATCH(
     if (error instanceof Error) {
       if (error.message.includes("Foreign key constraint")) {
         return NextResponse.json(
-          { error: "Invalid category or subcategory reference" },
+          { error: "Invalid category, subcategory, or brand reference" },
           { status: 400 }
         );
       }
     }
 
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-// GET /api/vendor/products/[id] - Get single product
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    const { id } = await params;
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const product = await db.product.findFirst({
-      where: {
-        id: id,
-        vendorId: session.user.id,
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        subcategory: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        _count: {
-          select: {
-            reviews: true,
-            cartItems: true,
-          },
-        },
-      },
-    });
-
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      product,
-    });
-  } catch (error) {
-    console.error("Error fetching product:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -274,22 +352,32 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Delete related records first
-    await db.cartItem.deleteMany({
-      where: { productId: id },
-    });
+    // Delete related records first (in a transaction)
+    await db.$transaction(async (tx) => {
+      // Delete color variants
+      await tx.productColor.deleteMany({
+        where: { productId: id },
+      });
 
-    await db.wishlistItem.deleteMany({
-      where: { productId: id },
-    });
+      // Delete cart items
+      await tx.cartItem.deleteMany({
+        where: { productId: id },
+      });
 
-    await db.review.deleteMany({
-      where: { productId: id },
-    });
+      // Delete wishlist items
+      await tx.wishlistItem.deleteMany({
+        where: { productId: id },
+      });
 
-    // Delete the product
-    await db.product.delete({
-      where: { id: id },
+      // Delete reviews
+      await tx.review.deleteMany({
+        where: { productId: id },
+      });
+
+      // Finally delete the product
+      await tx.product.delete({
+        where: { id: id },
+      });
     });
 
     return NextResponse.json({

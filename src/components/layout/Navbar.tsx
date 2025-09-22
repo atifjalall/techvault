@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -16,7 +17,13 @@ import {
   ShoppingCartIcon,
   ArrowRightOnRectangleIcon,
   BuildingStorefrontIcon,
+  BellIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
+import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
 import { getUserInitials } from "@/lib/utils";
 
 const categories = [
@@ -66,6 +73,394 @@ const categories = [
     ],
   },
 ];
+
+// Notification interfaces
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+interface NotificationsResponse {
+  success: boolean;
+  notifications: Notification[];
+  unreadCount: number;
+}
+
+// Helper functions for notification icons and colors
+const getNotificationIcon = (type: string) => {
+  const iconMap: Record<string, any> = {
+    // Order related
+    ORDER_CONFIRMED: CheckIcon,
+    ORDER_PROCESSING: InformationCircleIcon,
+    ORDER_PACKED: InformationCircleIcon,
+    ORDER_SHIPPED: ShoppingCartIcon,
+    ORDER_OUT_FOR_DELIVERY: ShoppingCartIcon,
+    ORDER_DELIVERED: CheckIcon,
+    ORDER_CANCELLED: ExclamationTriangleIcon,
+    ORDER_REFUNDED: ExclamationTriangleIcon,
+    ORDER_RETURNED: ExclamationTriangleIcon,
+    ORDER_UPDATED: InformationCircleIcon,
+
+    // Payment
+    PAYMENT_PROCESSING: InformationCircleIcon,
+    PAYMENT_PROCESSED: CheckIcon,
+    PAYMENT_FAILED: ExclamationTriangleIcon,
+    PAYMENT_REFUNDED: InformationCircleIcon,
+    REFUND_PROCESSED: CheckIcon,
+    RETURN_APPROVED: CheckIcon,
+    RETURN_RECEIVED: InformationCircleIcon,
+    RETURN_PROCESSED: CheckIcon,
+
+    // Wishlist
+    WISHLIST_ITEM_BACK_IN_STOCK: CheckIcon,
+    WISHLIST_ITEM_PRICE_DROP: InformationCircleIcon,
+    WISHLIST_ITEM_LOW_STOCK: ExclamationTriangleIcon,
+
+    // Promotions
+    PRICE_DROP_ALERT: InformationCircleIcon,
+    PROMOTIONAL_OFFER: InformationCircleIcon,
+    FLASH_SALE_ALERT: InformationCircleIcon,
+    DISCOUNT_EXPIRING: ExclamationTriangleIcon,
+    NEW_ARRIVAL_ALERT: InformationCircleIcon,
+    BIRTHDAY_OFFER: InformationCircleIcon,
+    LOYALTY_REWARD: CheckIcon,
+
+    // Security
+    ACCOUNT_SECURITY: ExclamationTriangleIcon,
+    PASSWORD_CHANGED: CheckIcon,
+    EMAIL_CHANGED: CheckIcon,
+    LOGIN_SUSPICIOUS: ExclamationTriangleIcon,
+    ACCOUNT_LOCKED: ExclamationTriangleIcon,
+    TWO_FACTOR_ENABLED: CheckIcon,
+
+    // Engagement
+    NEWSLETTER_WELCOME: InformationCircleIcon,
+    REVIEW_REMINDER: InformationCircleIcon,
+    ABANDONED_CART_REMINDER: ShoppingCartIcon,
+    RESTOCK_NOTIFICATION: CheckIcon,
+    SHIPPING_DELAY_ALERT: ExclamationTriangleIcon,
+    DELIVERY_ATTEMPT_FAILED: ExclamationTriangleIcon,
+    CUSTOMER_SERVICE_FOLLOW_UP: InformationCircleIcon,
+
+    // Vendor notifications
+    LOW_STOCK: ExclamationTriangleIcon,
+    NEW_ORDER: ShoppingCartIcon,
+    NEW_REVIEW: InformationCircleIcon,
+    SYSTEM_ALERT: ExclamationTriangleIcon,
+    PRODUCT_APPROVED: CheckIcon,
+    PRODUCT_REJECTED: ExclamationTriangleIcon,
+    PAYOUT_PROCESSED: CheckIcon,
+    PAYOUT_FAILED: ExclamationTriangleIcon,
+    VENDOR_VERIFICATION_REQUIRED: ExclamationTriangleIcon,
+    VENDOR_ACCOUNT_SUSPENDED: ExclamationTriangleIcon,
+    VENDOR_ACCOUNT_APPROVED: CheckIcon,
+    SALES_MILESTONE: CheckIcon,
+    REVENUE_THRESHOLD_REACHED: CheckIcon,
+    INVENTORY_WARNING: ExclamationTriangleIcon,
+    COMPETITOR_PRICE_ALERT: InformationCircleIcon,
+    SEASONAL_DEMAND_FORECAST: InformationCircleIcon,
+  };
+
+  return iconMap[type] || InformationCircleIcon;
+};
+
+const getNotificationColor = (type: string) => {
+  const colorMap: Record<string, string> = {
+    // Success states (green)
+    ORDER_CONFIRMED: "text-green-600 bg-green-100",
+    ORDER_DELIVERED: "text-green-600 bg-green-100",
+    PAYMENT_PROCESSED: "text-green-600 bg-green-100",
+    PASSWORD_CHANGED: "text-green-600 bg-green-100",
+    EMAIL_CHANGED: "text-green-600 bg-green-100",
+    TWO_FACTOR_ENABLED: "text-green-600 bg-green-100",
+    REFUND_PROCESSED: "text-green-600 bg-green-100",
+    RETURN_APPROVED: "text-green-600 bg-green-100",
+    RETURN_PROCESSED: "text-green-600 bg-green-100",
+    WISHLIST_ITEM_BACK_IN_STOCK: "text-green-600 bg-green-100",
+    LOYALTY_REWARD: "text-green-600 bg-green-100",
+    RESTOCK_NOTIFICATION: "text-green-600 bg-green-100",
+    PRODUCT_APPROVED: "text-green-600 bg-green-100",
+    PAYOUT_PROCESSED: "text-green-600 bg-green-100",
+    VENDOR_ACCOUNT_APPROVED: "text-green-600 bg-green-100",
+    SALES_MILESTONE: "text-green-600 bg-green-100",
+    REVENUE_THRESHOLD_REACHED: "text-green-600 bg-green-100",
+
+    // Warning states (amber)
+    ORDER_CANCELLED: "text-amber-600 bg-amber-100",
+    ORDER_REFUNDED: "text-amber-600 bg-amber-100",
+    ORDER_RETURNED: "text-amber-600 bg-amber-100",
+    WISHLIST_ITEM_LOW_STOCK: "text-amber-600 bg-amber-100",
+    DISCOUNT_EXPIRING: "text-amber-600 bg-amber-100",
+    LOW_STOCK: "text-amber-600 bg-amber-100",
+    SHIPPING_DELAY_ALERT: "text-amber-600 bg-amber-100",
+    DELIVERY_ATTEMPT_FAILED: "text-amber-600 bg-amber-100",
+    INVENTORY_WARNING: "text-amber-600 bg-amber-100",
+    VENDOR_VERIFICATION_REQUIRED: "text-amber-600 bg-amber-100",
+
+    // Error states (red)
+    PAYMENT_FAILED: "text-red-600 bg-red-100",
+    ACCOUNT_SECURITY: "text-red-600 bg-red-100",
+    LOGIN_SUSPICIOUS: "text-red-600 bg-red-100",
+    ACCOUNT_LOCKED: "text-red-600 bg-red-100",
+    PRODUCT_REJECTED: "text-red-600 bg-red-100",
+    PAYOUT_FAILED: "text-red-600 bg-red-100",
+    VENDOR_ACCOUNT_SUSPENDED: "text-red-600 bg-red-100",
+
+    // Order process states (blue)
+    ORDER_PROCESSING: "text-blue-600 bg-blue-100",
+    ORDER_PACKED: "text-blue-600 bg-blue-100",
+    ORDER_SHIPPED: "text-blue-600 bg-blue-100",
+    ORDER_OUT_FOR_DELIVERY: "text-blue-600 bg-blue-100",
+    ORDER_UPDATED: "text-blue-600 bg-blue-100",
+    PAYMENT_PROCESSING: "text-blue-600 bg-blue-100",
+    NEW_ORDER: "text-blue-600 bg-blue-100",
+
+    // Info states (default blue)
+    default: "text-blue-600 bg-blue-100",
+  };
+
+  return colorMap[type] || colorMap.default;
+};
+
+// Customer Notifications Component
+interface NotificationsDropdownProps {
+  onClose: () => void;
+  onNotificationUpdate?: () => void;
+}
+
+function NotificationsDropdown({
+  onClose,
+  onNotificationUpdate,
+}: NotificationsDropdownProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/notifications");
+
+        if (response.ok) {
+          const data: NotificationsResponse = await response.json();
+          if (data.success) {
+            setNotifications(data.notifications || []);
+          }
+        } else {
+          throw new Error("Failed to load notifications");
+        }
+      } catch (error) {
+        console.error("Error loading notifications:", error);
+        setError("Failed to load notifications");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, []);
+
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          notificationId: notificationId,
+          markAllRead: false,
+        }),
+      });
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notification) =>
+            notification.id === notificationId
+              ? { ...notification, isRead: true }
+              : notification
+          )
+        );
+        // Notify parent component to update badge count
+        onNotificationUpdate?.();
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  // Mark all as read
+  const markAllAsRead = async () => {
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          markAllRead: true,
+        }),
+      });
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notification) => ({ ...notification, isRead: true }))
+        );
+        // Notify parent component to update badge count
+        onNotificationUpdate?.();
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
+  };
+
+  return (
+    <div className="absolute right-0 mt-2 w-80 origin-top-right bg-white rounded-lg shadow-xl border border-gray-200 z-20">
+      {/* Arrow pointer */}
+      <div className="absolute -top-1 right-4 w-2 h-2 bg-white rotate-45 border-l border-t border-gray-200"></div>
+
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+          {notifications.some((n) => !n.isRead) && (
+            <button
+              onClick={markAllAsRead}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Notifications List */}
+      <div className="max-h-80 overflow-y-auto">
+        {loading ? (
+          // Loading skeleton
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex space-x-3 animate-pulse">
+                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          // Error state
+          <div className="p-6 text-center">
+            <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
+        ) : notifications.length === 0 ? (
+          // Empty state
+          <div className="p-6 text-center">
+            <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">No notifications yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              We&apos;ll notify you about order updates and special offers
+            </p>
+          </div>
+        ) : (
+          // Notifications list
+          <div className="py-2">
+            {notifications.map((notification) => {
+              const IconComponent = getNotificationIcon(notification.type);
+              const colorClasses = getNotificationColor(notification.type);
+
+              return (
+                <div
+                  key={notification.id}
+                  className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                    notification.isRead
+                      ? "border-transparent"
+                      : "border-blue-500 bg-blue-50/30"
+                  }`}
+                  onClick={() => {
+                    markAsRead(notification.id);
+                    if (notification.actionUrl) {
+                      window.location.href = notification.actionUrl;
+                    }
+                    onClose();
+                  }}
+                >
+                  <div className="flex space-x-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClasses}`}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p
+                            className={`text-sm font-medium ${
+                              notification.isRead
+                                ? "text-gray-600"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {notification.title}
+                          </p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              notification.isRead
+                                ? "text-gray-400"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(
+                              notification.createdAt
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      {notifications.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-100">
+          <Link
+            href="/notifications"
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+            onClick={onClose}
+          >
+            View all notifications
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ProfileDropdownProps {
   user: {
@@ -293,7 +688,7 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
   );
 }
 
-// Smart Badge Component for Cart/Wishlist counters
+// Smart Badge Component for Cart/Wishlist/Notifications counters
 interface SmartBadgeProps {
   count: number;
 }
@@ -308,10 +703,148 @@ function SmartBadge({ count }: SmartBadgeProps) {
   );
 }
 
+// Notification Button Component
+function NotificationButton() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Load unread count
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      try {
+        const response = await fetch("/api/notifications?unreadOnly=true");
+        if (response.ok) {
+          const data: NotificationsResponse = await response.json();
+          if (data.success) {
+            setUnreadCount(data.unreadCount || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading notification count:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUnreadCount();
+
+    // Refresh count every 30 seconds
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update count when notifications are marked as read
+  useEffect(() => {
+    const handleNotificationRead = () => {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    };
+
+    const handleAllNotificationsRead = () => {
+      setUnreadCount(0);
+    };
+
+    window.addEventListener("notificationRead", handleNotificationRead);
+    window.addEventListener("allNotificationsRead", handleAllNotificationsRead);
+
+    return () => {
+      window.removeEventListener("notificationRead", handleNotificationRead);
+      window.removeEventListener(
+        "allNotificationsRead",
+        handleAllNotificationsRead
+      );
+    };
+  }, []);
+
+  if (loading) {
+    // Skeleton
+    return (
+      <div className="w-8 h-8 rounded-full backdrop-blur-md bg-white/10 border border-white/20 animate-pulse"></div>
+    );
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-slate-700 hover:text-slate-900 p-1.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 cursor-pointer"
+        aria-label="View notifications"
+      >
+        {unreadCount > 0 ? (
+          <BellIconSolid className="h-4 w-4 text-slate-700" />
+        ) : (
+          <BellIcon className="h-4 w-4" />
+        )}
+        <SmartBadge count={unreadCount} />
+      </button>
+
+      {/* Dropdown */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="z-20"
+          >
+            <NotificationsDropdown
+              onClose={() => setIsOpen(false)}
+              onNotificationUpdate={() => {
+                // Reload unread count when notifications are updated
+                const loadUnreadCount = async () => {
+                  try {
+                    const response = await fetch(
+                      "/api/notifications?unreadOnly=true"
+                    );
+                    if (response.ok) {
+                      const data: NotificationsResponse = await response.json();
+                      if (data.success) {
+                        setUnreadCount(data.unreadCount || 0);
+                      }
+                    }
+                  } catch (error) {
+                    console.error("Error loading notification count:", error);
+                  }
+                };
+                loadUnreadCount();
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // Fixed position skeleton components to prevent layout shift
 function NavActionsSkeleton() {
   return (
     <div className="flex items-center space-x-2">
+      {/* Notifications Skeleton */}
+      <div className="w-8 h-8 rounded-full backdrop-blur-md bg-white/10 border border-white/20 animate-pulse"></div>
+
       {/* Wishlist Skeleton */}
       <div className="w-8 h-8 rounded-full backdrop-blur-md bg-white/10 border border-white/20 animate-pulse"></div>
 
@@ -335,9 +868,100 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  // TODO: Replace with actual cart/wishlist state management
-  const [cartItemCount] = useState(0); // This should come from your cart state
-  const [wishlistItemCount] = useState(0); // This should come from your wishlist state
+  // Real cart and wishlist state management
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [wishlistItemCount, setWishlistItemCount] = useState(0);
+  const [countsLoading, setCountsLoading] = useState(true);
+
+  // Load cart and wishlist counts
+  useEffect(() => {
+    const loadCounts = async () => {
+      if (!session?.user) {
+        setCartItemCount(0);
+        setWishlistItemCount(0);
+        setCountsLoading(false);
+        return;
+      }
+
+      try {
+        setCountsLoading(true);
+
+        // Load cart count
+        const cartResponse = await fetch("/api/cart");
+        if (cartResponse.ok) {
+          const cartData = await cartResponse.json();
+          if (cartData.success) {
+            setCartItemCount(cartData.count || 0);
+          }
+        }
+
+        // Load wishlist count
+        const wishlistResponse = await fetch("/api/wishlist");
+        if (wishlistResponse.ok) {
+          const wishlistData = await wishlistResponse.json();
+          if (wishlistData.success) {
+            setWishlistItemCount(wishlistData.items?.length || 0);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading cart/wishlist counts:", error);
+      } finally {
+        setCountsLoading(false);
+      }
+    };
+
+    loadCounts();
+  }, [session]);
+
+  // Listen for cart/wishlist updates
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      // Reload cart count when cart is updated
+      if (session?.user) {
+        fetch("/api/cart")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              setCartItemCount(data.count || 0);
+            }
+          })
+          .catch((error) => console.error("Error updating cart count:", error));
+      }
+    };
+
+    const handleWishlistUpdate = () => {
+      // Reload wishlist count when wishlist is updated
+      if (session?.user) {
+        fetch("/api/wishlist")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              setWishlistItemCount(data.items?.length || 0);
+            }
+          })
+          .catch((error) =>
+            console.error("Error updating wishlist count:", error)
+          );
+      }
+    };
+
+    // Listen for custom events
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate);
+
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
+    };
+  }, [session]);
+
+  if (
+    session?.user &&
+    "role" in session.user &&
+    session.user.role === "VENDOR"
+  ) {
+    return null;
+  }
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -476,23 +1100,35 @@ export default function Navbar() {
               <NavActionsSkeleton />
             ) : (
               <div className="flex items-center space-x-2">
-                {/* Wishlist Button - Desktop only */}
-                <Link
-                  href="/wishlist"
-                  className="text-slate-700 hover:text-slate-900 p-1.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block cursor-pointer"
-                >
-                  <HeartIcon className="h-4 w-4" />
-                  <SmartBadge count={wishlistItemCount} />
-                </Link>
+                {/* Authenticated user actions */}
+                {session?.user && (
+                  <>
+                    {/* Notifications Button - Desktop only */}
+                    <div className="hidden md:block">
+                      <NotificationButton />
+                    </div>
 
-                {/* Cart Button - Desktop only */}
-                <Link
-                  href="/cart"
-                  className="text-slate-700 hover:text-slate-900 p-1.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block cursor-pointer"
-                >
-                  <ShoppingBagIcon className="h-4 w-4" />
-                  <SmartBadge count={cartItemCount} />
-                </Link>
+                    {/* Wishlist Button - Desktop only */}
+                    <Link
+                      href="/wishlist"
+                      className="text-slate-700 hover:text-slate-900 p-1.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block cursor-pointer"
+                    >
+                      <HeartIcon className="h-4 w-4" />
+                      {!countsLoading && (
+                        <SmartBadge count={wishlistItemCount} />
+                      )}
+                    </Link>
+
+                    {/* Cart Button - Desktop only */}
+                    <Link
+                      href="/cart"
+                      className="text-slate-700 hover:text-slate-900 p-1.5 relative transition-colors backdrop-blur-md bg-white/10 hover:bg-white/20 rounded-full border border-white/20 hidden md:block cursor-pointer"
+                    >
+                      <ShoppingBagIcon className="h-4 w-4" />
+                      {!countsLoading && <SmartBadge count={cartItemCount} />}
+                    </Link>
+                  </>
+                )}
 
                 {/* Auth/Profile Section - Desktop only */}
                 <div className="hidden md:block">
@@ -636,6 +1272,13 @@ export default function Navbar() {
                       >
                         My Orders
                       </Link>
+                      <Link
+                        href="/notifications"
+                        className="block px-3 py-2 text-xs text-slate-700 hover:bg-white/50 rounded-lg transition-all duration-200 cursor-pointer"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Notifications
+                      </Link>
                       <button
                         onClick={() => {
                           setIsMobileMenuOpen(false);
@@ -659,27 +1302,39 @@ export default function Navbar() {
                   </div>
                 )}
 
-                {/* Mobile Actions (Wishlist, Cart) */}
-                <div className="flex items-center px-5 space-x-4 mt-4">
-                  <Link
-                    href="/wishlist"
-                    className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200 cursor-pointer"
-                    aria-label="View wishlist"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <HeartIcon className="h-4 w-4" />
-                    <SmartBadge count={wishlistItemCount} />
-                  </Link>
-                  <Link
-                    href="/cart"
-                    className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200 cursor-pointer"
-                    aria-label="View shopping cart"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <ShoppingBagIcon className="h-4 w-4" />
-                    <SmartBadge count={cartItemCount} />
-                  </Link>
-                </div>
+                {/* Mobile Actions (Wishlist, Cart, Notifications) */}
+                {session?.user && (
+                  <div className="flex items-center px-5 space-x-4 mt-4">
+                    <Link
+                      href="/notifications"
+                      className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200 cursor-pointer"
+                      aria-label="View notifications"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <BellIcon className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="/wishlist"
+                      className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200 cursor-pointer"
+                      aria-label="View wishlist"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <HeartIcon className="h-4 w-4" />
+                      {!countsLoading && (
+                        <SmartBadge count={wishlistItemCount} />
+                      )}
+                    </Link>
+                    <Link
+                      href="/cart"
+                      className="text-slate-700 hover:text-slate-900 p-2 relative backdrop-blur-md bg-white/30 hover:bg-white/50 rounded-full border border-white/30 transition-all duration-200 cursor-pointer"
+                      aria-label="View shopping cart"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ShoppingBagIcon className="h-4 w-4" />
+                      {!countsLoading && <SmartBadge count={cartItemCount} />}
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

@@ -27,50 +27,63 @@ export async function GET() {
       );
     }
 
-    // Calculate date ranges
+    // Only allow vendors to access this endpoint
+    if (user.role !== "VENDOR") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Vendors only" },
+        { status: 403 }
+      );
+    }
+
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    // Get all products (for demo - in real scenario, filter by vendor)
-    let productIds: string[] = [];
+    // Get vendor's products
+    const vendorProducts = await db.product.findMany({
+      where: { vendorId: user.id },
+      select: { id: true },
+    });
 
-    if (user.role === "VENDOR") {
-      const vendorProducts = await db.product.findMany({
-        where: { vendorId: user.id },
-        select: { id: true },
+    const productIds = vendorProducts.map((p) => p.id);
+
+    if (productIds.length === 0) {
+      // No products yet - return empty dashboard
+      return NextResponse.json({
+        success: true,
+        data: {
+          stats: {
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalProducts: 0,
+            productViews: 0,
+            revenueChange: 0,
+            ordersChange: 0,
+            productsChange: 0,
+            viewsChange: 0,
+          },
+          recentOrders: [],
+          topProducts: [],
+        },
       });
-      productIds = vendorProducts.map((p) => p.id);
-    } else {
-      // For demo purposes, get all products if not a vendor
-      const allProducts = await db.product.findMany({
-        select: { id: true },
-        take: 10, // Limit for demo
-      });
-      productIds = allProducts.map((p) => p.id);
     }
 
     // Get current month orders
     const currentMonthOrders = await db.order.findMany({
       where: {
         createdAt: { gte: currentMonthStart },
-        ...(productIds.length > 0 && {
-          items: {
-            some: {
-              productId: { in: productIds },
-            },
+        items: {
+          some: {
+            productId: { in: productIds },
           },
-        }),
+        },
       },
       include: {
         items: {
-          where:
-            productIds.length > 0
-              ? {
-                  productId: { in: productIds },
-                }
-              : undefined,
+          where: {
+            productId: { in: productIds },
+          },
           include: {
             product: {
               select: {
@@ -83,66 +96,63 @@ export async function GET() {
         },
         user: {
           select: {
+            id: true,
             name: true,
             email: true,
           },
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
     });
 
     // Get previous month orders for comparison
     const prevMonthOrders = await db.order.findMany({
       where: {
-        createdAt: { gte: prevMonthStart, lte: prevMonthEnd },
-        ...(productIds.length > 0 && {
-          items: {
-            some: {
-              productId: { in: productIds },
-            },
+        createdAt: {
+          gte: prevMonthStart,
+          lte: prevMonthEnd,
+        },
+        items: {
+          some: {
+            productId: { in: productIds },
           },
-        }),
+        },
       },
       include: {
         items: {
-          where:
-            productIds.length > 0
-              ? {
-                  productId: { in: productIds },
-                }
-              : undefined,
+          where: {
+            productId: { in: productIds },
+          },
         },
       },
     });
 
-    // Calculate current month stats
-    const currentRevenue = currentMonthOrders.reduce(
-      (sum, order) =>
+    // Calculate current month revenue
+    const currentRevenue = currentMonthOrders.reduce((sum, order) => {
+      return (
         sum +
-        order.items.reduce(
-          (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-          0
-        ),
-      0
-    );
+        order.items.reduce((itemSum, item) => {
+          return itemSum + Number(item.price) * item.quantity;
+        }, 0)
+      );
+    }, 0);
 
+    // Calculate previous month revenue
+    const prevRevenue = prevMonthOrders.reduce((sum, order) => {
+      return (
+        sum +
+        order.items.reduce((itemSum, item) => {
+          return itemSum + Number(item.price) * item.quantity;
+        }, 0)
+      );
+    }, 0);
+
+    // Calculate stats
     const currentOrdersCount = currentMonthOrders.length;
-
-    // Calculate previous month stats
-    const prevRevenue = prevMonthOrders.reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-          0
-        ),
-      0
-    );
-
     const prevOrdersCount = prevMonthOrders.length;
+    const totalProducts = productIds.length;
 
-    // Calculate growth rates
+    // Calculate growth percentages
     const revenueChange =
       prevRevenue > 0
         ? ((currentRevenue - prevRevenue) / prevRevenue) * 100
@@ -157,104 +167,84 @@ export async function GET() {
           ? 100
           : 0;
 
-    // Get total products count
-    const totalProducts = await db.product.count({
-      where: productIds.length > 0 ? { id: { in: productIds } } : {},
-    });
+    const productsChange = Math.random() * 20 - 10; // Mock change
+    const viewsChange = Math.random() * 30 - 15; // Mock change
+    const productViews =
+      Math.floor(currentRevenue * 0.1) + Math.floor(Math.random() * 500);
 
-    const prevTotalProducts = Math.max(1, Math.floor(totalProducts * 0.9)); // Mock previous count
-    const productsChange =
-      ((totalProducts - prevTotalProducts) / prevTotalProducts) * 100;
-
-    // Mock views data (in real scenario, you'd track this)
-    const totalViews =
-      Math.floor(currentRevenue * 0.1) + Math.floor(Math.random() * 1000);
-    const prevViews = Math.floor(totalViews * 0.85);
-    const viewsChange =
-      prevViews > 0 ? ((totalViews - prevViews) / prevViews) * 100 : 0;
-
-    // Format recent orders
+    // Format recent orders - CORRECTED STRUCTURE
     const recentOrders = currentMonthOrders.slice(0, 5).map((order) => {
-      const orderTotal = order.items.reduce(
-        (sum, item) => sum + Number(item.price) * item.quantity,
-        0
-      );
-
-      const mainProduct = order.items[0]?.product?.name || "Unknown Product";
+      const orderTotal = order.items.reduce((sum, item) => {
+        return sum + Number(item.price) * item.quantity;
+      }, 0);
 
       return {
-        id: order.id.slice(-8).toUpperCase(),
-        customer: order.user.name || order.user.email || "Unknown Customer",
-        product:
-          order.items.length > 1
-            ? `${mainProduct} +${order.items.length - 1} more`
-            : mainProduct,
-        amount: orderTotal,
-        status: order.status.toLowerCase() as
-          | "delivered"
-          | "shipped"
-          | "processing"
-          | "pending",
-        date: order.createdAt.toISOString(),
+        id: order.id,
+        orderNumber: order.id.slice(-8).toUpperCase(),
+        customerName: order.user.name || order.user.email || "Unknown Customer",
+        total: orderTotal,
+        status: order.status.toLowerCase(),
+        createdAt: order.createdAt.toISOString(),
       };
     });
 
-    // Calculate top products
+    // Calculate top products - CORRECTED STRUCTURE
     const productSales = new Map<
       string,
       {
         name: string;
-        sales: number;
-        revenue: number;
-        views: number;
+        totalSold: number;
+        totalRevenue: number;
+        price: number;
       }
     >();
 
     currentMonthOrders.forEach((order) => {
       order.items.forEach((item) => {
-        const key = item.productId;
+        const productId = item.productId;
         const revenue = Number(item.price) * item.quantity;
+        const price = Number(item.price);
 
-        if (productSales.has(key)) {
-          const existing = productSales.get(key)!;
-          existing.sales += item.quantity;
-          existing.revenue += revenue;
+        if (productSales.has(productId)) {
+          const existing = productSales.get(productId)!;
+          existing.totalSold += item.quantity;
+          existing.totalRevenue += revenue;
         } else {
-          productSales.set(key, {
+          productSales.set(productId, {
             name: item.product.name,
-            sales: item.quantity,
-            revenue,
-            views: Math.floor(revenue * 0.05) + Math.floor(Math.random() * 100), // Mock views
+            totalSold: item.quantity,
+            totalRevenue: revenue,
+            price: price,
           });
         }
       });
     });
 
     const topProducts = Array.from(productSales.entries())
-      .sort(([, a], [, b]) => b.revenue - a.revenue)
-      .slice(0, 3)
+      .sort(([, a], [, b]) => b.totalRevenue - a.totalRevenue)
+      .slice(0, 5)
       .map(([id, product]) => ({
         id,
         name: product.name,
-        sales: product.sales,
-        revenue: product.revenue,
-        views: product.views,
+        price: product.price,
+        sold: product.totalSold,
+        revenue: product.totalRevenue,
       }));
 
-    // Build dashboard data
+    // Build dashboard data with correct structure
     const dashboardData = {
       stats: {
         totalRevenue: currentRevenue,
         totalOrders: currentOrdersCount,
-        totalProducts,
-        totalViews,
-        revenueChange,
-        ordersChange,
-        productsChange,
-        viewsChange,
+        totalProducts: totalProducts,
+        productViews: productViews,
+        revenueChange: revenueChange,
+        ordersChange: ordersChange,
+        productsChange: productsChange,
+        viewsChange: viewsChange,
       },
-      recentOrders,
-      topProducts,
+      recentOrders: recentOrders,
+      topProducts: topProducts,
     };
 
     return NextResponse.json({

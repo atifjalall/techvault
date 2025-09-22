@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   ArrowLeftIcon,
   EnvelopeIcon,
@@ -25,8 +26,29 @@ interface PasswordStrength {
   color: string;
 }
 
+// -----------------------------
+// Loading Component
+// -----------------------------
+function LoadingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+      <motion.div
+        className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-xs text-slate-600">Loading...</p>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
   const [currentStep, setCurrentStep] = useState<Step>("email");
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -50,14 +72,13 @@ export default function ForgotPasswordPage() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Toast notification function
-  const showToastNotification = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
+  // Redirect authenticated users away from forgot password page
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/");
+    }
+  }, [status, session, router]);
 
-  // Timer countdown effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -71,6 +92,25 @@ export default function ForgotPasswordPage() {
       if (interval) clearInterval(interval);
     };
   }, [timer]);
+
+  // Don't render if user is already authenticated
+  if (status === "loading") {
+    return <LoadingPage />;
+  }
+
+  if (status === "authenticated") {
+    return null; // Don't render anything while redirecting
+  }
+
+  // Toast notification function
+  const showToastNotification = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    const timer = setTimeout(() => setShowToast(false), 3000);
+    return () => clearTimeout(timer);
+  };
+
+  // Timer countdown effect
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -89,6 +129,10 @@ export default function ForgotPasswordPage() {
       default:
         return 0;
     }
+  };
+
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   };
 
   const validatePassword = (password: string): PasswordStrength => {
@@ -121,14 +165,26 @@ export default function ForgotPasswordPage() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
+
+    // Validate email format
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       const data = await response.json();
@@ -195,6 +251,11 @@ export default function ForgotPasswordPage() {
   };
 
   const handleCodeVerification = async (code: string) => {
+    if (code.length !== 6) {
+      setError("Please enter all 6 digits");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -202,7 +263,7 @@ export default function ForgotPasswordPage() {
       const response = await fetch("/api/auth/verify-reset-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email: email.trim(), code }),
       });
 
       const data = await response.json();
@@ -232,8 +293,18 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     // Validate passwords
+    if (!newPassword) {
+      setError("Password is required");
+      return;
+    }
+
     if (passwordStrength.score < 3) {
       setError("Password is too weak");
+      return;
+    }
+
+    if (!confirmPassword) {
+      setError("Please confirm your password");
       return;
     }
 
@@ -249,7 +320,7 @@ export default function ForgotPasswordPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           code: verificationCode.join(""),
           newPassword,
         }),
@@ -271,7 +342,7 @@ export default function ForgotPasswordPage() {
         setTimeout(async () => {
           try {
             const result = await signIn("credentials", {
-              email: email,
+              email: email.trim(),
               password: newPassword,
               redirect: false,
             });
@@ -317,7 +388,7 @@ export default function ForgotPasswordPage() {
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       const data = await response.json();
@@ -401,7 +472,7 @@ export default function ForgotPasswordPage() {
           {/* Back Button */}
           <Link
             href="/signin"
-            className="inline-flex items-center text-xs text-slate-600 hover:text-slate-900 transition-colors mb-4"
+            className="inline-flex items-center text-xs text-slate-600 hover:text-slate-900 transition-colors mb-4 cursor-pointer"
           >
             <ArrowLeftIcon className="w-3.5 h-3.5 mr-1.5" />
             Back to Sign In
@@ -418,7 +489,7 @@ export default function ForgotPasswordPage() {
                 className="mb-4 bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-xl p-3"
               >
                 <div className="flex items-center">
-                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2" />
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
                   <p className="text-xs text-red-700 font-medium">{error}</p>
                 </div>
               </motion.div>
@@ -442,11 +513,15 @@ export default function ForgotPasswordPage() {
                   Reset Password
                 </h2>
                 <p className="text-sm text-slate-600 mb-4">
-                  Enter your email address and we&apos;ll send you a verification
-                  code
+                  Enter your email address and we&apos;ll send you a
+                  verification code
                 </p>
 
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <form
+                  onSubmit={handleEmailSubmit}
+                  className="space-y-4"
+                  noValidate
+                >
                   <div>
                     <label
                       htmlFor="email"
@@ -477,7 +552,7 @@ export default function ForgotPasswordPage() {
                       size="md"
                       fullWidth
                       isLoading={isLoading}
-                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5"
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
                     >
                       {isLoading ? "Sending..." : "Send Verification Code"}
                     </Button>
@@ -551,7 +626,7 @@ export default function ForgotPasswordPage() {
                         type="button"
                         onClick={handleResendCode}
                         disabled={isLoading}
-                        className="text-xs font-medium text-slate-900 hover:text-slate-700 transition-colors disabled:opacity-50"
+                        className="text-xs font-medium text-slate-900 hover:text-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         Resend verification code
                       </button>
@@ -576,7 +651,11 @@ export default function ForgotPasswordPage() {
                   Create a strong password for your account
                 </p>
 
-                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <form
+                  onSubmit={handlePasswordSubmit}
+                  className="space-y-4"
+                  noValidate
+                >
                   {/* New Password */}
                   <div>
                     <label
@@ -600,7 +679,7 @@ export default function ForgotPasswordPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         {showPassword ? (
                           <EyeSlashIcon className="w-4 h-4" />
@@ -650,7 +729,7 @@ export default function ForgotPasswordPage() {
                                     transition={{ delay: index * 0.1 }}
                                     className="flex items-center text-xs text-slate-500"
                                   >
-                                    <XMarkIcon className="h-3 w-3 text-red-400 mr-1" />
+                                    <XMarkIcon className="h-3 w-3 text-red-400 mr-1 flex-shrink-0" />
                                     {item}
                                   </motion.div>
                                 ))}
@@ -686,7 +765,7 @@ export default function ForgotPasswordPage() {
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         {showConfirmPassword ? (
                           <EyeSlashIcon className="w-4 h-4" />
@@ -719,7 +798,7 @@ export default function ForgotPasswordPage() {
                       fullWidth
                       isLoading={isLoading}
                       disabled={isLoading || passwordStrength.score < 3}
-                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5"
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
                     >
                       {isLoading ? "Resetting..." : "Reset Password"}
                     </Button>
@@ -736,7 +815,7 @@ export default function ForgotPasswordPage() {
             Remember your password?{" "}
             <Link
               href="/signin"
-              className="font-medium text-slate-900 hover:text-slate-700 transition-colors"
+              className="font-medium text-slate-900 hover:text-slate-700 transition-colors cursor-pointer"
             >
               Sign in here
             </Link>

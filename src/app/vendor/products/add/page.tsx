@@ -62,7 +62,7 @@ interface ColorVariant {
 
 interface FormData {
   name: string;
-  brand: string;
+  brandId: string;
   categoryId: string;
   subcategoryId: string;
   modelNumber: string;
@@ -89,6 +89,11 @@ interface FormData {
   storage: string;
   length: string;
   deliveryDays: string;
+}
+
+interface Brand {
+  id: string;
+  name: string;
 }
 
 interface Category {
@@ -129,9 +134,11 @@ const COLOR_OPTIONS = [
 function ProductCardPreview({
   formData,
   selectedCategory,
+  brands,
 }: {
   formData: FormData;
   selectedCategory: Category | null;
+  brands: Brand[];
 }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
@@ -250,9 +257,10 @@ function ProductCardPreview({
         <div className="space-y-1.5">
           {/* Brand & Name */}
           <div>
-            {formData.brand && (
+            {formData.brandId && (
               <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
-                {formData.brand}
+                {brands.find((brand) => brand.id === formData.brandId)?.name ||
+                  "Brand"}
               </p>
             )}
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight">
@@ -479,7 +487,7 @@ export default function VendorAddProductPage() {
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
-    brand: "",
+    brandId: "",
     categoryId: "",
     subcategoryId: "",
     modelNumber: "",
@@ -515,6 +523,7 @@ export default function VendorAddProductPage() {
   const [apiError, setApiError] = useState<string>("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const steps = [
     {
@@ -560,7 +569,7 @@ export default function VendorAddProductPage() {
 
   // Auto-save simulation
   useEffect(() => {
-    if (formData.name || formData.brand || formData.description) {
+    if (formData.name || formData.brandId || formData.description) {
       setAutoSaveStatus("saving");
       const timer = setTimeout(() => {
         setAutoSaveStatus("saved");
@@ -568,7 +577,19 @@ export default function VendorAddProductPage() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [formData.name, formData.brand, formData.description, formData.price]);
+  }, [formData.name, formData.brandId, formData.description, formData.price]);
+
+  useEffect(() => {
+    // Load brands
+    fetch("/api/brands")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setBrands(data.brands);
+        }
+      })
+      .catch((err) => console.error("Error loading brands:", err));
+  }, []);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -662,7 +683,7 @@ export default function VendorAddProductPage() {
     if (currentStep === 1) {
       if (!formData.name.trim()) stepErrors.name = "Product name is required";
       if (!formData.categoryId) stepErrors.categoryId = "Category is required";
-      if (!formData.brand.trim()) stepErrors.brand = "Brand is required";
+      if (!formData.brandId) stepErrors.brandId = "Brand is required";
     } else if (currentStep === 2) {
       if (!formData.description.trim())
         stepErrors.description = "Description is required";
@@ -711,7 +732,7 @@ export default function VendorAddProductPage() {
   const getCompletionPercentage = () => {
     const requiredFields = [
       formData.name,
-      formData.brand,
+      formData.brandId,
       formData.categoryId,
       formData.description,
       formData.price,
@@ -764,7 +785,7 @@ export default function VendorAddProductPage() {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
-        brand: formData.brand.trim() || undefined,
+        brandId: formData.brandId.trim() || undefined,
         categoryId: formData.categoryId,
         subcategoryId: formData.subcategoryId || undefined,
         modelNumber: formData.modelNumber.trim() || undefined,
@@ -930,6 +951,7 @@ export default function VendorAddProductPage() {
             <ProductCardPreview
               formData={formData}
               selectedCategory={selectedCategory}
+              brands={brands}
             />
 
             {/* Stats */}
@@ -1011,17 +1033,35 @@ export default function VendorAddProductPage() {
                         <Label htmlFor="brand" className="text-sm">
                           Brand *
                         </Label>
-                        <Input
-                          id="brand"
-                          value={formData.brand}
-                          onChange={(e) =>
-                            handleInputChange("brand", e.target.value)
+                        <Select
+                          value={formData.brandId || "select"}
+                          onValueChange={(value) =>
+                            handleInputChange(
+                              "brandId",
+                              value === "select" ? "" : value
+                            )
                           }
-                          placeholder="e.g. Sony, Apple, Samsung"
-                          className={`text-sm ${errors.brand ? "border-red-500" : ""}`}
-                        />
-                        {errors.brand && (
-                          <p className="text-red-500 text-xs">{errors.brand}</p>
+                        >
+                          <SelectTrigger
+                            className={`text-sm ${errors.brandId ? "border-red-500" : ""}`}
+                          >
+                            <SelectValue placeholder="Select a brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">
+                              Select a brand
+                            </SelectItem>
+                            {brands.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.brandId && (
+                          <p className="text-red-500 text-xs">
+                            {errors.brandId}
+                          </p>
                         )}
                       </div>
 

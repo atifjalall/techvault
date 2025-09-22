@@ -78,7 +78,10 @@ model User {
   products       Product[]       @relation("VendorProducts")
   transactions   Transaction[]
   vendorSettings VendorSettings?
-  notifications     Notification[] @relation("UserNotifications")
+  notifications  Notification[]  @relation("UserNotifications")
+  
+  // Payment methods
+  savedPaymentMethods SavedPaymentMethod[]
 }
 
 enum Role {
@@ -93,6 +96,37 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Payment Methods Model - ADD THIS
+model SavedPaymentMethod {
+  id            String   @id @default(cuid())
+  userId        String
+  
+  // SAFE DATA ONLY - No sensitive card info stored
+  stripePaymentMethodId String // Stripe's tokenized payment method ID
+  last4Digits   String   // Only last 4 digits for display (e.g., "4242")
+  cardBrand     String   // Visa, Mastercard, Amex, etc.
+  expiryMonth   Int      // For display/validation (1-12)
+  expiryYear    Int      // For display/validation (e.g., 2025)
+  
+  // Billing information (safe to store)
+  billingName   String
+  billingEmail  String?
+  billingAddress Json?   // {street, city, postalCode, country}
+  
+  // Metadata
+  isDefault     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  nickname      String?  // User-friendly name like "Personal Card"
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([stripePaymentMethodId])
 }
 
 // E-commerce Models
@@ -121,15 +155,24 @@ model Subcategory {
   products  Product[] @relation("SubcategoryProducts")
 }
 
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[] // relation back to products
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Product {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
-  slug           String   @unique
+  slug           String    @unique
   description    String?
-  price          Decimal  @db.Decimal(10, 2)
-  comparePrice   Decimal? @db.Decimal(10, 2)
+  price          Decimal   @db.Decimal(10, 2)
+  comparePrice   Decimal?  @db.Decimal(10, 2)
   images         String[]
-  brand          String?
+  brandId        String?
+  brand          Brand?    @relation(fields: [brandId], references: [id])
   modelNumber    String?
   specifications Json?
   stock          Int       @default(0)
@@ -149,23 +192,24 @@ model Product {
   tags           String[]
   color          String?
   material       String?
+  deletedAt      DateTime? // ADD THIS LINE
 
   categoryId    String
   subcategoryId String?
-  vendorId      String?
-
+  vendorId      String
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   category      Category       @relation(fields: [categoryId], references: [id])
   subcategory   Subcategory?   @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
-  vendor        User?          @relation("VendorProducts", fields: [vendorId], references: [id])
+  vendor        User           @relation("VendorProducts", fields: [vendorId], references: [id]) // Make vendorId required
   reviews       Review[]
   cartItems     CartItem[]
   orderItems    OrderItem[]
   wishlistItems WishlistItem[] @relation("ProductWishlistItems")
-  notifications  Notification[] @relation("ProductNotifications")
-  colors ProductColor[]
+  notifications Notification[] @relation("ProductNotifications")
+  colors        ProductColor[]
 }
 
 // New model for product colors
@@ -209,17 +253,62 @@ model WishlistItem {
 
 model Order {
   id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid())
   userId          String
   status          OrderStatus @default(PENDING)
+  
+  // Enhanced order tracking fields
+  trackingNumber  String?     // Shipping tracking number
+  shippingCarrier String?     // DHL, UPS, Deutsche Post, etc.
+  estimatedDelivery DateTime? // Expected delivery date
+  shippedAt       DateTime?   // When order was shipped
+  deliveredAt     DateTime?   // When order was delivered
+  cancelledAt     DateTime?   // When order was cancelled
+  cancellationReason String? // Why order was cancelled
+  
+  // Payment and financial details - Made subtotal optional for existing data
   total           Decimal     @db.Decimal(10, 2)
-  shippingAddress Json
-  paymentIntentId String?
+  subtotal        Decimal?    @db.Decimal(10, 2)
+  taxAmount       Decimal     @db.Decimal(10, 2) @default(0)
+  shippingCost    Decimal     @db.Decimal(10, 2) @default(0)
+  discountAmount  Decimal     @db.Decimal(10, 2) @default(0)
+  
+  // Addresses
+  shippingAddress Json        // Customer shipping address
+  billingAddress  Json?       // Customer billing address (optional)
+  
+  // Payment details
+  paymentIntentId String?     // Stripe payment intent ID
+  paymentMethod   String?     // Card, PayPal, etc.
+  paymentStatus   PaymentStatus @default(PENDING)
+  
+  // Order metadata
+  notes           String?     // Internal vendor notes
+  customerNotes   String?     // Customer delivery instructions
+  priority        OrderPriority @default(NORMAL)
+  
+  // Timestamps
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   user  User        @relation(fields: [userId], references: [id])
   items OrderItem[]
   notifications  Notification[] @relation("OrderNotifications")
+  statusHistory  OrderStatusHistory[]
+}
+
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  notes     String?     // Why status was changed
+  changedBy String?     // Who changed the status (vendor/system)
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
 }
 
 model OrderItem {
@@ -265,11 +354,78 @@ model Notification {
 }
 
 enum NotificationType {
+  // Vendor-specific notifications
   LOW_STOCK
   NEW_ORDER
   ORDER_UPDATED
   NEW_REVIEW
   SYSTEM_ALERT
+  PRODUCT_APPROVED
+  PRODUCT_REJECTED
+  PAYOUT_PROCESSED
+  PAYOUT_FAILED
+  VENDOR_VERIFICATION_REQUIRED
+  VENDOR_ACCOUNT_SUSPENDED
+  VENDOR_ACCOUNT_APPROVED
+  SALES_MILESTONE
+  REVENUE_THRESHOLD_REACHED
+  INVENTORY_WARNING
+  COMPETITOR_PRICE_ALERT
+  SEASONAL_DEMAND_FORECAST
+  
+  // Customer order status notifications
+  ORDER_CONFIRMED
+  ORDER_PROCESSING
+  ORDER_PACKED
+  ORDER_SHIPPED
+  ORDER_OUT_FOR_DELIVERY
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+  ORDER_RETURNED
+  
+  // Customer payment notifications
+  PAYMENT_PROCESSING
+  PAYMENT_PROCESSED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+  
+  // Customer return & refund notifications
+  REFUND_PROCESSED
+  RETURN_APPROVED
+  RETURN_RECEIVED
+  RETURN_PROCESSED
+  
+  // Customer wishlist notifications
+  WISHLIST_ITEM_BACK_IN_STOCK
+  WISHLIST_ITEM_PRICE_DROP
+  WISHLIST_ITEM_LOW_STOCK
+  
+  // Customer price & promotion notifications
+  PRICE_DROP_ALERT
+  PROMOTIONAL_OFFER
+  FLASH_SALE_ALERT
+  DISCOUNT_EXPIRING
+  NEW_ARRIVAL_ALERT
+  
+  // Customer security notifications
+  ACCOUNT_SECURITY
+  PASSWORD_CHANGED
+  EMAIL_CHANGED
+  LOGIN_SUSPICIOUS
+  ACCOUNT_LOCKED
+  TWO_FACTOR_ENABLED
+  
+  // Customer marketing & engagement
+  NEWSLETTER_WELCOME
+  BIRTHDAY_OFFER
+  LOYALTY_REWARD
+  REVIEW_REMINDER
+  ABANDONED_CART_REMINDER
+  RESTOCK_NOTIFICATION
+  SHIPPING_DELAY_ALERT
+  DELIVERY_ATTEMPT_FAILED
+  CUSTOMER_SERVICE_FOLLOW_UP
 }
 
 enum NotificationSeverity {
@@ -314,9 +470,53 @@ enum TransactionType {
 }
 
 enum OrderStatus {
+  // Initial states
+  PENDING           // Order placed, awaiting payment confirmation
+  PAYMENT_PENDING   // Waiting for payment to process
+  PAYMENT_FAILED    // Payment failed, needs attention
+  
+  // Processing states
+  CONFIRMED         // Payment confirmed, order accepted
+  PROCESSING        // Order is being prepared
+  PACKAGING         // Items being packaged
+  READY_TO_SHIP     // Packaged and ready for pickup
+  
+  // Shipping states
+  SHIPPED           // Order has been shipped
+  IN_TRANSIT        // Package is on the way
+  OUT_FOR_DELIVERY  // Package is out for final delivery
+  DELIVERY_ATTEMPT  // Delivery was attempted but failed
+  
+  // Completion states
+  DELIVERED         // Successfully delivered
+  COMPLETED         // Order fully completed and confirmed
+  
+  // Problem states
+  CANCELLED         // Order cancelled (by customer or vendor)
+  REFUNDED          // Order refunded
+  RETURNED          // Order returned by customer
+  EXCHANGE_REQUESTED // Customer wants to exchange items
+  
+  // Special states
+  ON_HOLD          // Order temporarily on hold
+  REQUIRES_ACTION  // Needs manual intervention
+}
+
+// New enum for payment status
+enum PaymentStatus {
   PENDING
   PROCESSING
-  SHIPPED
-  DELIVERED
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
   CANCELLED
+}
+
+// New enum for order priority
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }

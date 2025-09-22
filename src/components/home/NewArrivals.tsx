@@ -19,6 +19,7 @@ const newProducts = [
     variants: "3 colors",
     isNew: true,
     category: "Audio",
+    slug: "wireless-gaming-headset-pro",
   },
   {
     id: 2,
@@ -30,6 +31,7 @@ const newProducts = [
     variants: "2 configurations",
     isNew: true,
     category: "Computing",
+    slug: "ultraslim-laptop-15",
   },
   {
     id: 3,
@@ -41,6 +43,7 @@ const newProducts = [
     variants: "4 colors",
     isNew: true,
     category: "Wearables",
+    slug: "smart-fitness-watch",
   },
   {
     id: 4,
@@ -52,6 +55,7 @@ const newProducts = [
     variants: "3 switch types",
     isNew: true,
     category: "Gaming",
+    slug: "mechanical-gaming-keyboard",
   },
   {
     id: 5,
@@ -63,6 +67,7 @@ const newProducts = [
     variants: "5 colors",
     isNew: true,
     category: "Audio",
+    slug: "portable-bluetooth-speaker",
   },
   {
     id: 6,
@@ -74,6 +79,7 @@ const newProducts = [
     variants: "2 colors",
     isNew: true,
     category: "Accessories",
+    slug: "wireless-charging-stand",
   },
   {
     id: 7,
@@ -85,6 +91,7 @@ const newProducts = [
     variants: "1 model",
     isNew: true,
     category: "Computing",
+    slug: "4k-webcam-pro",
   },
   {
     id: 8,
@@ -96,6 +103,7 @@ const newProducts = [
     variants: "3 colors",
     isNew: true,
     category: "Audio",
+    slug: "premium-noise-canceling-earbuds",
   },
 ];
 
