@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/vendor/orders/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -72,27 +73,51 @@ export async function GET(request: Request) {
     // Build where conditions for orders
     const whereConditions: any = {};
 
-    // For vendors, only show orders that contain their products
+    // For vendors, only show orders that contain their products (regular or variant items)
     if (user.role === "VENDOR") {
-      whereConditions.items = {
-        some: {
-          productId: { in: vendorProductIds },
+      whereConditions.OR = [
+        {
+          items: {
+            some: {
+              productId: { in: vendorProductIds },
+            },
+          },
         },
-      };
+        {
+          variantItems: {
+            some: {
+              productVariant: {
+                productId: { in: vendorProductIds },
+              },
+            },
+          },
+        },
+      ];
     }
 
     // Search filter
     if (search) {
-      whereConditions.OR = [
-        { id: { contains: search, mode: "insensitive" } },
-        { user: { name: { contains: search, mode: "insensitive" } } },
-        { user: { email: { contains: search, mode: "insensitive" } } },
+      whereConditions.AND = [
+        whereConditions.OR ? { OR: whereConditions.OR } : {},
+        {
+          OR: [
+            { id: { contains: search, mode: "insensitive" } },
+            { orderNumber: { contains: search, mode: "insensitive" } },
+            { user: { name: { contains: search, mode: "insensitive" } } },
+            { user: { email: { contains: search, mode: "insensitive" } } },
+          ],
+        },
       ];
+      delete whereConditions.OR;
     }
 
     // Status filter
     if (status && status !== "all") {
-      whereConditions.status = status.toUpperCase();
+      if (whereConditions.AND) {
+        whereConditions.AND.push({ status: status.toUpperCase() });
+      } else {
+        whereConditions.status = status.toUpperCase();
+      }
     }
 
     // Date range filter
@@ -115,7 +140,15 @@ export async function GET(request: Request) {
           break;
       }
 
-      whereConditions.createdAt = { gte: startDate };
+      const dateCondition = { createdAt: { gte: startDate } };
+      if (whereConditions.AND) {
+        whereConditions.AND.push(dateCondition);
+      } else if (whereConditions.OR) {
+        whereConditions.AND = [{ OR: whereConditions.OR }, dateCondition];
+        delete whereConditions.OR;
+      } else {
+        whereConditions.createdAt = { gte: startDate };
+      }
     }
 
     // Calculate pagination
@@ -159,8 +192,32 @@ export async function GET(request: Request) {
                   id: true,
                   name: true,
                   images: true,
-                  price: true,
                   vendorId: true,
+                },
+              },
+            },
+          },
+          variantItems: {
+            // For vendors, only include their variant products
+            where:
+              user.role === "VENDOR"
+                ? {
+                    productVariant: {
+                      productId: { in: vendorProductIds },
+                    },
+                  }
+                : undefined,
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      images: true,
+                      vendorId: true,
+                    },
+                  },
                 },
               },
             },
@@ -173,16 +230,29 @@ export async function GET(request: Request) {
       db.order.count({ where: whereConditions }),
     ]);
 
-    // Calculate statistics
+    // Calculate statistics for all vendor orders
     const allOrdersForStats = await db.order.findMany({
       where:
         user.role === "VENDOR"
           ? {
-              items: {
-                some: {
-                  productId: { in: vendorProductIds },
+              OR: [
+                {
+                  items: {
+                    some: {
+                      productId: { in: vendorProductIds },
+                    },
+                  },
                 },
-              },
+                {
+                  variantItems: {
+                    some: {
+                      productVariant: {
+                        productId: { in: vendorProductIds },
+                      },
+                    },
+                  },
+                },
+              ],
             }
           : {},
       include: {
@@ -194,12 +264,22 @@ export async function GET(request: Request) {
                 }
               : undefined,
         },
+        variantItems: {
+          where:
+            user.role === "VENDOR"
+              ? {
+                  productVariant: {
+                    productId: { in: vendorProductIds },
+                  },
+                }
+              : undefined,
+        },
       },
     });
 
-    // Calculate vendor-specific revenue and stats
+    // Helper function to calculate vendor-specific order total
     const calculateOrderTotal = (order: any) => {
-      return order.items.reduce((sum: number, item: any) => {
+      const regularItemsTotal = order.items.reduce((sum: number, item: any) => {
         // Only count items from this vendor's products
         if (
           user.role === "VENDOR" &&
@@ -209,6 +289,22 @@ export async function GET(request: Request) {
         }
         return sum + Number(item.price) * item.quantity;
       }, 0);
+
+      const variantItemsTotal = order.variantItems.reduce(
+        (sum: number, item: any) => {
+          // Only count variant items from this vendor's products
+          if (
+            user.role === "VENDOR" &&
+            !vendorProductIds.includes(item.productVariant.product.id)
+          ) {
+            return sum;
+          }
+          return sum + Number(item.price) * item.quantity;
+        },
+        0
+      );
+
+      return regularItemsTotal + variantItemsTotal;
     };
 
     const stats = {
@@ -230,45 +326,81 @@ export async function GET(request: Request) {
 
     // Transform orders data for frontend
     const transformedOrders = orders.map((order) => {
-      const orderItems = order.items.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.product.name,
-        productImage: item.product.images?.[0] || "/products/default.jpg",
-        quantity: item.quantity,
-        price: Number(item.price),
-        total: Number(item.price) * item.quantity,
-      }));
+      // Combine regular and variant items
+      const allOrderItems = [
+        ...order.items.map((item) => ({
+          id: item.id,
+          type: "regular" as const,
+          productId: item.productId,
+          variantId: null,
+          productName: item.product.name,
+          variantName: null,
+          productImage: item.product.images?.[0] || "/products/default.jpg",
+          quantity: item.quantity,
+          price: Number(item.price),
+          total: Number(item.price) * item.quantity,
+          variantDetails: null,
+        })),
+        ...order.variantItems.map((item) => {
+          const snapshot = item.variantSnapshot as any;
+          return {
+            id: item.id,
+            type: "variant" as const,
+            productId: item.productVariant.product.id,
+            variantId: item.productVariantId,
+            productName: item.productVariant.product.name,
+            variantName: snapshot?.variantName || "Variant",
+            productImage:
+              item.productVariant.images?.[0] ||
+              item.productVariant.product.images?.[0] ||
+              "/products/default.jpg",
+            quantity: item.quantity,
+            price: Number(item.price),
+            total: Number(item.price) * item.quantity,
+            variantDetails: {
+              color: snapshot?.color,
+              storage: snapshot?.storage,
+              ram: snapshot?.ram,
+              size: snapshot?.size,
+              material: snapshot?.material,
+            },
+          };
+        }),
+      ];
 
       const totalAmount = calculateOrderTotal(order);
 
       return {
         id: order.id,
-        orderNumber: `TF-${order.id.slice(-8).toUpperCase()}`,
+        orderNumber:
+          order.orderNumber || `TF-${order.id.slice(-8).toUpperCase()}`,
         customerId: order.user.id,
         customerName: order.user.name || "Unknown Customer",
         customerEmail: order.user.email,
         customerPhone: order.user.phone,
         status: order.status.toLowerCase(),
         totalAmount,
-        shippingAmount: 0, // Add shipping logic if needed
-        taxAmount: totalAmount * 0.19, // 19% VAT for Germany
-        items: orderItems,
+        shippingAmount: Number(order.shippingCost || 0),
+        taxAmount: Number(order.taxAmount || 0),
+        items: allOrderItems,
         shippingAddress: (order.shippingAddress as any) || {
           street: "",
           city: "",
           postalCode: "",
           country: "Germany",
         },
-        paymentMethod: "card", // Add payment method logic if needed
-        paymentStatus: order.status === "DELIVERED" ? "paid" : "pending",
+        paymentMethod: order.paymentMethod || "card",
+        paymentStatus: order.paymentStatus?.toLowerCase() || "pending",
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
-        estimatedDelivery: new Date(
-          Date.now() + 7 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        trackingNumber: `TK${order.id.slice(-6).toUpperCase()}`,
-        notes: "",
+        estimatedDelivery:
+          order.estimatedDelivery?.toISOString() ||
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        trackingNumber:
+          order.trackingNumber || `TK${order.id.slice(-6).toUpperCase()}`,
+        shippingCarrier: order.shippingCarrier,
+        notes: order.notes || "",
+        priority: order.priority || "NORMAL",
       };
     });
 
@@ -354,11 +486,24 @@ export async function PUT(request: Request) {
     const order = await db.order.findFirst({
       where: {
         id: orderId,
-        items: {
-          some: {
-            productId: { in: vendorProductIds },
+        OR: [
+          {
+            items: {
+              some: {
+                productId: { in: vendorProductIds },
+              },
+            },
           },
-        },
+          {
+            variantItems: {
+              some: {
+                productVariant: {
+                  productId: { in: vendorProductIds },
+                },
+              },
+            },
+          },
+        ],
       },
     });
 
@@ -378,8 +523,16 @@ export async function PUT(request: Request) {
       },
     });
 
-    // TODO: Add notification creation when notification system is implemented
-    // await db.notification.create({ ... })
+    // Create notification for status change
+    await db.notification.create({
+      data: {
+        userId: order.userId,
+        orderId: order.id,
+        type: "ORDER_UPDATED",
+        message: `Your order status has been updated to ${status}`,
+        severity: "INFO",
+      },
+    });
 
     return NextResponse.json({
       success: true,

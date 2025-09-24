@@ -1,3 +1,4 @@
+// src/app/api/vendor/dashboard/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -69,15 +70,28 @@ export async function GET() {
       });
     }
 
-    // Get current month orders
+    // Get current month orders - including both regular items and variant items
     const currentMonthOrders = await db.order.findMany({
       where: {
         createdAt: { gte: currentMonthStart },
-        items: {
-          some: {
-            productId: { in: productIds },
+        OR: [
+          {
+            items: {
+              some: {
+                productId: { in: productIds },
+              },
+            },
           },
-        },
+          {
+            variantItems: {
+              some: {
+                productVariant: {
+                  productId: { in: productIds },
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         items: {
@@ -89,7 +103,27 @@ export async function GET() {
               select: {
                 id: true,
                 name: true,
-                price: true,
+                images: true,
+              },
+            },
+          },
+        },
+        variantItems: {
+          where: {
+            productVariant: {
+              productId: { in: productIds },
+            },
+          },
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                  },
+                },
               },
             },
           },
@@ -112,11 +146,24 @@ export async function GET() {
           gte: prevMonthStart,
           lte: prevMonthEnd,
         },
-        items: {
-          some: {
-            productId: { in: productIds },
+        OR: [
+          {
+            items: {
+              some: {
+                productId: { in: productIds },
+              },
+            },
           },
-        },
+          {
+            variantItems: {
+              some: {
+                productVariant: {
+                  productId: { in: productIds },
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         items: {
@@ -124,27 +171,40 @@ export async function GET() {
             productId: { in: productIds },
           },
         },
+        variantItems: {
+          where: {
+            productVariant: {
+              productId: { in: productIds },
+            },
+          },
+        },
       },
     });
 
-    // Calculate current month revenue
+    // Calculate current month revenue from both regular and variant items
     const currentRevenue = currentMonthOrders.reduce((sum, order) => {
-      return (
-        sum +
-        order.items.reduce((itemSum, item) => {
-          return itemSum + Number(item.price) * item.quantity;
-        }, 0)
-      );
+      const regularItemsRevenue = order.items.reduce((itemSum, item) => {
+        return itemSum + Number(item.price) * item.quantity;
+      }, 0);
+
+      const variantItemsRevenue = order.variantItems.reduce((itemSum, item) => {
+        return itemSum + Number(item.price) * item.quantity;
+      }, 0);
+
+      return sum + regularItemsRevenue + variantItemsRevenue;
     }, 0);
 
     // Calculate previous month revenue
     const prevRevenue = prevMonthOrders.reduce((sum, order) => {
-      return (
-        sum +
-        order.items.reduce((itemSum, item) => {
-          return itemSum + Number(item.price) * item.quantity;
-        }, 0)
-      );
+      const regularItemsRevenue = order.items.reduce((itemSum, item) => {
+        return itemSum + Number(item.price) * item.quantity;
+      }, 0);
+
+      const variantItemsRevenue = order.variantItems.reduce((itemSum, item) => {
+        return itemSum + Number(item.price) * item.quantity;
+      }, 0);
+
+      return sum + regularItemsRevenue + variantItemsRevenue;
     }, 0);
 
     // Calculate stats
@@ -172,15 +232,21 @@ export async function GET() {
     const productViews =
       Math.floor(currentRevenue * 0.1) + Math.floor(Math.random() * 500);
 
-    // Format recent orders - CORRECTED STRUCTURE
+    // Format recent orders
     const recentOrders = currentMonthOrders.slice(0, 5).map((order) => {
-      const orderTotal = order.items.reduce((sum, item) => {
+      const regularItemsTotal = order.items.reduce((sum, item) => {
         return sum + Number(item.price) * item.quantity;
       }, 0);
 
+      const variantItemsTotal = order.variantItems.reduce((sum, item) => {
+        return sum + Number(item.price) * item.quantity;
+      }, 0);
+
+      const orderTotal = regularItemsTotal + variantItemsTotal;
+
       return {
         id: order.id,
-        orderNumber: order.id.slice(-8).toUpperCase(),
+        orderNumber: order.orderNumber || order.id.slice(-8).toUpperCase(),
         customerName: order.user.name || order.user.email || "Unknown Customer",
         total: orderTotal,
         status: order.status.toLowerCase(),
@@ -188,22 +254,22 @@ export async function GET() {
       };
     });
 
-    // Calculate top products - CORRECTED STRUCTURE
+    // Calculate top products from both regular and variant sales
     const productSales = new Map<
       string,
       {
         name: string;
         totalSold: number;
         totalRevenue: number;
-        price: number;
+        image: string;
       }
     >();
 
+    // Process regular order items
     currentMonthOrders.forEach((order) => {
       order.items.forEach((item) => {
         const productId = item.productId;
         const revenue = Number(item.price) * item.quantity;
-        const price = Number(item.price);
 
         if (productSales.has(productId)) {
           const existing = productSales.get(productId)!;
@@ -214,7 +280,28 @@ export async function GET() {
             name: item.product.name,
             totalSold: item.quantity,
             totalRevenue: revenue,
-            price: price,
+            image: item.product.images[0] || "",
+          });
+        }
+      });
+    });
+
+    // Process variant order items
+    currentMonthOrders.forEach((order) => {
+      order.variantItems.forEach((item) => {
+        const productId = item.productVariant.product.id;
+        const revenue = Number(item.price) * item.quantity;
+
+        if (productSales.has(productId)) {
+          const existing = productSales.get(productId)!;
+          existing.totalSold += item.quantity;
+          existing.totalRevenue += revenue;
+        } else {
+          productSales.set(productId, {
+            name: item.productVariant.product.name,
+            totalSold: item.quantity,
+            totalRevenue: revenue,
+            image: item.productVariant.product.images[0] || "",
           });
         }
       });
@@ -226,12 +313,12 @@ export async function GET() {
       .map(([id, product]) => ({
         id,
         name: product.name,
-        price: product.price,
+        image: product.image,
         sold: product.totalSold,
         revenue: product.totalRevenue,
       }));
 
-    // Build dashboard data with correct structure
+    // Build dashboard data
     const dashboardData = {
       stats: {
         totalRevenue: currentRevenue,

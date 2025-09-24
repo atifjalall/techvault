@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/vendor/insights/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -61,16 +62,29 @@ export async function GET(request: Request) {
       productIds = vendorProducts.map((p) => p.id);
     }
 
-    // Fetch all orders in the date range
+    // Fetch all orders in the date range - including both regular and variant items
     const orders = await db.order.findMany({
       where: {
         createdAt: { gte: startDate },
         ...(productIds.length > 0 && {
-          items: {
-            some: {
-              productId: { in: productIds },
+          OR: [
+            {
+              items: {
+                some: {
+                  productId: { in: productIds },
+                },
+              },
             },
-          },
+            {
+              variantItems: {
+                some: {
+                  productVariant: {
+                    productId: { in: productIds },
+                  },
+                },
+              },
+            },
+          ],
         }),
       },
       include: {
@@ -87,8 +101,29 @@ export async function GET(request: Request) {
                 id: true,
                 name: true,
                 images: true,
-                price: true,
-                stock: true,
+              },
+            },
+          },
+        },
+        variantItems: {
+          where:
+            productIds.length > 0
+              ? {
+                  productVariant: {
+                    productId: { in: productIds },
+                  },
+                }
+              : undefined,
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                  },
+                },
               },
             },
           },
@@ -111,18 +146,31 @@ export async function GET(request: Request) {
       (order) => new Date(order.createdAt) >= currentMonthStart
     );
 
-    // Calculate previous month for growth comparison
+    // Calculate previous month for growth comparison - FIXED: Include proper relations
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
     const prevMonthOrders = await db.order.findMany({
       where: {
         createdAt: { gte: prevMonthStart, lte: prevMonthEnd },
         ...(productIds.length > 0 && {
-          items: {
-            some: {
-              productId: { in: productIds },
+          OR: [
+            {
+              items: {
+                some: {
+                  productId: { in: productIds },
+                },
+              },
             },
-          },
+            {
+              variantItems: {
+                some: {
+                  productVariant: {
+                    productId: { in: productIds },
+                  },
+                },
+              },
+            },
+          ],
         }),
       },
       include: {
@@ -133,28 +181,64 @@ export async function GET(request: Request) {
                   productId: { in: productIds },
                 }
               : undefined,
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                images: true,
+              },
+            },
+          },
+        },
+        // FIXED: Include productVariant relation with product
+        variantItems: {
+          where:
+            productIds.length > 0
+              ? {
+                  productVariant: {
+                    productId: { in: productIds },
+                  },
+                }
+              : undefined,
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                  },
+                },
+              },
+            },
+          },
         },
       },
     });
 
+    // Helper function to calculate order revenue from both regular and variant items
+    const calculateOrderRevenue = (order: any) => {
+      const regularRevenue = order.items.reduce(
+        (sum: number, item: any) => sum + Number(item.price) * item.quantity,
+        0
+      );
+      const variantRevenue = order.variantItems.reduce(
+        (sum: number, item: any) => sum + Number(item.price) * item.quantity,
+        0
+      );
+      return regularRevenue + variantRevenue;
+    };
+
     // Calculate revenue metrics
     const currentRevenue = currentMonthOrders.reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-          0
-        ),
+      (sum, order) => sum + calculateOrderRevenue(order),
       0
     );
 
     const prevRevenue = prevMonthOrders.reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-          0
-        ),
+      (sum, order) => sum + calculateOrderRevenue(order),
       0
     );
 
@@ -195,24 +279,23 @@ export async function GET(request: Request) {
         ? ((currentCustomers - prevCustomers) / prevCustomers) * 100
         : 0;
 
-    // Get products data
+    // Get products data including variants - FIXED: Don't use both include and select
     const products = await db.product.findMany({
       where: productIds.length > 0 ? { id: { in: productIds } } : {},
-      select: {
-        id: true,
-        name: true,
-        images: true,
-        stock: true,
-        isActive: true,
-        price: true,
+      include: {
+        variants: {
+          where: { isActive: true },
+          select: {
+            stock: true,
+          },
+        },
       },
     });
 
     const activeProducts = products.filter((p) => p.isActive).length;
 
     // Calculate conversion rate based on actual page view data or estimate from orders
-    // Since we don't have page views, we'll calculate based on order patterns
-    const totalVisitors = currentOrdersCount * 25; // Assume 25 visitors per order (typical e-commerce)
+    const totalVisitors = currentOrdersCount * 25; // Assume 25 visitors per order
     const conversionRate =
       totalVisitors > 0 ? (currentOrdersCount / totalVisitors) * 100 : 0;
 
@@ -224,7 +307,7 @@ export async function GET(request: Request) {
         ? ((conversionRate - prevConversionRate) / prevConversionRate) * 100
         : 0;
 
-    // Calculate top products with real growth data
+    // Calculate top products with real growth data from both regular and variant sales
     const productSales = new Map<
       string,
       {
@@ -236,7 +319,7 @@ export async function GET(request: Request) {
       }
     >();
 
-    // Calculate current month product sales
+    // Calculate current month product sales from regular items
     currentMonthOrders.forEach((order) => {
       order.items.forEach((item) => {
         const key = item.productId;
@@ -259,10 +342,46 @@ export async function GET(request: Request) {
       });
     });
 
-    // Calculate previous month product sales for growth
+    // Calculate current month product sales from variant items
+    currentMonthOrders.forEach((order) => {
+      order.variantItems.forEach((item) => {
+        const key = item.productVariant.product.id;
+        const revenue = Number(item.price) * item.quantity;
+
+        if (productSales.has(key)) {
+          const existing = productSales.get(key)!;
+          existing.currentMonthRevenue += revenue;
+          existing.revenue += revenue;
+          existing.orders += 1;
+        } else {
+          productSales.set(key, {
+            product: item.productVariant.product,
+            revenue,
+            orders: 1,
+            currentMonthRevenue: revenue,
+            prevMonthRevenue: 0,
+          });
+        }
+      });
+    });
+
+    // Calculate previous month product sales for growth from regular items
     prevMonthOrders.forEach((order) => {
       order.items.forEach((item) => {
         const key = item.productId;
+        const revenue = Number(item.price) * item.quantity;
+
+        if (productSales.has(key)) {
+          const existing = productSales.get(key)!;
+          existing.prevMonthRevenue += revenue;
+        }
+      });
+    });
+
+    // FIXED: Calculate previous month product sales for growth from variant items
+    prevMonthOrders.forEach((order) => {
+      order.variantItems.forEach((item) => {
+        const key = item.productVariant.product.id;
         const revenue = Number(item.price) * item.quantity;
 
         if (productSales.has(key)) {
@@ -283,6 +402,14 @@ export async function GET(request: Request) {
               100
             : 0;
 
+        // Calculate total stock from variants
+        const productWithVariants = products.find(
+          (p) => p.id === item.product.id
+        );
+        const totalStock =
+          productWithVariants?.variants.reduce((sum, v) => sum + v.stock, 0) ||
+          0;
+
         return {
           id: item.product.id,
           name: item.product.name,
@@ -290,7 +417,7 @@ export async function GET(request: Request) {
           revenue: item.currentMonthRevenue,
           orders: item.orders,
           growth,
-          stock: item.product.stock,
+          stock: totalStock,
         };
       });
 
@@ -327,12 +454,7 @@ export async function GET(request: Request) {
       });
 
       const periodRevenue = periodOrders.reduce(
-        (sum, order) =>
-          sum +
-          order.items.reduce(
-            (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-            0
-          ),
+        (sum, order) => sum + calculateOrderRevenue(order),
         0
       );
 
@@ -363,12 +485,7 @@ export async function GET(request: Request) {
     });
 
     const newCustomersRevenue = newCustomersThisMonth.reduce(
-      (sum, order) =>
-        sum +
-        order.items.reduce(
-          (itemSum, item) => itemSum + Number(item.price) * item.quantity,
-          0
-        ),
+      (sum, order) => sum + calculateOrderRevenue(order),
       0
     );
 
@@ -400,7 +517,6 @@ export async function GET(request: Request) {
     ];
 
     // Calculate geographic distribution based on actual order data
-    // This would require shipping address data - for now we'll calculate proportionally
     const geographicData = [
       {
         country: "Germany",
@@ -428,14 +544,14 @@ export async function GET(request: Request) {
         device: "Desktop",
         visitors: Math.floor(totalVisitors * 0.45),
         orders: Math.floor(currentOrdersCount * 0.5),
-        conversion: conversionRate * 1.1, // Desktop typically converts better
+        conversion: conversionRate * 1.1,
         color: "#6366F1",
       },
       {
         device: "Mobile",
         visitors: Math.floor(totalVisitors * 0.5),
         orders: Math.floor(currentOrdersCount * 0.45),
-        conversion: conversionRate * 0.9, // Mobile typically converts lower
+        conversion: conversionRate * 0.9,
         color: "#8B5CF6",
       },
       {
@@ -448,15 +564,15 @@ export async function GET(request: Request) {
     ];
 
     // Calculate performance metrics
-    const totalPageViews = totalVisitors * 3; // Assume 3 pages per visitor
+    const totalPageViews = totalVisitors * 3;
     const uniqueVisitors = totalVisitors;
-    const bounceRate = 100 - conversionRate * 10; // Inverse relationship estimate
-    const avgSessionDuration = 2 + conversionRate * 0.5; // Higher conversion = longer sessions
+    const bounceRate = 100 - conversionRate * 10;
+    const avgSessionDuration = 2 + conversionRate * 0.5;
     const returnCustomerRate =
       currentCustomers > 0
         ? (returningCustomersCount / currentCustomers) * 100
         : 0;
-    const customerLifetimeValue = avgOrderValue * 2.5; // Estimate based on repeat purchases
+    const customerLifetimeValue = avgOrderValue * 2.5;
 
     const performanceMetrics = {
       pageViews: Math.floor(totalPageViews),
@@ -499,7 +615,11 @@ export async function GET(request: Request) {
     };
 
     // Generate dynamic recommendations based on actual data
-    const lowStockProducts = products.filter((p) => p.stock < 10);
+    const lowStockProducts = products.filter((p) => {
+      const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+      return totalStock < 10;
+    });
+
     if (lowStockProducts.length > 0) {
       insightsData.recommendations.push({
         type: "warning",

@@ -152,7 +152,7 @@ function getNotificationTitle(type: NotificationType): string {
   return titles[type] || "Notification";
 }
 
-// GET - Fetch notifications based on user role
+// GET - Fetch notifications based on user role (updated for variant system)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -226,6 +226,22 @@ export async function GET(request: NextRequest) {
                 },
               },
             },
+            variantItems: {
+              take: 1,
+              select: {
+                productVariant: {
+                  select: {
+                    variantName: true,
+                    product: {
+                      select: {
+                        name: true,
+                        images: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         product: {
@@ -233,8 +249,16 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             images: true,
-            price: true,
+            basePrice: true, // Updated: use basePrice instead of price
             slug: true,
+            variants: {
+              where: { isActive: true },
+              orderBy: { price: "asc" },
+              take: 1,
+              select: {
+                price: true,
+              },
+            },
           },
         },
       },
@@ -273,43 +297,78 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const formattedNotifications = notifications.map((notification) => ({
-      id: notification.id,
-      type: notification.type,
-      title: getNotificationTitle(notification.type),
-      message: notification.message,
-      severity: notification.severity,
-      isRead: notification.isRead,
-      createdAt: notification.createdAt.toISOString(),
-      updatedAt: notification.updatedAt.toISOString(),
-      ...(notification.order && {
-        actionUrl:
-          user.role === "VENDOR"
-            ? `/vendor/orders/${notification.order.id}`
-            : `/orders/${notification.order.id}`,
-        order: {
+    const formattedNotifications = notifications.map((notification) => {
+      // Get product price - use variant price if available, otherwise basePrice
+      const getProductPrice = () => {
+        if (notification.product) {
+          if (notification.product.variants.length > 0) {
+            return Number(notification.product.variants[0].price);
+          }
+          return notification.product.basePrice
+            ? Number(notification.product.basePrice)
+            : 0;
+        }
+        return 0;
+      };
+
+      // Get product/order info for notification
+      const getOrderInfo = () => {
+        if (!notification.order) return null;
+
+        // Try to get product info from variant items first, then regular items
+        let productImage = null;
+        let productName = "Order";
+
+        if (notification.order.variantItems.length > 0) {
+          const variantItem = notification.order.variantItems[0];
+          productImage = variantItem.productVariant.product.images[0] || null;
+          productName = `${variantItem.productVariant.product.name} - ${variantItem.productVariant.variantName}`;
+        } else if (notification.order.items.length > 0) {
+          const item = notification.order.items[0];
+          productImage = item.product.images[0] || null;
+          productName = item.product.name;
+        }
+
+        return {
           id: notification.order.id,
           status: notification.order.status,
           createdAt: notification.order.createdAt.toISOString(),
-          productImage:
-            notification.order.items[0]?.product?.images?.[0] || null,
-          productName: notification.order.items[0]?.product?.name || "Order",
-        },
-      }),
-      ...(notification.product && {
-        actionUrl:
-          user.role === "VENDOR"
-            ? `/vendor/products/${notification.product.id}`
-            : `/products/${notification.product.slug}`,
-        product: {
-          id: notification.product.id,
-          name: notification.product.name,
-          image: notification.product.images?.[0] || null,
-          price: Number(notification.product.price),
-          slug: notification.product.slug,
-        },
-      }),
-    }));
+          productImage,
+          productName,
+        };
+      };
+
+      return {
+        id: notification.id,
+        type: notification.type,
+        title: getNotificationTitle(notification.type),
+        message: notification.message,
+        severity: notification.severity,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString(),
+        ...(notification.order && {
+          actionUrl:
+            user.role === "VENDOR"
+              ? `/vendor/orders/${notification.order.id}`
+              : `/orders/${notification.order.id}`,
+          order: getOrderInfo(),
+        }),
+        ...(notification.product && {
+          actionUrl:
+            user.role === "VENDOR"
+              ? `/vendor/products/${notification.product.id}`
+              : `/products/${notification.product.slug}`,
+          product: {
+            id: notification.product.id,
+            name: notification.product.name,
+            image: notification.product.images[0] || null,
+            price: getProductPrice(),
+            slug: notification.product.slug,
+          },
+        }),
+      };
+    });
 
     return NextResponse.json({
       success: true,

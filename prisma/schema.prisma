@@ -1,3 +1,5 @@
+// Enhanced Prisma Schema for Professional Product Variant System
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth required tables
+// NextAuth required tables (keeping existing)
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -41,26 +43,20 @@ model User {
   emailVerified     DateTime?
   image             String?
   password          String?
-  phone             String?              // NEW - Phone number
-  bio               String?              // NEW - Business description
+  phone             String?
+  bio               String?
   isVerified        Boolean   @default(false)
   verificationToken String?
   resetToken        String?
   resetTokenExpiry  DateTime?
   
-  // NEW - Security settings
   twoFactorEnabled    Boolean   @default(false)
   phoneVerified       Boolean   @default(false)
   lastPasswordChange  DateTime? @default(now())
   
-  // NEW - Business address as JSON
-  businessAddress     Json?     // { street, city, postalCode, country }
-  
-  // NEW - Notification preferences as JSON  
-  notificationSettings Json?    // { orderAlerts, marketingEmails, productUpdates, payoutNotifications }
-  
-  // NEW - Privacy settings as JSON
-  privacySettings     Json?     // { profileVisibility, showEmail, showPhone }
+  businessAddress     Json?
+  notificationSettings Json?
+  privacySettings     Json?
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -72,15 +68,14 @@ model User {
   orders        Order[]
   reviews       Review[]
   cartItems     CartItem[]
+  variantCartItems VariantCartItem[]  // NEW: For variant-specific cart items
   wishlistItems WishlistItem[]
 
-  // Vendor-specific
   products       Product[]       @relation("VendorProducts")
   transactions   Transaction[]
   vendorSettings VendorSettings?
   notifications  Notification[]  @relation("UserNotifications")
   
-  // Payment methods
   savedPaymentMethods SavedPaymentMethod[]
 }
 
@@ -98,27 +93,23 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Payment Methods Model - ADD THIS
 model SavedPaymentMethod {
   id            String   @id @default(cuid())
   userId        String
   
-  // SAFE DATA ONLY - No sensitive card info stored
-  stripePaymentMethodId String // Stripe's tokenized payment method ID
-  last4Digits   String   // Only last 4 digits for display (e.g., "4242")
-  cardBrand     String   // Visa, Mastercard, Amex, etc.
-  expiryMonth   Int      // For display/validation (1-12)
-  expiryYear    Int      // For display/validation (e.g., 2025)
+  stripePaymentMethodId String
+  last4Digits   String
+  cardBrand     String
+  expiryMonth   Int
+  expiryYear    Int
   
-  // Billing information (safe to store)
   billingName   String
   billingEmail  String?
-  billingAddress Json?   // {street, city, postalCode, country}
+  billingAddress Json?
   
-  // Metadata
   isDefault     Boolean  @default(false)
   isActive      Boolean  @default(true)
-  nickname      String?  // User-friendly name like "Personal Card"
+  nickname      String?
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -129,7 +120,7 @@ model SavedPaymentMethod {
   @@index([stripePaymentMethodId])
 }
 
-// E-commerce Models
+// Product Structure
 model Category {
   id           String       @id @default(cuid())
   name         String       @unique
@@ -158,74 +149,155 @@ model Subcategory {
 model Brand {
   id        String    @id @default(cuid())
   name      String    @unique
-  products  Product[] // relation back to products
+  logo      String?
+  website   String?
+  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
+// Enhanced Product Model - Base product without variants
 model Product {
   id             String    @id @default(cuid())
   name           String
   slug           String    @unique
   description    String?
-  price          Decimal   @db.Decimal(10, 2)
-  comparePrice   Decimal?  @db.Decimal(10, 2)
-  images         String[]
+  
+  // Base product images (general/default images)
+  images         String[]  @default([])
+  
   brandId        String?
   brand          Brand?    @relation(fields: [brandId], references: [id])
+  
+  // Computed fields from variants
+  basePrice      Decimal?  @db.Decimal(10, 2)  // Starting price from cheapest variant
+  totalStock     Int       @default(0)          // Sum of all variant stocks
+  
+  // SEO and discoverability
+  tags           String[]  @default([])
   modelNumber    String?
-  specifications Json?
-  stock          Int       @default(0)
-  lowStockAlert  Int       @default(10)
+  views          Int       @default(0)
+  sold           Int       @default(0)
+  
+  // Product status
   isActive       Boolean   @default(true)
   featured       Boolean   @default(false)
   newArrival     Boolean   @default(false)
-  storage        String?
-  length         String?
-  views          Int       @default(0)
-  sold           Int       @default(0)
   returnable     Boolean   @default(true)
-  deliveryDays   Int?
-  warranty       String?
+  
+  // Shipping and warranty
+  deliveryDays   Int?      @default(3)
+  warranty       String?   // e.g., "2 years", "1 year"
+  
+  // Physical properties (shared across variants)
   weight         String?
-  dimensions     String?
-  tags           String[]
-  color          String?
-  material       String?
-  deletedAt      DateTime? // ADD THIS LINE
-
+  dimensions     String?   // L×W×H format
+  
   categoryId    String
   subcategoryId String?
   vendorId      String
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
 
   category      Category       @relation(fields: [categoryId], references: [id])
   subcategory   Subcategory?   @relation("SubcategoryProducts", fields: [subcategoryId], references: [id])
-  vendor        User           @relation("VendorProducts", fields: [vendorId], references: [id]) // Make vendorId required
+  vendor        User           @relation("VendorProducts", fields: [vendorId], references: [id])
+  
+  // Enhanced relations
+  variants      ProductVariant[]
+  specifications ProductSpecification[]
   reviews       Review[]
   cartItems     CartItem[]
   orderItems    OrderItem[]
   wishlistItems WishlistItem[] @relation("ProductWishlistItems")
   notifications Notification[] @relation("ProductNotifications")
-  colors        ProductColor[]
+  
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isActive])
+  @@index([featured])
 }
 
-// New model for product colors
-model ProductColor {
-  id        String   @id @default(cuid())
-  productId String
-  color     String      // e.g., "Red", "Blue", "Black"
-  image     String      // URL to color image (Cloudinary)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// New: Product Variants - The actual purchasable items
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  
+  // Variant identification
+  variantName   String   // e.g., "Space Black - 256GB", "2 meters", "27 inch"
+  sku           String?  @unique
+  
+  // Pricing
+  price         Decimal  @db.Decimal(10, 2)
+  comparePrice  Decimal? @db.Decimal(10, 2)
+  
+  // Stock management
+  stock         Int      @default(0)
+  lowStockAlert Int      @default(10)
+  
+  // Variant-specific attributes (flexible JSON for different product types)
+  color         String?
+  colorHex      String?
+  storage       String?  // "256GB", "512GB"
+  ram           String?  // "8GB", "16GB"
+  size          String?  // For monitors, tablets: "27 inch", "12.9 inch"
+  length        String?  // For cables: "1m", "2m", "5m"
+  material      String?  // "Aluminum", "Leather", "Silicone"
+  
+  // Additional flexible attributes
+  attributes    Json?    // For any other variant-specific properties
+  
+  // Variant images
+  images        String[] @default([])
+  thumbnailImage String? // Main image for variant selector
+  
+  // Status
+  isActive      Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([productId, color]) // Each product can have a color only once
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems     VariantCartItem[]
+  orderItems    VariantOrderItem[]
+  
+  @@index([productId])
+  @@index([sku])
+  @@index([stock])
+  @@index([isActive])
 }
 
+// Enhanced Product Specifications with Categories
+model ProductSpecification {
+  id          String   @id @default(cuid())
+  productId   String
+  
+  // Specification organization
+  category    String   // "Display", "Performance", "Camera", "Connectivity"
+  name        String   // "Screen Size", "Processor", "Main Camera"
+  value       String   // "6.7 inches", "A17 Pro", "48MP"
+  unit        String?  // "inches", "GB", "MP", "hours"
+  
+  // Ordering and importance
+  categoryOrder Int    @default(0) // Order of categories
+  specOrder     Int    @default(0) // Order within category
+  isHighlight   Boolean @default(false) // Important specs to highlight
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([category])
+  @@index([categoryOrder])
+  @@index([specOrder])
+}
+
+// Updated Cart System for Variants
 model CartItem {
   id        String   @id @default(cuid())
   userId    String
@@ -237,6 +309,22 @@ model CartItem {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+}
+
+// New: Variant-specific cart items
+model VariantCartItem {
+  id              String   @id @default(cuid())
+  userId          String
+  productVariantId String
+  quantity        Int      @default(1)
+  createdAt       DateTime @default(now())
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productVariant  ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productVariantId])
+  @@index([userId])
+  @@index([productVariantId])
 }
 
 model WishlistItem {
@@ -251,64 +339,46 @@ model WishlistItem {
   @@unique([userId, productId])
 }
 
+// Order System
 model Order {
   id              String      @id @default(cuid())
   orderNumber     String      @unique @default(cuid())
   userId          String
   status          OrderStatus @default(PENDING)
   
-  // Enhanced order tracking fields
-  trackingNumber  String?     // Shipping tracking number
-  shippingCarrier String?     // DHL, UPS, Deutsche Post, etc.
-  estimatedDelivery DateTime? // Expected delivery date
-  shippedAt       DateTime?   // When order was shipped
-  deliveredAt     DateTime?   // When order was delivered
-  cancelledAt     DateTime?   // When order was cancelled
-  cancellationReason String? // Why order was cancelled
+  trackingNumber  String?
+  shippingCarrier String?
+  estimatedDelivery DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancellationReason String?
   
-  // Payment and financial details - Made subtotal optional for existing data
   total           Decimal     @db.Decimal(10, 2)
   subtotal        Decimal?    @db.Decimal(10, 2)
   taxAmount       Decimal     @db.Decimal(10, 2) @default(0)
   shippingCost    Decimal     @db.Decimal(10, 2) @default(0)
   discountAmount  Decimal     @db.Decimal(10, 2) @default(0)
   
-  // Addresses
-  shippingAddress Json        // Customer shipping address
-  billingAddress  Json?       // Customer billing address (optional)
+  shippingAddress Json
+  billingAddress  Json?
   
-  // Payment details
-  paymentIntentId String?     // Stripe payment intent ID
-  paymentMethod   String?     // Card, PayPal, etc.
+  paymentIntentId String?
+  paymentMethod   String?
   paymentStatus   PaymentStatus @default(PENDING)
   
-  // Order metadata
-  notes           String?     // Internal vendor notes
-  customerNotes   String?     // Customer delivery instructions
+  notes           String?
+  customerNotes   String?
   priority        OrderPriority @default(NORMAL)
   
-  // Timestamps
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   user  User        @relation(fields: [userId], references: [id])
   items OrderItem[]
+  variantItems VariantOrderItem[]
   notifications  Notification[] @relation("OrderNotifications")
   statusHistory  OrderStatusHistory[]
-}
-
-
-model OrderStatusHistory {
-  id        String      @id @default(cuid())
-  orderId   String
-  status    OrderStatus
-  notes     String?     // Why status was changed
-  changedBy String?     // Who changed the status (vendor/system)
-  createdAt DateTime    @default(now())
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  @@index([orderId])
 }
 
 model OrderItem {
@@ -322,6 +392,38 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 }
 
+// New: Variant-specific order items
+model VariantOrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  productVariantId String
+  quantity        Int
+  price           Decimal @db.Decimal(10, 2)
+  
+  // Store variant details at time of order for historical accuracy
+  variantSnapshot Json    // Store variant details like color, storage, etc.
+
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+  
+  @@index([orderId])
+  @@index([productVariantId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  notes     String?
+  changedBy String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+}
+
+// Reviews
 model Review {
   id        String   @id @default(cuid())
   userId    String
@@ -336,11 +438,12 @@ model Review {
   @@unique([userId, productId])
 }
 
+// Additional models (keeping existing)
 model Notification {
   id          String      @id @default(cuid())
-  userId      String?     // Who should receive the notification (optional for admin-wide notifications)
-  productId   String?     // Optional, for product-related notifications
-  orderId     String?     // Optional, for order-related notifications
+  userId      String?
+  productId   String?
+  orderId     String?
   type        NotificationType
   severity    NotificationSeverity @default(INFO)
   message     String
@@ -353,8 +456,38 @@ model Notification {
   order   Order?   @relation("OrderNotifications", fields: [orderId], references: [id])
 }
 
+model VendorSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  storeName    String?
+  banner       String?
+  logo         String?
+  
+  businessName String?
+  businessType String?
+  taxId        String?
+  website      String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vendor User @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  vendorId  String
+  type      TransactionType
+  amount    Decimal         @db.Decimal(10, 2)
+  createdAt DateTime        @default(now())
+
+  vendor User @relation(fields: [vendorId], references: [id])
+}
+
+// Removed duplicate - VariantCartItem already defined above
+
+// Enums (keeping existing)
 enum NotificationType {
-  // Vendor-specific notifications
   LOW_STOCK
   NEW_ORDER
   ORDER_UPDATED
@@ -373,7 +506,6 @@ enum NotificationType {
   COMPETITOR_PRICE_ALERT
   SEASONAL_DEMAND_FORECAST
   
-  // Customer order status notifications
   ORDER_CONFIRMED
   ORDER_PROCESSING
   ORDER_PACKED
@@ -384,31 +516,26 @@ enum NotificationType {
   ORDER_REFUNDED
   ORDER_RETURNED
   
-  // Customer payment notifications
   PAYMENT_PROCESSING
   PAYMENT_PROCESSED
   PAYMENT_FAILED
   PAYMENT_REFUNDED
   
-  // Customer return & refund notifications
   REFUND_PROCESSED
   RETURN_APPROVED
   RETURN_RECEIVED
   RETURN_PROCESSED
   
-  // Customer wishlist notifications
   WISHLIST_ITEM_BACK_IN_STOCK
   WISHLIST_ITEM_PRICE_DROP
   WISHLIST_ITEM_LOW_STOCK
   
-  // Customer price & promotion notifications
   PRICE_DROP_ALERT
   PROMOTIONAL_OFFER
   FLASH_SALE_ALERT
   DISCOUNT_EXPIRING
   NEW_ARRIVAL_ALERT
   
-  // Customer security notifications
   ACCOUNT_SECURITY
   PASSWORD_CHANGED
   EMAIL_CHANGED
@@ -416,7 +543,6 @@ enum NotificationType {
   ACCOUNT_LOCKED
   TWO_FACTOR_ENABLED
   
-  // Customer marketing & engagement
   NEWSLETTER_WELCOME
   BIRTHDAY_OFFER
   LOYALTY_REWARD
@@ -429,39 +555,9 @@ enum NotificationType {
 }
 
 enum NotificationSeverity {
-  INFO       // General info
-  WARNING    // Needs attention (like low stock)
-  CRITICAL   // Urgent (like stock=0 or order failed)
-}
-
-// Vendor-specific models
-model VendorSettings {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  storeName    String?
-  banner       String?
-  logo         String?
-  
-  // NEW - Business information
-  businessName String?  // Legal business name
-  businessType String?  // Business category (Electronics Retail, Online Store, etc.)
-  taxId        String?  // VAT/Tax ID number (e.g., DE123456789)
-  website      String?  // Business website URL
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  vendor User @relation(fields: [userId], references: [id])
-}
-
-model Transaction {
-  id        String          @id @default(cuid())
-  vendorId  String
-  type      TransactionType
-  amount    Decimal         @db.Decimal(10, 2)
-  createdAt DateTime        @default(now())
-
-  vendor User @relation(fields: [vendorId], references: [id])
+  INFO
+  WARNING
+  CRITICAL
 }
 
 enum TransactionType {
@@ -470,39 +566,27 @@ enum TransactionType {
 }
 
 enum OrderStatus {
-  // Initial states
-  PENDING           // Order placed, awaiting payment confirmation
-  PAYMENT_PENDING   // Waiting for payment to process
-  PAYMENT_FAILED    // Payment failed, needs attention
-  
-  // Processing states
-  CONFIRMED         // Payment confirmed, order accepted
-  PROCESSING        // Order is being prepared
-  PACKAGING         // Items being packaged
-  READY_TO_SHIP     // Packaged and ready for pickup
-  
-  // Shipping states
-  SHIPPED           // Order has been shipped
-  IN_TRANSIT        // Package is on the way
-  OUT_FOR_DELIVERY  // Package is out for final delivery
-  DELIVERY_ATTEMPT  // Delivery was attempted but failed
-  
-  // Completion states
-  DELIVERED         // Successfully delivered
-  COMPLETED         // Order fully completed and confirmed
-  
-  // Problem states
-  CANCELLED         // Order cancelled (by customer or vendor)
-  REFUNDED          // Order refunded
-  RETURNED          // Order returned by customer
-  EXCHANGE_REQUESTED // Customer wants to exchange items
-  
-  // Special states
-  ON_HOLD          // Order temporarily on hold
-  REQUIRES_ACTION  // Needs manual intervention
+  PENDING
+  PAYMENT_PENDING
+  PAYMENT_FAILED
+  CONFIRMED
+  PROCESSING
+  PACKAGING
+  READY_TO_SHIP
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERY_ATTEMPT
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  RETURNED
+  EXCHANGE_REQUESTED
+  ON_HOLD
+  REQUIRES_ACTION
 }
 
-// New enum for payment status
 enum PaymentStatus {
   PENDING
   PROCESSING
@@ -513,7 +597,6 @@ enum PaymentStatus {
   CANCELLED
 }
 
-// New enum for order priority
 enum OrderPriority {
   LOW
   NORMAL

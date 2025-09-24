@@ -55,7 +55,7 @@ export class NotificationService {
 
   // ============ VENDOR NOTIFICATIONS ============
 
-  // Create notifications for new orders (vendor-focused)
+  // Create notifications for new orders (vendor-focused) - FIXED: Handle both regular and variant order items
   static async createOrderNotifications(orderId: string) {
     try {
       if (!orderId) {
@@ -68,11 +68,23 @@ export class NotificationService {
           items: {
             include: {
               product: {
+                select: {
+                  id: true,
+                  name: true,
+                  vendorId: true,
+                },
+              },
+            },
+          },
+          variantItems: {
+            include: {
+              productVariant: {
                 include: {
-                  vendor: {
+                  product: {
                     select: {
                       id: true,
                       name: true,
+                      vendorId: true,
                     },
                   },
                 },
@@ -92,19 +104,33 @@ export class NotificationService {
         throw new Error("Order not found");
       }
 
-      if (!order.items || order.items.length === 0) {
-        return [];
-      }
-
       const vendorGroups = new Map<string, any[]>();
 
+      // Process regular order items
       for (const item of order.items) {
         const vendorId = item?.product?.vendorId;
         if (vendorId) {
           if (!vendorGroups.has(vendorId)) {
             vendorGroups.set(vendorId, []);
           }
-          vendorGroups.get(vendorId)!.push(item);
+          vendorGroups.get(vendorId)!.push({
+            ...item,
+            productName: item.product.name,
+          });
+        }
+      }
+
+      // Process variant order items
+      for (const item of order.variantItems) {
+        const vendorId = item?.productVariant?.product?.vendorId;
+        if (vendorId) {
+          if (!vendorGroups.has(vendorId)) {
+            vendorGroups.set(vendorId, []);
+          }
+          vendorGroups.get(vendorId)!.push({
+            ...item,
+            productName: item.productVariant.product.name,
+          });
         }
       }
 
@@ -118,7 +144,7 @@ export class NotificationService {
         }, 0);
 
         const productNames = items
-          .map((item) => item?.product?.name || "Unknown Product")
+          .map((item) => item?.productName || "Unknown Product")
           .filter(Boolean)
           .join(", ");
 
@@ -145,74 +171,92 @@ export class NotificationService {
     }
   }
 
-  // Create low stock notifications
+  // Create low stock notifications - FIXED: Use variant-based stock management
   static async createLowStockNotifications() {
     try {
-      const lowStockProducts = await db.product.findMany({
+      // Find products that have low stock variants
+      const productsWithLowStockVariants = await db.product.findMany({
         where: {
-          stock: {
-            lte: 10,
-          },
           deletedAt: null,
-          vendorId: {
-            not: undefined,
+          variants: {
+            some: {
+              isActive: true,
+              stock: {
+                lte: 10,
+              },
+            },
           },
         },
         include: {
-          vendor: {
-            select: {
-              id: true,
-              name: true,
+          variants: {
+            where: {
+              isActive: true,
+              stock: {
+                lte: 10,
+              },
             },
           },
         },
         take: 100,
       });
 
-      if (!lowStockProducts || lowStockProducts.length === 0) {
+      if (
+        !productsWithLowStockVariants ||
+        productsWithLowStockVariants.length === 0
+      ) {
         return [];
       }
 
       const notifications = [];
 
-      for (const product of lowStockProducts) {
+      for (const product of productsWithLowStockVariants) {
         if (!product.vendorId) continue;
 
-        const existingNotification = await db.notification.findFirst({
-          where: {
-            userId: product.vendorId,
-            type: NotificationType.LOW_STOCK,
-            productId: product.id,
-            createdAt: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        for (const variant of product.variants) {
+          // Check if we already sent a notification for this variant in the last 24 hours
+          const existingNotification = await db.notification.findFirst({
+            where: {
+              userId: product.vendorId,
+              type: NotificationType.LOW_STOCK,
+              productId: product.id,
+              message: {
+                contains: variant.variantName || variant.id,
+              },
+              createdAt: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+              },
             },
-          },
-        });
-
-        if (!existingNotification) {
-          const stock = Math.max(0, product.stock || 0);
-
-          let severity: NotificationSeverity = NotificationSeverity.INFO;
-          if (stock === 0) {
-            severity = NotificationSeverity.CRITICAL;
-          } else if (stock <= 5) {
-            severity = NotificationSeverity.WARNING;
-          }
-
-          const message =
-            stock === 0
-              ? `${product.name || "Product"} is out of stock!`
-              : `${product.name || "Product"} is running low (${stock} left)`;
-
-          const notification = await this.createNotification({
-            userId: product.vendorId,
-            type: NotificationType.LOW_STOCK,
-            severity,
-            message,
-            productId: product.id,
           });
 
-          notifications.push(notification);
+          if (!existingNotification) {
+            const stock = Math.max(0, variant.stock || 0);
+
+            let severity: NotificationSeverity = NotificationSeverity.INFO;
+            if (stock === 0) {
+              severity = NotificationSeverity.CRITICAL;
+            } else if (stock <= 5) {
+              severity = NotificationSeverity.WARNING;
+            }
+
+            const variantInfo = variant.variantName
+              ? ` (${variant.variantName})`
+              : "";
+
+            const message =
+              stock === 0
+                ? `${product.name}${variantInfo} is out of stock!`
+                : `${product.name}${variantInfo} is running low (${stock} left)`;
+
+            const notification = await this.createNotification({
+              userId: product.vendorId,
+              type: NotificationType.LOW_STOCK,
+              severity,
+              message,
+              productId: product.id,
+            });
+
+            notifications.push(notification);
+          }
         }
       }
 
@@ -223,7 +267,7 @@ export class NotificationService {
     }
   }
 
-  // Create order update notifications for vendors
+  // Create order update notifications for vendors - FIXED: Handle both regular and variant items
   static async createOrderUpdateNotification(
     orderId: string,
     newStatus: string
@@ -245,6 +289,19 @@ export class NotificationService {
               },
             },
           },
+          variantItems: {
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      vendorId: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -252,19 +309,24 @@ export class NotificationService {
         throw new Error("Order not found");
       }
 
-      if (!order.items || order.items.length === 0) {
-        return [];
-      }
+      // Collect vendor IDs from both regular and variant items
+      const vendorIds = new Set<string>();
 
-      const vendorIds = [
-        ...new Set(
-          order.items
-            .map((item) => item?.product?.vendorId)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
+      // Add vendor IDs from regular items
+      order.items.forEach((item) => {
+        if (item?.product?.vendorId) {
+          vendorIds.add(item.product.vendorId);
+        }
+      });
 
-      if (vendorIds.length === 0) {
+      // Add vendor IDs from variant items
+      order.variantItems.forEach((item) => {
+        if (item?.productVariant?.product?.vendorId) {
+          vendorIds.add(item.productVariant.product.vendorId);
+        }
+      });
+
+      if (vendorIds.size === 0) {
         return [];
       }
 
@@ -300,13 +362,10 @@ export class NotificationService {
         where: { id: reviewId },
         include: {
           product: {
-            include: {
-              vendor: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
+            select: {
+              id: true,
+              name: true,
+              vendorId: true,
             },
           },
           user: {
@@ -346,7 +405,7 @@ export class NotificationService {
 
   // ============ CUSTOMER NOTIFICATIONS ============
 
-  // Create customer order confirmation notification
+  // Create customer order confirmation notification - FIXED: Handle both regular and variant items
   static async createCustomerOrderConfirmation(
     orderId: string,
     customerId: string
@@ -369,6 +428,20 @@ export class NotificationService {
               },
             },
           },
+          variantItems: {
+            take: 3,
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -376,15 +449,23 @@ export class NotificationService {
         throw new Error("Order not found");
       }
 
-      const itemCount = order.items.length;
-      const firstItem = order.items[0]?.product?.name || "items";
+      const totalItems = order.items.length + order.variantItems.length;
+      let firstItemName = "items";
+
+      if (order.items.length > 0) {
+        firstItemName = order.items[0]?.product?.name || "items";
+      } else if (order.variantItems.length > 0) {
+        firstItemName =
+          order.variantItems[0]?.productVariant?.product?.name || "items";
+      }
+
       const orderRef = order.id.slice(-8).toUpperCase();
 
       let message = `Order #${orderRef} confirmed! `;
-      if (itemCount === 1) {
-        message += `Your ${firstItem} will be processed shortly.`;
+      if (totalItems === 1) {
+        message += `Your ${firstItemName} will be processed shortly.`;
       } else {
-        message += `Your ${itemCount} items including ${firstItem} will be processed shortly.`;
+        message += `Your ${totalItems} items including ${firstItemName} will be processed shortly.`;
       }
 
       return await this.createNotification({
@@ -520,7 +601,7 @@ export class NotificationService {
     }
   }
 
-  // Create wishlist notifications
+  // Create wishlist notifications - FIXED: Use basePrice from product instead of direct price
   static async createWishlistNotification(
     customerId: string,
     productId: string,
@@ -535,14 +616,17 @@ export class NotificationService {
         where: { id: productId },
         select: {
           name: true,
-          price: true,
-          stock: true,
+          basePrice: true,
+          totalStock: true,
         },
       });
 
       if (!product) {
         throw new Error("Product not found");
       }
+
+      const price = product.basePrice ? Number(product.basePrice) : 0;
+      const stock = product.totalStock || 0;
 
       const wishlistMessages = {
         back_in_stock: {
@@ -552,12 +636,12 @@ export class NotificationService {
         },
         price_drop: {
           type: NotificationType.WISHLIST_ITEM_PRICE_DROP,
-          message: `Price drop alert! ${product.name} is now available for €${product.price}.`,
+          message: `Price drop alert! ${product.name} is now available for €${price.toFixed(2)}.`,
           severity: NotificationSeverity.INFO,
         },
         low_stock: {
           type: NotificationType.WISHLIST_ITEM_LOW_STOCK,
-          message: `Hurry! Only ${product.stock} left of ${product.name} in your wishlist.`,
+          message: `Hurry! Only ${stock} left of ${product.name} in your wishlist.`,
           severity: NotificationSeverity.WARNING,
         },
       };

@@ -1,3 +1,4 @@
+// src/app/api/wishlist/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -29,7 +30,7 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get wishlist items
+    // Get wishlist items with updated product structure
     const wishlistItems = await db.wishlistItem.findMany({
       where: { userId: user.id },
       include: {
@@ -37,6 +38,18 @@ export async function GET() {
           include: {
             brand: true,
             category: true,
+            variants: {
+              where: { isActive: true },
+              select: {
+                id: true,
+                price: true,
+                comparePrice: true,
+                stock: true,
+                color: true,
+                thumbnailImage: true,
+              },
+              orderBy: { price: "asc" },
+            },
             reviews: {
               select: { rating: true },
             },
@@ -49,8 +62,22 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Transform data
+    // Transform data with variant-based pricing
     const transformedItems = wishlistItems.map((item) => {
+      const activeVariants = item.product.variants.filter((v) => v.stock > 0);
+      const allVariants = item.product.variants;
+
+      // Get pricing from variants
+      const prices = allVariants.map((v) => Number(v.price));
+      const comparePrices = allVariants
+        .map((v) => (v.comparePrice ? Number(v.comparePrice) : null))
+        .filter(Boolean) as number[];
+
+      const basePrice = prices.length > 0 ? Math.min(...prices) : 0;
+      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+      const totalStock = activeVariants.reduce((sum, v) => sum + v.stock, 0);
+
+      // Calculate average rating
       const avgRating =
         item.product.reviews.length > 0
           ? item.product.reviews.reduce(
@@ -59,22 +86,59 @@ export async function GET() {
             ) / item.product.reviews.length
           : 0;
 
+      // Calculate discount percentage
+      const lowestComparePrice =
+        comparePrices.length > 0 ? Math.min(...comparePrices) : null;
+      const discountPercentage =
+        lowestComparePrice && lowestComparePrice > basePrice
+          ? Math.round(
+              ((lowestComparePrice - basePrice) / lowestComparePrice) * 100
+            )
+          : 0;
+
+      // Get color options from variants
+      const colorOptions = allVariants
+        .filter((v) => v.color)
+        .map((v) => ({
+          color: v.color,
+          image: v.thumbnailImage,
+        }))
+        .filter((v, i, arr) => arr.findIndex((a) => a.color === v.color) === i); // Remove duplicates
+
       return {
         id: item.id,
         productId: item.product.id,
         name: item.product.name,
         brand: item.product.brand?.name,
-        price: Number(item.product.price),
-        originalPrice: item.product.comparePrice
-          ? Number(item.product.comparePrice)
-          : null,
-        image: item.product.images[0] || "",
-        category: item.product.category.name,
-        inStock: item.product.stock > 0,
-        stock: item.product.stock,
-        rating: avgRating > 0 ? avgRating : null,
-        reviewCount: item.product._count.reviews,
         slug: item.product.slug,
+
+        // Variant-based pricing
+        price: basePrice,
+        maxPrice: maxPrice !== basePrice ? maxPrice : null,
+        priceRange:
+          maxPrice !== basePrice
+            ? `€${basePrice} - €${maxPrice}`
+            : `€${basePrice}`,
+        originalPrice: lowestComparePrice,
+        discountPercentage,
+
+        // Images and variants
+        image: item.product.images[0] || "",
+        colorOptions,
+        variantCount: allVariants.length,
+
+        // Availability
+        inStock: totalStock > 0,
+        stock: totalStock,
+
+        // Product details
+        category: item.product.category.name,
+        rating: avgRating > 0 ? Math.round(avgRating * 10) / 10 : null,
+        reviewCount: item.product._count.reviews,
+
+        // Additional info
+        featured: item.product.featured,
+        newArrival: item.product.newArrival,
         dateAdded: item.createdAt,
       };
     });
@@ -127,9 +191,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if product exists
+    // Check if product exists and is active
     const product = await db.product.findUnique({
-      where: { id: productId },
+      where: {
+        id: productId,
+        isActive: true,
+        deletedAt: null,
+      },
       select: { id: true, name: true },
     });
 
@@ -159,6 +227,17 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         productId: productId,
+      },
+    });
+
+    // Create notification for user
+    await db.notification.create({
+      data: {
+        userId: user.id,
+        productId: productId,
+        type: "WISHLIST_ITEM_BACK_IN_STOCK",
+        message: `"${product.name}" has been added to your wishlist. We'll notify you of price drops and availability.`,
+        severity: "INFO",
       },
     });
 
