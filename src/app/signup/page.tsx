@@ -13,6 +13,7 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PasswordStrength {
   score: number;
@@ -35,15 +36,184 @@ interface FormErrors {
 // -----------------------------
 function LoadingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
       <motion.div
-        className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-md w-full"
       >
-        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-xs text-slate-600">Loading...</p>
+        {/* Header Skeleton */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-center mb-8"
+        >
+          <Skeleton className="h-8 w-32 mx-auto mb-2" />
+          <Skeleton className="h-0.5 w-16 mx-auto mb-6" />
+          <Skeleton className="h-6 w-36 mx-auto mb-1" />
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </motion.div>
+
+        {/* Form Container Skeleton */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6"
+        >
+          {/* Google Sign Up Button Skeleton */}
+          <Skeleton className="w-full h-10 rounded-xl mb-4" />
+
+          {/* Divider Skeleton */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <Skeleton className="w-full h-px" />
+            </div>
+            <div className="relative flex justify-center">
+              <Skeleton className="h-4 w-32 bg-white/70" />
+            </div>
+          </div>
+
+          {/* Form Fields Skeleton */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="space-y-4"
+          >
+            {/* Name Fields Row */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="grid grid-cols-2 gap-3"
+            >
+              <div>
+                <Skeleton className="h-4 w-16 mb-1.5" />
+                <Skeleton className="w-full h-10 rounded-xl" />
+              </div>
+              <div>
+                <Skeleton className="h-4 w-16 mb-1.5" />
+                <Skeleton className="w-full h-10 rounded-xl" />
+              </div>
+            </motion.div>
+
+            {/* Email Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <Skeleton className="h-4 w-24 mb-1.5" />
+              <Skeleton className="w-full h-10 rounded-xl" />
+            </motion.div>
+
+            {/* Password Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <Skeleton className="h-4 w-16 mb-1.5" />
+              <Skeleton className="w-full h-10 rounded-xl" />
+              {/* Password Strength Indicator */}
+              <div className="mt-2">
+                <div className="flex items-center space-x-2 mb-1.5">
+                  <Skeleton className="flex-1 h-1.5 rounded-full" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center">
+                    <Skeleton className="h-3 w-3 mr-1" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <div className="flex items-center">
+                    <Skeleton className="h-3 w-3 mr-1" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Confirm Password Field */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <Skeleton className="h-4 w-28 mb-1.5" />
+              <Skeleton className="w-full h-10 rounded-xl" />
+            </motion.div>
+
+            {/* Agreements Checkboxes */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+              className="space-y-3"
+            >
+              <div className="flex items-start">
+                <Skeleton className="mt-0.5 h-3.5 w-3.5 mr-2.5" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-full mb-1" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              </div>
+              <div className="flex items-start">
+                <Skeleton className="mt-0.5 h-3.5 w-3.5 mr-2.5" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-full mb-1" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Sign Up Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+              className="pt-2"
+            >
+              <Skeleton className="w-full h-10 rounded-xl" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+
+        {/* Sign In Link Skeleton */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.0 }}
+          className="text-center mt-6"
+        >
+          <Skeleton className="h-4 w-56 mx-auto" />
+        </motion.div>
+
+        {/* Trust Indicators Skeleton */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.1 }}
+          className="text-center mt-6"
+        >
+          <div className="flex items-center justify-center space-x-6">
+            {[1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.2 + i * 0.1 }}
+                className="flex items-center"
+              >
+                <Skeleton className="w-3.5 h-3.5 mr-1" />
+                <Skeleton className="h-3 w-16" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );
