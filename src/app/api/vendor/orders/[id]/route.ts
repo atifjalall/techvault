@@ -67,11 +67,11 @@ export async function GET(
       );
     }
 
-    // Fetch order with all related data - including both regular and variant items
+    // Fetch order with all related data - both regular and variant items
     const order = await db.order.findFirst({
       where: {
         id: resolvedParams.id,
-        // Only show orders that contain vendor's products
+        // Only show orders that contain vendor's products (either regular or variant)
         OR: [
           {
             items: {
@@ -104,8 +104,8 @@ export async function GET(
             phone: true,
           },
         },
+        // Regular order items (legacy support)
         items: {
-          // Only include items that belong to this vendor
           where: {
             product: {
               vendorId: user.id,
@@ -121,8 +121,8 @@ export async function GET(
             },
           },
         },
+        // Variant order items (new system)
         variantItems: {
-          // Only include variant items that belong to this vendor
           where: {
             productVariant: {
               product: {
@@ -170,8 +170,9 @@ export async function GET(
 
     const vendorSubtotal = regularItemsSubtotal + variantItemsSubtotal;
 
-    // Combine regular and variant items for response
+    // Combine regular and variant items for unified response
     const allItems = [
+      // Regular items (legacy)
       ...order.items.map((item) => ({
         id: item.id,
         type: "regular" as const,
@@ -185,35 +186,43 @@ export async function GET(
         total: Number(item.price) * item.quantity,
         variantDetails: null,
       })),
+      // Variant items (new system)
       ...order.variantItems.map((item) => {
         const snapshot = item.variantSnapshot as any;
+        const variant = item.productVariant;
+
+        // Get the best available image
+        const image =
+          variant.images?.[0] ||
+          variant.thumbnailImage ||
+          variant.product.images[0] ||
+          "";
+
         return {
           id: item.id,
           type: "variant" as const,
-          productId: item.productVariant.product.id,
+          productId: variant.product.id,
           variantId: item.productVariantId,
-          productName: item.productVariant.product.name,
-          variantName: snapshot?.variantName || "Variant",
-          image:
-            item.productVariant.images?.[0] ||
-            item.productVariant.product.images[0] ||
-            "",
+          productName: variant.product.name,
+          variantName:
+            snapshot?.variantName || variant.variantName || "Variant",
+          image: image,
           quantity: item.quantity,
           price: Number(item.price),
           total: Number(item.price) * item.quantity,
           variantDetails: {
-            color: snapshot?.color,
-            storage: snapshot?.storage,
-            ram: snapshot?.ram,
-            size: snapshot?.size,
-            material: snapshot?.material,
-            attributes: snapshot?.attributes,
+            color: snapshot?.color || variant.color,
+            storage: snapshot?.storage || variant.storage,
+            ram: snapshot?.ram || variant.ram,
+            size: snapshot?.size || variant.size,
+            material: snapshot?.material || variant.material,
+            attributes: snapshot?.attributes || variant.attributes,
           },
         };
       }),
     ];
 
-    // Create modified order object with vendor-specific calculations
+    // Create response with vendor-specific calculations
     const vendorOrder = {
       ...order,
       items: allItems,
@@ -536,27 +545,33 @@ export async function PATCH(
       })),
       ...updatedOrder.variantItems.map((item) => {
         const snapshot = item.variantSnapshot as any;
+        const variant = item.productVariant;
+
+        const image =
+          variant.images?.[0] ||
+          variant.thumbnailImage ||
+          variant.product.images[0] ||
+          "";
+
         return {
           id: item.id,
           type: "variant" as const,
-          productId: item.productVariant.product.id,
+          productId: variant.product.id,
           variantId: item.productVariantId,
-          productName: item.productVariant.product.name,
-          variantName: snapshot?.variantName || "Variant",
-          image:
-            item.productVariant.images?.[0] ||
-            item.productVariant.product.images[0] ||
-            "",
+          productName: variant.product.name,
+          variantName:
+            snapshot?.variantName || variant.variantName || "Variant",
+          image: image,
           quantity: item.quantity,
           price: Number(item.price),
           total: Number(item.price) * item.quantity,
           variantDetails: {
-            color: snapshot?.color,
-            storage: snapshot?.storage,
-            ram: snapshot?.ram,
-            size: snapshot?.size,
-            material: snapshot?.material,
-            attributes: snapshot?.attributes,
+            color: snapshot?.color || variant.color,
+            storage: snapshot?.storage || variant.storage,
+            ram: snapshot?.ram || variant.ram,
+            size: snapshot?.size || variant.size,
+            material: snapshot?.material || variant.material,
+            attributes: snapshot?.attributes || variant.attributes,
           },
         };
       }),

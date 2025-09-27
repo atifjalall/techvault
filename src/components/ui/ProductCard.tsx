@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { HeartIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { formatPrice } from "@/lib/utils";
 
+// Updated Product interface with variant support
 export interface Product {
   id: string | number;
   name: string;
@@ -26,6 +27,27 @@ export interface Product {
   description?: string;
   stock?: number;
   isActive?: boolean;
+
+  // New fields for variant support
+  selectedVariantId?: string; // The variant ID to pre-select
+  variantDetails?: {
+    id: string;
+    name: string;
+    color?: string;
+    storage?: string;
+    ram?: string;
+    size?: string;
+    length?: string;
+    material?: string;
+  };
+  colorOptions?: Array<{
+    color?: string;
+    colorHex?: string;
+    image?: string;
+    variantId: string;
+  }>;
+  discountPercentage?: number;
+  priceRange?: string;
 }
 
 interface ProductCardProps {
@@ -35,6 +57,7 @@ interface ProductCardProps {
   showAddToCart?: boolean;
   isOnWishlistPage?: boolean;
   className?: string;
+  showPriceRange?: boolean;
 }
 
 export default function ProductCard({
@@ -44,6 +67,7 @@ export default function ProductCard({
   showAddToCart = true,
   isOnWishlistPage = false,
   className = "",
+  showPriceRange = false,
 }: ProductCardProps) {
   const { data: session } = useSession();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -56,13 +80,27 @@ export default function ProductCard({
     (product.stock !== undefined && product.stock <= 0) ||
     product.isActive === false;
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(
-        ((product.originalPrice - product.price) / product.originalPrice) * 100
-      )
-    : 0;
+  // Use discountPercentage from API if available, otherwise calculate
+  const discountPercentage =
+    product.discountPercentage ||
+    (product.originalPrice
+      ? Math.round(
+          ((product.originalPrice - product.price) / product.originalPrice) *
+            100
+        )
+      : 0);
 
-  const productUrl = `/products/${product.slug || product.id}`;
+  // Generate product URL with variant parameter if needed
+  const productUrl = useMemo(() => {
+    let url = `/products/${product.slug || product.id}`;
+
+    // Add variant parameter if this product was selected from wishlist with a specific variant
+    if (product.selectedVariantId) {
+      url += `?variant=${product.selectedVariantId}`;
+    }
+
+    return url;
+  }, [product.slug, product.id, product.selectedVariantId]);
 
   // Check if product is in wishlist on component mount
   useEffect(() => {
@@ -76,9 +114,21 @@ export default function ProductCard({
         const response = await fetch("/api/wishlist");
         if (response.ok) {
           const data = await response.json();
-          const isInWishlist = data.items.some(
-            (item: any) => item.productId === product.id
-          );
+
+          // Check for wishlist item - handle both variant-specific and product-only items
+          const isInWishlist = data.items.some((item: any) => {
+            if (product.selectedVariantId) {
+              // If we have a specific variant, check for that exact variant
+              return (
+                item.productId === product.id &&
+                item.productVariantId === product.selectedVariantId
+              );
+            } else {
+              // Otherwise, check if product is in wishlist (any variant or no variant)
+              return item.productId === product.id;
+            }
+          });
+
           setIsWishlisted(isInWishlist);
         }
       } catch (error) {
@@ -89,7 +139,7 @@ export default function ProductCard({
     };
 
     checkWishlistStatus();
-  }, [session, product.id]);
+  }, [session, product.id, product.selectedVariantId]);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -108,15 +158,20 @@ export default function ProductCard({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/cart", {
+      // Determine which API endpoint to use based on whether we have variant info
+      const apiEndpoint = product.selectedVariantId
+        ? "/api/cart/variant"
+        : "/api/cart";
+      const requestBody = product.selectedVariantId
+        ? { productVariantId: product.selectedVariantId, quantity: 1 }
+        : { productId: product.id, quantity: 1 };
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -134,6 +189,7 @@ export default function ProductCard({
               },
               body: JSON.stringify({
                 productId: product.id,
+                productVariantId: product.selectedVariantId || null, // Include variant ID for proper removal
               }),
             });
 
@@ -172,14 +228,21 @@ export default function ProductCard({
 
     try {
       const method = isWishlisted ? "DELETE" : "POST";
+      const requestBody: any = {
+        productId: product.id,
+      };
+
+      // Include variant ID if we have one
+      if (product.selectedVariantId) {
+        requestBody.productVariantId = product.selectedVariantId;
+      }
+
       const response = await fetch("/api/wishlist", {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          productId: product.id,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -189,11 +252,10 @@ export default function ProductCard({
         console.log("Wishlist updated:", data.message);
         window.dispatchEvent(new CustomEvent("wishlistUpdated"));
       } else {
-        alert(data.error || "Failed to update wishlist");
+        console.error("Wishlist error:", data.error);
       }
     } catch (error) {
       console.error("Error updating wishlist:", error);
-      alert("Failed to update wishlist. Please try again.");
     }
   };
 
@@ -304,6 +366,29 @@ export default function ProductCard({
             </div>
           )}
 
+          {/* Color variants display - Show color options at bottom of image */}
+          {product.colorOptions &&
+            product.colorOptions.length > 0 &&
+            !isOutOfStock && (
+              <div className="absolute bottom-3 left-3 flex gap-1">
+                {product.colorOptions.slice(0, 4).map((colorOption, index) => (
+                  <div
+                    key={index}
+                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                    style={{
+                      backgroundColor: colorOption.colorHex || "#6B7280",
+                    }}
+                    title={colorOption.color}
+                  />
+                ))}
+                {product.colorOptions.length > 4 && (
+                  <span className="text-xs text-white bg-black/50 px-1 rounded">
+                    +{product.colorOptions.length - 4}
+                  </span>
+                )}
+              </div>
+            )}
+
           {/* Quick Add to Cart - only show if in stock */}
           {showAddToCart && session?.user && !isOutOfStock && (
             <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
@@ -353,8 +438,26 @@ export default function ProductCard({
                     isOutOfStock ? "text-gray-500" : ""
                   }`}
                 >
-                  {product.name}
+                  {/* Show variant details if available */}
+                  {product.variantDetails
+                    ? `${product.name} - ${product.variantDetails.name}`
+                    : product.name}
                 </h3>
+                {/* Show variant details as subtitle if available */}
+                {product.variantDetails && (
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {[
+                      product.variantDetails.color,
+                      product.variantDetails.storage,
+                      product.variantDetails.ram,
+                      product.variantDetails.size,
+                      product.variantDetails.length,
+                      product.variantDetails.material,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                )}
               </div>
               {/* Featured badge next to product name */}
               {product.isFeatured && !isOutOfStock && (
@@ -388,7 +491,7 @@ export default function ProductCard({
             )}
 
             {/* Variants */}
-            {product.variants && (
+            {product.variants && !product.variantDetails && (
               <p className="text-[10px] text-gray-500 font-medium">
                 {typeof product.variants === "number"
                   ? `${product.variants} variants`
@@ -427,14 +530,18 @@ export default function ProductCard({
                 )}
             </div>
 
-            {/* From label */}
-            <p
-              className={`text-[10px] font-medium ${
-                isOutOfStock ? "text-gray-300" : "text-gray-400"
-              }`}
-            >
-              {isOutOfStock ? "Currently unavailable" : "From"}
-            </p>
+            {/* Conditional price range display */}
+            {showPriceRange && (
+              <p
+                className={`text-[10px] font-medium ${
+                  isOutOfStock ? "text-gray-300" : "text-gray-400"
+                }`}
+              >
+                {isOutOfStock
+                  ? "Currently unavailable"
+                  : product.priceRange || "From"}
+              </p>
+            )}
 
             {/* Description for featured variant */}
             {variant === "featured" && product.description && (

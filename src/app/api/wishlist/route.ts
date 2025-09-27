@@ -1,10 +1,8 @@
-// src/app/api/wishlist/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// GET /api/wishlist - Get user's wishlist
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +18,6 @@ export async function GET() {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Get user
     const user = await db.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
@@ -30,117 +27,121 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get wishlist items with updated product structure
     const wishlistItems = await db.wishlistItem.findMany({
       where: { userId: user.id },
       include: {
         product: {
           include: {
-            brand: true,
-            category: true,
-            variants: {
-              where: { isActive: true },
-              select: {
-                id: true,
-                price: true,
-                comparePrice: true,
-                stock: true,
-                color: true,
-                thumbnailImage: true,
-              },
-              orderBy: { price: "asc" },
-            },
-            reviews: {
-              select: { rating: true },
-            },
-            _count: {
-              select: { reviews: true },
-            },
+            brand: { select: { name: true } },
+            category: { select: { name: true } },
+            reviews: { select: { rating: true } },
+            _count: { select: { reviews: true } },
+          },
+        },
+        productVariant: {
+          select: {
+            id: true,
+            variantName: true,
+            price: true,
+            comparePrice: true,
+            stock: true,
+            color: true,
+            storage: true,
+            ram: true,
+            size: true,
+            length: true,
+            material: true,
+            images: true,
+            thumbnailImage: true,
           },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Transform data with variant-based pricing
     const transformedItems = wishlistItems.map((item) => {
-      const activeVariants = item.product.variants.filter((v) => v.stock > 0);
-      const allVariants = item.product.variants;
+      const product = item.product;
+      const variant = item.productVariant;
 
-      // Get pricing from variants
-      const prices = allVariants.map((v) => Number(v.price));
-      const comparePrices = allVariants
-        .map((v) => (v.comparePrice ? Number(v.comparePrice) : null))
-        .filter(Boolean) as number[];
+      if (variant) {
+        // Variant-specific item
+        const discountPercentage =
+          variant.comparePrice &&
+          Number(variant.comparePrice) > Number(variant.price)
+            ? Math.round(
+                ((Number(variant.comparePrice) - Number(variant.price)) /
+                  Number(variant.comparePrice)) *
+                  100
+              )
+            : 0;
 
-      const basePrice = prices.length > 0 ? Math.min(...prices) : 0;
-      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
-      const totalStock = activeVariants.reduce((sum, v) => sum + v.stock, 0);
-
-      // Calculate average rating
-      const avgRating =
-        item.product.reviews.length > 0
-          ? item.product.reviews.reduce(
-              (sum, review) => sum + review.rating,
-              0
-            ) / item.product.reviews.length
-          : 0;
-
-      // Calculate discount percentage
-      const lowestComparePrice =
-        comparePrices.length > 0 ? Math.min(...comparePrices) : null;
-      const discountPercentage =
-        lowestComparePrice && lowestComparePrice > basePrice
-          ? Math.round(
-              ((lowestComparePrice - basePrice) / lowestComparePrice) * 100
-            )
-          : 0;
-
-      // Get color options from variants
-      const colorOptions = allVariants
-        .filter((v) => v.color)
-        .map((v) => ({
-          color: v.color,
-          image: v.thumbnailImage,
-        }))
-        .filter((v, i, arr) => arr.findIndex((a) => a.color === v.color) === i); // Remove duplicates
-
-      return {
-        id: item.id,
-        productId: item.product.id,
-        name: item.product.name,
-        brand: item.product.brand?.name,
-        slug: item.product.slug,
-
-        // Variant-based pricing
-        price: basePrice,
-        maxPrice: maxPrice !== basePrice ? maxPrice : null,
-        priceRange:
-          maxPrice !== basePrice
-            ? `€${basePrice} - €${maxPrice}`
-            : `€${basePrice}`,
-        originalPrice: lowestComparePrice,
-        discountPercentage,
-
-        // Images and variants
-        image: item.product.images[0] || "",
-        colorOptions,
-        variantCount: allVariants.length,
-
-        // Availability
-        inStock: totalStock > 0,
-        stock: totalStock,
-
-        // Product details
-        category: item.product.category.name,
-        rating: avgRating > 0 ? Math.round(avgRating * 10) / 10 : null,
-        reviewCount: item.product._count.reviews,
-
-        // Additional info
-        featured: item.product.featured,
-        newArrival: item.product.newArrival,
-        dateAdded: item.createdAt,
-      };
+        return {
+          id: item.id,
+          productId: product.id,
+          productVariantId: variant.id,
+          name: `${product.name} - ${variant.variantName}`,
+          slug: product.slug,
+          brand: product.brand?.name,
+          price: Number(variant.price),
+          originalPrice: variant.comparePrice
+            ? Number(variant.comparePrice)
+            : null,
+          discountPercentage,
+          image:
+            variant.thumbnailImage ||
+            variant.images[0] ||
+            product.images[0] ||
+            "",
+          variant: {
+            id: variant.id,
+            name: variant.variantName,
+            color: variant.color,
+            storage: variant.storage,
+            ram: variant.ram,
+            size: variant.size,
+            length: variant.length,
+            material: variant.material,
+          },
+          inStock: variant.stock > 0,
+          stock: variant.stock,
+          category: product.category.name,
+          rating:
+            product.reviews.length > 0
+              ? Math.round(
+                  (product.reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    product.reviews.length) *
+                    10
+                ) / 10
+              : null,
+          reviewCount: product._count.reviews,
+          dateAdded: item.createdAt,
+        };
+      } else {
+        // Product-only item (legacy)
+        return {
+          id: item.id,
+          productId: product.id,
+          productVariantId: null,
+          name: product.name,
+          slug: product.slug,
+          brand: product.brand?.name,
+          price: 0, // You'll need to calculate this from variants
+          image: product.images[0] || "",
+          inStock: false, // You'll need to calculate this
+          stock: 0,
+          category: product.category.name,
+          rating:
+            product.reviews.length > 0
+              ? Math.round(
+                  (product.reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    product.reviews.length) *
+                    10
+                ) / 10
+              : null,
+          reviewCount: product._count.reviews,
+          dateAdded: item.createdAt,
+        };
+      }
     });
 
     return NextResponse.json({
@@ -156,7 +157,6 @@ export async function GET() {
   }
 }
 
-// POST /api/wishlist - Add item to wishlist
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { productId } = await request.json();
+    const { productId, productVariantId } = await request.json();
 
     if (!productId) {
       return NextResponse.json(
@@ -181,7 +181,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user
     const user = await db.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
@@ -191,13 +190,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if product exists and is active
+    // Verify product exists
     const product = await db.product.findUnique({
-      where: {
-        id: productId,
-        isActive: true,
-        deletedAt: null,
-      },
+      where: { id: productId, isActive: true, deletedAt: null },
       select: { id: true, name: true },
     });
 
@@ -205,19 +200,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // If variant specified, verify it exists
+    if (productVariantId) {
+      const variant = await db.productVariant.findUnique({
+        where: { id: productVariantId, productId, isActive: true },
+        select: { id: true, variantName: true },
+      });
+
+      if (!variant) {
+        return NextResponse.json(
+          { error: "Product variant not found" },
+          { status: 404 }
+        );
+      }
+    }
+
     // Check if already in wishlist
-    const existingItem = await db.wishlistItem.findUnique({
+    const existingItem = await db.wishlistItem.findFirst({
       where: {
-        userId_productId: {
-          userId: user.id,
-          productId: productId,
-        },
+        userId: user.id,
+        productId,
+        productVariantId: productVariantId || null,
       },
     });
 
     if (existingItem) {
       return NextResponse.json(
-        { error: "Product already in wishlist" },
+        { error: "Item already in wishlist" },
         { status: 400 }
       );
     }
@@ -226,24 +235,16 @@ export async function POST(request: NextRequest) {
     const wishlistItem = await db.wishlistItem.create({
       data: {
         userId: user.id,
-        productId: productId,
-      },
-    });
-
-    // Create notification for user
-    await db.notification.create({
-      data: {
-        userId: user.id,
-        productId: productId,
-        type: "WISHLIST_ITEM_BACK_IN_STOCK",
-        message: `"${product.name}" has been added to your wishlist. We'll notify you of price drops and availability.`,
-        severity: "INFO",
+        productId,
+        productVariantId: productVariantId || null,
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Product added to wishlist",
+      message: productVariantId
+        ? "Product variant added to wishlist"
+        : "Product added to wishlist",
       item: wishlistItem,
     });
   } catch (error) {
@@ -255,7 +256,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/wishlist - Remove item from wishlist
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -271,7 +271,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const { productId } = await request.json();
+    const { productId, productVariantId } = await request.json();
 
     if (!productId) {
       return NextResponse.json(
@@ -280,7 +280,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get user
     const user = await db.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
@@ -294,7 +293,8 @@ export async function DELETE(request: NextRequest) {
     const deletedItem = await db.wishlistItem.deleteMany({
       where: {
         userId: user.id,
-        productId: productId,
+        productId,
+        productVariantId: productVariantId || null,
       },
     });
 
@@ -307,7 +307,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Product removed from wishlist",
+      message: "Item removed from wishlist",
     });
   } catch (error) {
     console.error("Error removing from wishlist:", error);

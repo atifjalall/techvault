@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -17,35 +19,36 @@ import {
   KeyIcon,
   ExclamationTriangleIcon,
   ArrowLeftIcon,
+  ShoppingBagIcon,
+  HeartIcon,
+  CogIcon,
 } from "@heroicons/react/24/outline";
+
+// UI Components
+import { Button } from "@/components/ui/Button1";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import Footer from "@/components/layout/Footer";
 import { getUserInitials } from "@/lib/utils";
 
-// Country codes for phone numbers with online flag service
-const countryCodes = [
-  { code: "+49", country: "Germany", iso: "DE" },
-  { code: "+1", country: "United States", iso: "US" },
-  { code: "+44", country: "United Kingdom", iso: "GB" },
-  { code: "+33", country: "France", iso: "FR" },
-  { code: "+39", country: "Italy", iso: "IT" },
-  { code: "+31", country: "Netherlands", iso: "NL" },
-  { code: "+41", country: "Switzerland", iso: "CH" },
-  { code: "+43", country: "Austria", iso: "AT" },
-  { code: "+32", country: "Belgium", iso: "BE" },
-  { code: "+45", country: "Denmark", iso: "DK" },
-  { code: "+358", country: "Finland", iso: "FI" },
-  { code: "+47", country: "Norway", iso: "NO" },
-  { code: "+46", country: "Sweden", iso: "SE" },
-  { code: "+34", country: "Spain", iso: "ES" },
-  { code: "+351", country: "Portugal", iso: "PT" },
-];
-
 interface ProfileData {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  countryCode: string;
+  bio: string;
   address: {
     street: string;
     city: string;
@@ -53,6 +56,9 @@ interface ProfileData {
     zipCode: string;
     country: string;
   };
+  joinedAt: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
 }
 
 interface PasswordData {
@@ -61,54 +67,261 @@ interface PasswordData {
   confirmPassword: string;
 }
 
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  bio?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
+// Validation functions
+const validateName = (name: string): string | null => {
+  if (!name.trim()) return "This field is required";
+  if (name.length < 2) return "Must be at least 2 characters";
+  if (name.length > 50) return "Must be less than 50 characters";
+  if (!/^[a-zA-ZÀ-ÿĀ-žА-я\s'-]+$/.test(name))
+    return "Only letters, spaces, hyphens and apostrophes allowed";
+  return null;
+};
+
+const validatePhone = (phone: string): string | null => {
+  if (!phone.trim()) return null; // Phone is optional
+  // Remove all non-digits for validation
+  const digitsOnly = phone.replace(/\D/g, "");
+  if (digitsOnly.length < 10) return "Phone number too short";
+  if (digitsOnly.length > 15) return "Phone number too long";
+  if (!/^[+]?[\d\s\-()]+$/.test(phone)) return "Invalid phone number format";
+  return null;
+};
+
+const validateBio = (bio: string): string | null => {
+  if (bio.length > 500) return "Bio must be less than 500 characters";
+  // Check for potentially malicious content
+  if (/<script|javascript:|data:|vbscript:/i.test(bio))
+    return "Invalid content detected";
+  return null;
+};
+
+const validateAddress = (
+  field: string,
+  value: string,
+  fieldName: string
+): string | null => {
+  if (field === "street" && value.trim()) {
+    if (value.length < 5) return "Street address too short";
+    if (value.length > 100) return "Street address too long";
+  }
+
+  if (field === "city" && value.trim()) {
+    if (value.length < 2) return "City name too short";
+    if (value.length > 50) return "City name too long";
+    if (!/^[a-zA-ZÀ-ÿĀ-žА-я\s'-]+$/.test(value))
+      return "Invalid city name format";
+  }
+
+  if (field === "state" && value.trim()) {
+    if (value.length > 50) return "State name too long";
+    if (!/^[a-zA-ZÀ-ÿĀ-žА-я\s'-]+$/.test(value))
+      return "Invalid state name format";
+  }
+
+  if (field === "zipCode" && value.trim()) {
+    if (!/^[0-9A-Za-z\s-]{3,10}$/.test(value))
+      return "Invalid postal code format";
+  }
+
+  return null;
+};
+
+const validatePassword = (password: string): string | null => {
+  if (!password) return "Password is required";
+  if (password.length < 8) return "Must be at least 8 characters";
+  if (password.length > 128) return "Password too long";
+  if (!/[A-Z]/.test(password)) return "Must contain uppercase letter";
+  if (!/[a-z]/.test(password)) return "Must contain lowercase letter";
+  if (!/\d/.test(password)) return "Must contain a number";
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
+    return "Must contain special character";
+  return null;
+};
+
+// Input sanitization
+const sanitizeInput = (input: string): string => {
+  return input
+    .trim()
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
+};
+
+// Secure input component that prevents copy/paste of sensitive data
+const SecureInput = ({
+  type,
+  value,
+  onChange,
+  placeholder,
+  className,
+  id,
+  maxLength,
+  ...props
+}: any) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent Ctrl+A, Ctrl+C, Ctrl+V for password fields
+    if (type === "password" && (e.ctrlKey || e.metaKey)) {
+      if (["a", "c", "v", "x"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // Disable right-click context menu on password fields
+    if (type === "password") {
+      e.preventDefault();
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let newValue = e.target.value;
+
+    // Apply maxLength if specified
+    if (maxLength && newValue.length > maxLength) {
+      newValue = newValue.slice(0, maxLength);
+    }
+
+    // Sanitize input for non-password fields
+    if (type !== "password") {
+      newValue = sanitizeInput(newValue);
+    }
+
+    onChange({ target: { value: newValue } });
+  };
+
+  return (
+    <Input
+      {...props}
+      id={id}
+      type={type}
+      value={value}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      onContextMenu={handleContextMenu}
+      placeholder={placeholder}
+      className={className}
+      autoComplete={type === "password" ? "new-password" : "off"}
+      spellCheck={false}
+      maxLength={maxLength}
+    />
+  );
+};
+
+// Loading Skeleton with full animations
+function ProfileSkeleton() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-20 rounded-full mx-auto" />
+                <Skeleton className="h-6 w-32 mx-auto" />
+                <Skeleton className="h-4 w-40 mx-auto" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="lg:col-span-3 space-y-6"
+        >
+          {[1, 2, 3].map((i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 * i }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Skeleton className="h-10" />
+                      <Skeleton className="h-10" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [isEditingPassword, setIsEditingPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    countryCode: "+49",
-    address: {
-      street: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      country: "Germany",
-    },
-  });
-
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [passwordData, setPasswordData] = useState<PasswordData>({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // Initialize profile data from session
-  useEffect(() => {
-    if (session?.user) {
-      const nameParts = session.user.name?.split(" ") || ["", ""];
-      setProfileData((prev) => ({
-        ...prev,
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        email: session.user.email || "",
-      }));
-    }
-  }, [session]);
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {}
+  );
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -123,146 +336,243 @@ export default function ProfilePage() {
     }
   }, [status, session, router]);
 
+  // Load profile data
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!session?.user) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch("/api/profile");
+
+        if (!response.ok) {
+          throw new Error("Failed to load profile");
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setProfileData(result.profile);
+        } else {
+          throw new Error("Failed to load profile data");
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        setError("Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      loadProfile();
+    }
+  }, [session]);
+
   // Don't render content for vendors
   if (session?.user?.role === "VENDOR") {
     return null;
   }
 
-  const showSuccessMessage = (message: string) => {
+  const showSuccess = (message: string) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const showErrorMessage = (message: string) => {
+  const showError = (message: string) => {
     setError(message);
     setTimeout(() => setError(null), 5000);
   };
 
   const validatePasswordStrength = (password: string): boolean => {
-    if (password.length < 8) return false;
-
-    let score = 0;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
-
-    return score >= 3;
+    return validatePassword(password) === null;
   };
 
-  const handleNameUpdate = async () => {
-    if (!profileData.firstName.trim()) {
-      showErrorMessage("First name is required");
+  const validatePersonalForm = (): boolean => {
+    if (!profileData) return false;
+
+    const errors: ValidationErrors = {};
+
+    const firstNameError = validateName(profileData.firstName);
+    if (firstNameError) errors.firstName = firstNameError;
+
+    const lastNameError = validateName(profileData.lastName);
+    if (lastNameError) errors.lastName = lastNameError;
+
+    const phoneError = validatePhone(profileData.phone);
+    if (phoneError) errors.phone = phoneError;
+
+    const bioError = validateBio(profileData.bio);
+    if (bioError) errors.bio = bioError;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAddressForm = (): boolean => {
+    if (!profileData) return false;
+
+    const errors: ValidationErrors = {};
+
+    const streetError = validateAddress(
+      "street",
+      profileData.address.street,
+      "Street"
+    );
+    if (streetError) errors.street = streetError;
+
+    const cityError = validateAddress("city", profileData.address.city, "City");
+    if (cityError) errors.city = cityError;
+
+    const stateError = validateAddress(
+      "state",
+      profileData.address.state,
+      "State"
+    );
+    if (stateError) errors.state = stateError;
+
+    const zipError = validateAddress(
+      "zipCode",
+      profileData.address.zipCode,
+      "ZIP Code"
+    );
+    if (zipError) errors.zipCode = zipError;
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validatePasswordForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    if (!passwordData.currentPassword.trim()) {
+      errors.currentPassword = "Current password is required";
+    }
+
+    const newPasswordError = validatePassword(passwordData.newPassword);
+    if (newPasswordError) errors.newPassword = newPasswordError;
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      errors.newPassword =
+        "New password must be different from current password";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePersonalUpdate = async () => {
+    if (!profileData) return;
+
+    if (!validatePersonalForm()) {
+      showError("Please fix the validation errors");
       return;
     }
 
-    setIsLoading(true);
+    setSaving(true);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/profile/update-name", {
-        method: "POST",
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
+          section: "personal",
+          data: {
+            firstName: sanitizeInput(profileData.firstName),
+            lastName: sanitizeInput(profileData.lastName),
+            phone: sanitizeInput(profileData.phone),
+            bio: sanitizeInput(profileData.bio),
+          },
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to update name");
+        throw new Error(result.error || "Failed to update profile");
       }
 
-      setIsEditingName(false);
-      showSuccessMessage("Name updated successfully!");
+      setIsEditingPersonal(false);
+      setValidationErrors({});
+      showSuccess("Personal information updated successfully!");
     } catch (error) {
-      showErrorMessage("Failed to update name");
+      showError(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
   const handleAddressUpdate = async () => {
-    setIsLoading(true);
-    try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/profile/update-address", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: profileData.address }),
-      });
+    if (!profileData) return;
 
-      if (!response.ok) {
-        throw new Error("Failed to update address");
-      }
-
-      setIsEditingAddress(false);
-      showSuccessMessage("Address updated successfully!");
-    } catch (error) {
-      showErrorMessage("Failed to update address");
-    } finally {
-      setIsLoading(false);
+    if (!validateAddressForm()) {
+      showError("Please fix the validation errors");
+      return;
     }
-  };
 
-  const handlePhoneUpdate = async () => {
-    setIsLoading(true);
+    setSaving(true);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/profile/update-phone", {
-        method: "POST",
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: profileData.phone,
-          countryCode: profileData.countryCode,
+          section: "address",
+          data: {
+            street: sanitizeInput(profileData.address.street),
+            city: sanitizeInput(profileData.address.city),
+            state: sanitizeInput(profileData.address.state),
+            zipCode: sanitizeInput(profileData.address.zipCode),
+            country: profileData.address.country,
+          },
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to update phone number");
+        throw new Error(result.error || "Failed to update address");
       }
 
-      setIsEditingPhone(false);
-      showSuccessMessage("Phone number updated successfully!");
+      setIsEditingAddress(false);
+      setValidationErrors({});
+      showSuccess("Address updated successfully!");
     } catch (error) {
-      showErrorMessage("Failed to update phone number");
+      showError(
+        error instanceof Error ? error.message : "Failed to update address"
+      );
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
   const handlePasswordUpdate = async () => {
-    if (!passwordData.currentPassword) {
-      showErrorMessage("Current password is required");
+    if (!validatePasswordForm()) {
+      showError("Please fix the validation errors");
       return;
     }
 
-    if (!validatePasswordStrength(passwordData.newPassword)) {
-      showErrorMessage(
-        "New password must be at least 8 characters with uppercase, lowercase, number, and special character"
-      );
-      return;
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      showErrorMessage("New passwords do not match");
-      return;
-    }
-
-    setIsLoading(true);
+    setSaving(true);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/profile/update-password", {
-        method: "POST",
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword,
+          section: "password",
+          data: {
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+          },
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update password");
+        throw new Error(result.error || "Failed to update password");
       }
 
       setPasswordData({
@@ -271,35 +581,24 @@ export default function ProfilePage() {
         confirmPassword: "",
       });
       setIsEditingPassword(false);
-      showSuccessMessage("Password updated successfully!");
+      setValidationErrors({});
+      showSuccess("Password updated successfully!");
     } catch (error) {
-      showErrorMessage(
+      showError(
         error instanceof Error ? error.message : "Failed to update password"
       );
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
   const cancelEdit = (section: string) => {
     switch (section) {
-      case "name":
-        setIsEditingName(false);
-        // Reset to original values from session
-        if (session?.user) {
-          const nameParts = session.user.name?.split(" ") || ["", ""];
-          setProfileData((prev) => ({
-            ...prev,
-            firstName: nameParts[0] || "",
-            lastName: nameParts.slice(1).join(" ") || "",
-          }));
-        }
+      case "personal":
+        setIsEditingPersonal(false);
         break;
       case "address":
         setIsEditingAddress(false);
-        break;
-      case "phone":
-        setIsEditingPhone(false);
         break;
       case "password":
         setIsEditingPassword(false);
@@ -311,50 +610,90 @@ export default function ProfilePage() {
         break;
     }
     setError(null);
+    setValidationErrors({});
   };
 
-  if (status === "loading") {
+  // Clear validation errors when user starts typing
+  const handleInputChange = (field: string, value: string) => {
+    if (validationErrors[field as keyof ValidationErrors]) {
+      setValidationErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-400 border-t-black rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gray-50">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="container mx-auto px-4 py-6"
+        >
+          <ProfileSkeleton />
+        </motion.div>
+        <Footer />
       </div>
     );
   }
 
-  if (!session) {
+  if (!session || !profileData) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
-        >
-          <Link
-            href="/"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeftIcon className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
-        </motion.div>
-
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="container mx-auto px-4 py-6 space-y-6"
+      >
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
-          <p className="text-gray-600">
-            Manage your account information and preferences
-          </p>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                >
+                  <Link
+                    href="/"
+                    className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer mb-3"
+                  >
+                    <motion.div
+                      whileHover={{ x: -2 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <ArrowLeftIcon className="w-4 h-4 mr-1" />
+                    </motion.div>
+                    Back to Home
+                  </Link>
+                  <motion.h1
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="text-xl font-bold text-gray-900"
+                  >
+                    My Profile
+                  </motion.h1>
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="text-sm text-gray-600 mt-1"
+                  >
+                    Manage your account information and preferences
+                  </motion.p>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Success/Error Messages */}
@@ -364,14 +703,28 @@ export default function ProfilePage() {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4"
+              transition={{ duration: 0.3 }}
             >
-              <div className="flex items-center">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3" />
-                <p className="text-sm text-green-700 font-medium">
-                  {successMessage}
-                </p>
-              </div>
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        delay: 0.1,
+                        type: "spring",
+                        stiffness: 200,
+                      }}
+                    >
+                      <CheckIcon className="w-4 h-4 text-green-600 mr-2" />
+                    </motion.div>
+                    <p className="text-sm text-green-700 font-medium">
+                      {successMessage}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           )}
 
@@ -380,867 +733,1337 @@ export default function ProfilePage() {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4"
+              transition={{ duration: 0.3 }}
             >
-              <div className="flex items-center">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-3" />
-                <p className="text-sm text-red-700 font-medium">{error}</p>
-              </div>
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{
+                        delay: 0.1,
+                        type: "spring",
+                        stiffness: 200,
+                      }}
+                    >
+                      <ExclamationTriangleIcon className="w-4 h-4 text-red-600 mr-2" />
+                    </motion.div>
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Profile Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-6"
           >
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="text-center">
-                {/* Profile Picture */}
-                <div className="relative w-24 h-24 mx-auto mb-4">
-                  {session.user.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt="Profile"
-                      width={96}
-                      height={96}
-                      className="w-full h-full rounded-full object-cover border-4 border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-2xl font-bold border-4 border-gray-200">
-                      {getUserInitials(session.user.name || "User")}
-                    </div>
-                  )}
-                </div>
+            {/* Profile Overview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-6 text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                    className="w-20 h-20 mx-auto mb-4"
+                  >
+                    {session.user.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt="Profile"
+                        width={80}
+                        height={80}
+                        className="w-full h-full rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-xl font-bold">
+                        {getUserInitials(
+                          profileData.firstName + " " + profileData.lastName
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                  <motion.h3
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                    className="text-lg font-semibold text-gray-900 mb-1"
+                  >
+                    {profileData.firstName} {profileData.lastName}
+                  </motion.h3>
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                    className="text-sm text-gray-600 mb-3"
+                  >
+                    {profileData.email}
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                    className="flex items-center justify-center space-x-2 text-xs text-gray-500"
+                  >
+                    <UserIcon className="w-3 h-3" />
+                    <span>
+                      Member since{" "}
+                      {new Date(profileData.joinedAt).getFullYear()}
+                    </span>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                    className="flex items-center justify-center space-x-2 mt-2"
+                  >
+                    {profileData.emailVerified && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          delay: 0.9,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
+                      >
+                        <Badge variant="secondary" className="text-xs">
+                          Email Verified
+                        </Badge>
+                      </motion.div>
+                    )}
+                    {profileData.phoneVerified && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          delay: 1.0,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
+                      >
+                        <Badge variant="secondary" className="text-xs">
+                          Phone Verified
+                        </Badge>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-1">
-                  {session.user.name}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  {session.user.email}
-                </p>
-
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center justify-center">
-                    <UserIcon className="w-4 h-4 mr-2" />
-                    Member since 2024
+            {/* Quick Links */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <div className="space-y-2">
+                    {[
+                      {
+                        href: "/orders",
+                        icon: ShoppingBagIcon,
+                        label: "Order History",
+                      },
+                      { href: "/wishlist", icon: HeartIcon, label: "Wishlist" },
+                      { href: "/settings", icon: CogIcon, label: "Settings" },
+                    ].map((link, index) => (
+                      <motion.div
+                        key={link.href}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
+                      >
+                        <Link
+                          href={link.href}
+                          className="flex items-center justify-between p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <motion.div
+                            whileHover={{ x: 2 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="flex items-center"
+                          >
+                            <link.icon className="w-4 h-4 mr-2" />
+                            <span>{link.label}</span>
+                          </motion.div>
+                          <motion.span
+                            whileHover={{ x: 2 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="text-xs text-gray-400"
+                          >
+                            →
+                          </motion.span>
+                        </Link>
+                      </motion.div>
+                    ))}
                   </div>
-                </div>
-              </div>
-            </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </motion.div>
 
-          {/* Profile Details */}
+          {/* Main Content */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2 space-y-6"
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="lg:col-span-3 space-y-6"
           >
             {/* Personal Information */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Personal Information
-                </h3>
-                {!isEditingName && (
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {isEditingName ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.firstName}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            firstName: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.lastName}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            lastName: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={profileData.email}
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Email address cannot be changed
-                    </p>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleNameUpdate}
-                      disabled={isLoading}
-                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <CheckIcon className="w-4 h-4 mr-2" />
-                      )}
-                      Save
-                    </button>
-                    <button
-                      onClick={() => cancelEdit("name")}
-                      className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <XMarkIcon className="w-4 h-4 mr-2" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
-                      </label>
-                      <p className="text-gray-900">
-                        {profileData.firstName || "Not set"}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
-                      </label>
-                      <p className="text-gray-900">
-                        {profileData.lastName || "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <p className="text-gray-900">{profileData.email}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Phone Number */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <PhoneIcon className="w-5 h-5 text-gray-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Phone Number
-                  </h3>
-                </div>
-                {!isEditingPhone && (
-                  <button
-                    onClick={() => setIsEditingPhone(true)}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {isEditingPhone ? (
-                <div className="space-y-4">
-                  <div className="flex space-x-3">
-                    <div className="w-40">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Country
-                      </label>
-
-                      <select
-                        value={profileData.countryCode}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            countryCode: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">
+                      Personal Information
+                    </CardTitle>
+                    {!isEditingPersonal && (
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        {countryCodes.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {country.code} {country.country}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={profileData.phone}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        placeholder="123 456 7890"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
+                        <Button
+                          onClick={() => setIsEditingPersonal(true)}
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
+                        >
+                          <PencilIcon className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                      </motion.div>
+                    )}
                   </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handlePhoneUpdate}
-                      disabled={isLoading}
-                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <CheckIcon className="w-4 h-4 mr-2" />
-                      )}
-                      Save
-                    </button>
-                    <button
-                      onClick={() => cancelEdit("phone")}
-                      className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <XMarkIcon className="w-4 h-4 mr-2" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  {profileData.phone && profileData.countryCode ? (
+                </CardHeader>
+                <CardContent>
+                  <AnimatePresence mode="wait">
+                    {isEditingPersonal ? (
+                      <motion.div
+                        key="editing"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <div>
+                            <Label htmlFor="firstName">First Name</Label>
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="firstName"
+                                value={profileData.firstName}
+                                onChange={(e: any) => {
+                                  setProfileData((prev) =>
+                                    prev
+                                      ? { ...prev, firstName: e.target.value }
+                                      : null
+                                  );
+                                  handleInputChange(
+                                    "firstName",
+                                    e.target.value
+                                  );
+                                }}
+                                className={`mt-1 ${validationErrors.firstName ? "border-red-500" : ""}`}
+                                maxLength={50}
+                                placeholder="Enter first name"
+                              />
+                            </motion.div>
+                            <AnimatePresence>
+                              {validationErrors.firstName && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-1 text-xs text-red-600"
+                                >
+                                  {validationErrors.firstName}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <div>
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="lastName"
+                                value={profileData.lastName}
+                                onChange={(e: any) => {
+                                  setProfileData((prev) =>
+                                    prev
+                                      ? { ...prev, lastName: e.target.value }
+                                      : null
+                                  );
+                                  handleInputChange("lastName", e.target.value);
+                                }}
+                                className={`mt-1 ${validationErrors.lastName ? "border-red-500" : ""}`}
+                                maxLength={50}
+                                placeholder="Enter last name"
+                              />
+                            </motion.div>
+                            <AnimatePresence>
+                              {validationErrors.lastName && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-1 text-xs text-red-600"
+                                >
+                                  {validationErrors.lastName}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                        >
+                          <Label htmlFor="email">Email Address</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={profileData.email}
+                            readOnly
+                            className="mt-1 bg-gray-50 text-gray-500"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Email address cannot be changed
+                          </p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 }}
+                        >
+                          <Label htmlFor="phone">Phone Number</Label>
+                          <motion.div whileFocus={{ scale: 1.01 }}>
+                            <SecureInput
+                              id="phone"
+                              type="tel"
+                              value={profileData.phone}
+                              onChange={(e: any) => {
+                                setProfileData((prev) =>
+                                  prev
+                                    ? { ...prev, phone: e.target.value }
+                                    : null
+                                );
+                                handleInputChange("phone", e.target.value);
+                              }}
+                              placeholder="+49 123 456 7890"
+                              className={`mt-1 ${validationErrors.phone ? "border-red-500" : ""}`}
+                              maxLength={20}
+                            />
+                          </motion.div>
+                          <AnimatePresence>
+                            {validationErrors.phone && (
+                              <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-1 text-xs text-red-600"
+                              >
+                                {validationErrors.phone}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.4 }}
+                        >
+                          <Label htmlFor="bio">Bio</Label>
+                          <motion.textarea
+                            whileFocus={{ scale: 1.01 }}
+                            id="bio"
+                            value={profileData.bio}
+                            onChange={(e) => {
+                              const sanitized = sanitizeInput(e.target.value);
+                              if (sanitized.length <= 500) {
+                                setProfileData((prev) =>
+                                  prev ? { ...prev, bio: sanitized } : null
+                                );
+                                handleInputChange("bio", sanitized);
+                              }
+                            }}
+                            placeholder="Tell us about yourself..."
+                            className={`mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none ${validationErrors.bio ? "border-red-500" : "border-gray-300"}`}
+                            rows={3}
+                            maxLength={500}
+                          />
+                          <div className="flex justify-between items-center mt-1">
+                            <AnimatePresence>
+                              {validationErrors.bio && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="text-xs text-red-600"
+                                >
+                                  {validationErrors.bio}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                            <span className="text-xs text-gray-500">
+                              {profileData.bio.length}/500
+                            </span>
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.5 }}
+                          className="flex space-x-3"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={handlePersonalUpdate}
+                              disabled={saving}
+                              className="cursor-pointer"
+                              variant="dark"
+                            >
+                              {saving ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              ) : (
+                                <CheckIcon className="w-4 h-4 mr-1" />
+                              )}
+                              Save Changes
+                            </Button>
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={() => cancelEdit("personal")}
+                              variant="outline"
+                              className="cursor-pointer"
+                            >
+                              <XMarkIcon className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </motion.div>
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="viewing"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <div>
+                            <Label className="text-gray-600">First Name</Label>
+                            <p className="text-gray-900 mt-1">
+                              {profileData.firstName || "Not set"}
+                            </p>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600">Last Name</Label>
+                            <p className="text-gray-900 mt-1">
+                              {profileData.lastName || "Not set"}
+                            </p>
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                        >
+                          <Label className="text-gray-600">Email Address</Label>
+                          <p className="text-gray-900 mt-1">
+                            {profileData.email}
+                          </p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                        >
+                          <Label className="text-gray-600">Phone Number</Label>
+                          <div className="flex items-center mt-1">
+                            {profileData.phone ? (
+                              <>
+                                <Image
+                                  src={`https://flagcdn.com/16x12/de.png`}
+                                  alt="Country flag"
+                                  width={16}
+                                  height={12}
+                                  className="mr-2"
+                                />
+                                <p className="text-gray-900">
+                                  {profileData.phone}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-gray-500">Not set</p>
+                            )}
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 }}
+                        >
+                          <Label className="text-gray-600">Bio</Label>
+                          <p className="text-gray-900 mt-1">
+                            {profileData.bio || "No bio added"}
+                          </p>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Shipping Address */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Image
-                        src={`https://flagcdn.com/16x12/${
-                          countryCodes
-                            .find((c) => c.code === profileData.countryCode)
-                            ?.iso.toLowerCase() || "de"
-                        }.png`}
-                        alt="Country flag"
-                        width={16}
-                        height={12}
-                        className="mr-2"
-                      />
-                      <p className="text-gray-900">
-                        {profileData.countryCode} {profileData.phone}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No phone number set</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Address */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <MapPinIcon className="w-5 h-5 text-gray-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Shipping Address
-                  </h3>
-                </div>
-                {!isEditingAddress && (
-                  <button
-                    onClick={() => setIsEditingAddress(true)}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {isEditingAddress ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address
-                    </label>
-                    <input
-                      type="text"
-                      value={profileData.address.street}
-                      onChange={(e) =>
-                        setProfileData((prev) => ({
-                          ...prev,
-                          address: { ...prev.address, street: e.target.value },
-                        }))
-                      }
-                      placeholder="123 Main Street"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.address.city}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            address: { ...prev.address, city: e.target.value },
-                          }))
-                        }
-                        placeholder="Berlin"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Region
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.address.state}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            address: { ...prev.address, state: e.target.value },
-                          }))
-                        }
-                        placeholder="Berlin"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        ZIP Code
-                      </label>
-                      <input
-                        type="text"
-                        value={profileData.address.zipCode}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            address: {
-                              ...prev.address,
-                              zipCode: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="10115"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Country
-                      </label>
-                      <select
-                        value={profileData.address.country}
-                        onChange={(e) =>
-                          setProfileData((prev) => ({
-                            ...prev,
-                            address: {
-                              ...prev.address,
-                              country: e.target.value,
-                            },
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          delay: 0.6,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
                       >
-                        <option value="Germany">Germany</option>
-                        <option value="Austria">Austria</option>
-                        <option value="Switzerland">Switzerland</option>
-                        <option value="Netherlands">Netherlands</option>
-                        <option value="France">France</option>
-                        <option value="Belgium">Belgium</option>
-                        <option value="Denmark">Denmark</option>
-                        <option value="Sweden">Sweden</option>
-                        <option value="Norway">Norway</option>
-                      </select>
+                        <MapPinIcon className="w-5 h-5 text-gray-600 mr-2" />
+                      </motion.div>
+                      <CardTitle className="text-lg">
+                        Shipping Address
+                      </CardTitle>
                     </div>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleAddressUpdate}
-                      disabled={isLoading}
-                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <CheckIcon className="w-4 h-4 mr-2" />
-                      )}
-                      Save
-                    </button>
-                    <button
-                      onClick={() => cancelEdit("address")}
-                      className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <XMarkIcon className="w-4 h-4 mr-2" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {profileData.address.street ? (
-                    <>
-                      <p className="text-gray-900">
-                        {profileData.address.street}
-                      </p>
-                      <p className="text-gray-900">
-                        {profileData.address.city}, {profileData.address.state}{" "}
-                        {profileData.address.zipCode}
-                      </p>
-                      <p className="text-gray-900">
-                        {profileData.address.country}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-gray-500">No address set</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Password Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <KeyIcon className="w-5 h-5 text-gray-600 mr-2" />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Password & Security
-                  </h3>
-                </div>
-                {!isEditingPassword && (
-                  <button
-                    onClick={() => setIsEditingPassword(true)}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {isEditingPassword ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        value={passwordData.currentPassword}
-                        onChange={(e) =>
-                          setPasswordData((prev) => ({
-                            ...prev,
-                            currentPassword: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="Enter current password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowCurrentPassword(!showCurrentPassword)
-                        }
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    {!isEditingAddress && (
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        {showCurrentPassword ? (
-                          <EyeSlashIcon className="w-4 h-4" />
+                        <Button
+                          onClick={() => setIsEditingAddress(true)}
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
+                        >
+                          <PencilIcon className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <AnimatePresence mode="wait">
+                    {isEditingAddress ? (
+                      <motion.div
+                        key="editing-address"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                        >
+                          <Label htmlFor="street">Street Address</Label>
+                          <motion.div whileFocus={{ scale: 1.01 }}>
+                            <SecureInput
+                              id="street"
+                              value={profileData.address.street}
+                              onChange={(e: any) => {
+                                setProfileData((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: {
+                                          ...prev.address,
+                                          street: e.target.value,
+                                        },
+                                      }
+                                    : null
+                                );
+                                handleInputChange("street", e.target.value);
+                              }}
+                              placeholder="123 Main Street"
+                              className={`mt-1 ${validationErrors.street ? "border-red-500" : ""}`}
+                              maxLength={100}
+                            />
+                          </motion.div>
+                          <AnimatePresence>
+                            {validationErrors.street && (
+                              <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-1 text-xs text-red-600"
+                              >
+                                {validationErrors.street}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <div>
+                            <Label htmlFor="city">City</Label>
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="city"
+                                value={profileData.address.city}
+                                onChange={(e: any) => {
+                                  setProfileData((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          address: {
+                                            ...prev.address,
+                                            city: e.target.value,
+                                          },
+                                        }
+                                      : null
+                                  );
+                                  handleInputChange("city", e.target.value);
+                                }}
+                                placeholder="Berlin"
+                                className={`mt-1 ${validationErrors.city ? "border-red-500" : ""}`}
+                                maxLength={50}
+                              />
+                            </motion.div>
+                            <AnimatePresence>
+                              {validationErrors.city && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-1 text-xs text-red-600"
+                                >
+                                  {validationErrors.city}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <div>
+                            <Label htmlFor="state">State/Region</Label>
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="state"
+                                value={profileData.address.state}
+                                onChange={(e: any) => {
+                                  setProfileData((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          address: {
+                                            ...prev.address,
+                                            state: e.target.value,
+                                          },
+                                        }
+                                      : null
+                                  );
+                                  handleInputChange("state", e.target.value);
+                                }}
+                                placeholder="Berlin"
+                                className={`mt-1 ${validationErrors.state ? "border-red-500" : ""}`}
+                                maxLength={50}
+                              />
+                            </motion.div>
+                            <AnimatePresence>
+                              {validationErrors.state && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-1 text-xs text-red-600"
+                                >
+                                  {validationErrors.state}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 }}
+                          className="grid grid-cols-2 gap-4"
+                        >
+                          <div>
+                            <Label htmlFor="zipCode">ZIP Code</Label>
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="zipCode"
+                                value={profileData.address.zipCode}
+                                onChange={(e: any) => {
+                                  setProfileData((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          address: {
+                                            ...prev.address,
+                                            zipCode: e.target.value,
+                                          },
+                                        }
+                                      : null
+                                  );
+                                  handleInputChange("zipCode", e.target.value);
+                                }}
+                                placeholder="10115"
+                                className={`mt-1 ${validationErrors.zipCode ? "border-red-500" : ""}`}
+                                maxLength={10}
+                              />
+                            </motion.div>
+                            <AnimatePresence>
+                              {validationErrors.zipCode && (
+                                <motion.p
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="mt-1 text-xs text-red-600"
+                                >
+                                  {validationErrors.zipCode}
+                                </motion.p>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <div>
+                            <Label htmlFor="country">Country</Label>
+                            <Select
+                              value={profileData.address.country}
+                              onValueChange={(value) =>
+                                setProfileData((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: {
+                                          ...prev.address,
+                                          country: value,
+                                        },
+                                      }
+                                    : null
+                                )
+                              }
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Germany">Germany</SelectItem>
+                                <SelectItem value="Austria">Austria</SelectItem>
+                                <SelectItem value="Switzerland">
+                                  Switzerland
+                                </SelectItem>
+                                <SelectItem value="Netherlands">
+                                  Netherlands
+                                </SelectItem>
+                                <SelectItem value="France">France</SelectItem>
+                                <SelectItem value="Belgium">Belgium</SelectItem>
+                                <SelectItem value="Denmark">Denmark</SelectItem>
+                                <SelectItem value="Sweden">Sweden</SelectItem>
+                                <SelectItem value="Norway">Norway</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.4 }}
+                          className="flex space-x-3"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={handleAddressUpdate}
+                              disabled={saving}
+                              className="cursor-pointer"
+                              variant="dark"
+                            >
+                              {saving ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              ) : (
+                                <CheckIcon className="w-4 h-4 mr-1" />
+                              )}
+                              Save Changes
+                            </Button>
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={() => cancelEdit("address")}
+                              variant="outline"
+                              className="cursor-pointer"
+                            >
+                              <XMarkIcon className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </motion.div>
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="viewing-address"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {profileData.address.street ? (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className="space-y-1 text-sm"
+                          >
+                            <p className="text-gray-900">
+                              {profileData.address.street}
+                            </p>
+                            <p className="text-gray-900">
+                              {profileData.address.city},{" "}
+                              {profileData.address.state}{" "}
+                              {profileData.address.zipCode}
+                            </p>
+                            <p className="text-gray-900">
+                              {profileData.address.country}
+                            </p>
+                          </motion.div>
                         ) : (
-                          <EyeIcon className="w-4 h-4" />
+                          <motion.p
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className="text-gray-500 text-sm"
+                          >
+                            No address set
+                          </motion.p>
                         )}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        value={passwordData.newPassword}
-                        onChange={(e) =>
-                          setPasswordData((prev) => ({
-                            ...prev,
-                            newPassword: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="Enter new password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showNewPassword ? (
-                          <EyeSlashIcon className="w-4 h-4" />
-                        ) : (
-                          <EyeIcon className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirm New Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={passwordData.confirmPassword}
-                        onChange={(e) =>
-                          setPasswordData((prev) => ({
-                            ...prev,
-                            confirmPassword: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="Confirm new password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeSlashIcon className="w-4 h-4" />
-                        ) : (
-                          <EyeIcon className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-                  {/* Password Strength Indicator */}
-                  {passwordData.newPassword && (
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        Password Requirements:
-                      </p>
-                      <div className="space-y-1 text-sm">
-                        <div
-                          className={`flex items-center ${passwordData.newPassword.length >= 8 ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {passwordData.newPassword.length >= 8 ? (
-                            <CheckIcon className="w-4 h-4 mr-2" />
-                          ) : (
-                            <XMarkIcon className="w-4 h-4 mr-2" />
-                          )}
-                          At least 8 characters
-                        </div>
-                        <div
-                          className={`flex items-center ${/[A-Z]/.test(passwordData.newPassword) ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {/[A-Z]/.test(passwordData.newPassword) ? (
-                            <CheckIcon className="w-4 h-4 mr-2" />
-                          ) : (
-                            <XMarkIcon className="w-4 h-4 mr-2" />
-                          )}
-                          One uppercase letter
-                        </div>
-                        <div
-                          className={`flex items-center ${/[a-z]/.test(passwordData.newPassword) ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {/[a-z]/.test(passwordData.newPassword) ? (
-                            <CheckIcon className="w-4 h-4 mr-2" />
-                          ) : (
-                            <XMarkIcon className="w-4 h-4 mr-2" />
-                          )}
-                          One lowercase letter
-                        </div>
-                        <div
-                          className={`flex items-center ${/\d/.test(passwordData.newPassword) ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {/\d/.test(passwordData.newPassword) ? (
-                            <CheckIcon className="w-4 h-4 mr-2" />
-                          ) : (
-                            <XMarkIcon className="w-4 h-4 mr-2" />
-                          )}
-                          One number
-                        </div>
-                        <div
-                          className={`flex items-center ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordData.newPassword) ? "text-green-600" : "text-gray-500"}`}
-                        >
-                          {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-                            passwordData.newPassword
-                          ) ? (
-                            <CheckIcon className="w-4 h-4 mr-2" />
-                          ) : (
-                            <XMarkIcon className="w-4 h-4 mr-2" />
-                          )}
-                          One special character
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handlePasswordUpdate}
-                      disabled={
-                        isLoading ||
-                        !validatePasswordStrength(passwordData.newPassword)
-                      }
-                      className="flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <CheckIcon className="w-4 h-4 mr-2" />
-                      )}
-                      Update Password
-                    </button>
-                    <button
-                      onClick={() => cancelEdit("password")}
-                      className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <XMarkIcon className="w-4 h-4 mr-2" />
-                      Cancel
-                    </button>
-                  </div>
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      <strong>Forgot your current password?</strong>{" "}
-                      <Link
-                        href="/forgot-password"
-                        className="text-blue-600 hover:text-blue-800 underline font-medium"
+            {/* Password & Security */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          delay: 0.7,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
                       >
-                        Reset it here
-                      </Link>
-                    </p>
+                        <KeyIcon className="w-5 h-5 text-gray-600 mr-2" />
+                      </motion.div>
+                      <CardTitle className="text-lg">
+                        Password & Security
+                      </CardTitle>
+                    </div>
+                    {!isEditingPassword && (
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button
+                          onClick={() => setIsEditingPassword(true)}
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
+                        >
+                          <PencilIcon className="w-4 h-4 mr-1" />
+                          Change Password
+                        </Button>
+                      </motion.div>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <p className="text-gray-500">••••••••••••</p>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <p>Last updated: Never</p>
-                  </div>
-                  <div className="pt-2">
-                    <Link
-                      href="/forgot-password"
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Forgot your password? Reset it here
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
+                </CardHeader>
+                <CardContent>
+                  <AnimatePresence mode="wait">
+                    {isEditingPassword ? (
+                      <motion.div
+                        key="editing-password"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                        >
+                          <Label htmlFor="currentPassword">
+                            Current Password
+                          </Label>
+                          <div className="relative mt-1">
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="currentPassword"
+                                type={
+                                  showPasswords.current ? "text" : "password"
+                                }
+                                value={passwordData.currentPassword}
+                                onChange={(e: any) => {
+                                  setPasswordData((prev) => ({
+                                    ...prev,
+                                    currentPassword: e.target.value,
+                                  }));
+                                  handleInputChange(
+                                    "currentPassword",
+                                    e.target.value
+                                  );
+                                }}
+                                placeholder="Enter current password"
+                                className={
+                                  validationErrors.currentPassword
+                                    ? "border-red-500"
+                                    : ""
+                                }
+                                maxLength={128}
+                              />
+                            </motion.div>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={() =>
+                                setShowPasswords((prev) => ({
+                                  ...prev,
+                                  current: !prev.current,
+                                }))
+                              }
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            >
+                              {showPasswords.current ? (
+                                <EyeSlashIcon className="w-4 h-4" />
+                              ) : (
+                                <EyeIcon className="w-4 h-4" />
+                              )}
+                            </motion.button>
+                          </div>
+                          <AnimatePresence>
+                            {validationErrors.currentPassword && (
+                              <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-1 text-xs text-red-600"
+                              >
+                                {validationErrors.currentPassword}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                        >
+                          <Label htmlFor="newPassword">New Password</Label>
+                          <div className="relative mt-1">
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="newPassword"
+                                type={showPasswords.new ? "text" : "password"}
+                                value={passwordData.newPassword}
+                                onChange={(e: any) => {
+                                  setPasswordData((prev) => ({
+                                    ...prev,
+                                    newPassword: e.target.value,
+                                  }));
+                                  handleInputChange(
+                                    "newPassword",
+                                    e.target.value
+                                  );
+                                }}
+                                placeholder="Enter new password"
+                                className={
+                                  validationErrors.newPassword
+                                    ? "border-red-500"
+                                    : ""
+                                }
+                                maxLength={128}
+                              />
+                            </motion.div>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={() =>
+                                setShowPasswords((prev) => ({
+                                  ...prev,
+                                  new: !prev.new,
+                                }))
+                              }
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            >
+                              {showPasswords.new ? (
+                                <EyeSlashIcon className="w-4 h-4" />
+                              ) : (
+                                <EyeIcon className="w-4 h-4" />
+                              )}
+                            </motion.button>
+                          </div>
+                          <AnimatePresence>
+                            {validationErrors.newPassword && (
+                              <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-1 text-xs text-red-600"
+                              >
+                                {validationErrors.newPassword}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.3 }}
+                        >
+                          <Label htmlFor="confirmPassword">
+                            Confirm New Password
+                          </Label>
+                          <div className="relative mt-1">
+                            <motion.div whileFocus={{ scale: 1.01 }}>
+                              <SecureInput
+                                id="confirmPassword"
+                                type={
+                                  showPasswords.confirm ? "text" : "password"
+                                }
+                                value={passwordData.confirmPassword}
+                                onChange={(e: any) => {
+                                  setPasswordData((prev) => ({
+                                    ...prev,
+                                    confirmPassword: e.target.value,
+                                  }));
+                                  handleInputChange(
+                                    "confirmPassword",
+                                    e.target.value
+                                  );
+                                }}
+                                placeholder="Confirm new password"
+                                className={
+                                  validationErrors.confirmPassword
+                                    ? "border-red-500"
+                                    : ""
+                                }
+                                maxLength={128}
+                              />
+                            </motion.div>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={() =>
+                                setShowPasswords((prev) => ({
+                                  ...prev,
+                                  confirm: !prev.confirm,
+                                }))
+                              }
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                            >
+                              {showPasswords.confirm ? (
+                                <EyeSlashIcon className="w-4 h-4" />
+                              ) : (
+                                <EyeIcon className="w-4 h-4" />
+                              )}
+                            </motion.button>
+                          </div>
+                          <AnimatePresence>
+                            {validationErrors.confirmPassword && (
+                              <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-1 text-xs text-red-600"
+                              >
+                                {validationErrors.confirmPassword}
+                              </motion.p>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+
+                        {/* Password Strength Indicator */}
+                        <AnimatePresence>
+                          {passwordData.newPassword && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="p-3 bg-gray-50 rounded-lg"
+                            >
+                              <p className="text-sm font-medium text-gray-700 mb-2">
+                                Password Requirements:
+                              </p>
+                              <motion.div className="space-y-1 text-xs">
+                                {[
+                                  {
+                                    check: passwordData.newPassword.length >= 8,
+                                    text: "At least 8 characters",
+                                  },
+                                  {
+                                    check: /[A-Z]/.test(
+                                      passwordData.newPassword
+                                    ),
+                                    text: "One uppercase letter",
+                                  },
+                                  {
+                                    check: /[a-z]/.test(
+                                      passwordData.newPassword
+                                    ),
+                                    text: "One lowercase letter",
+                                  },
+                                  {
+                                    check: /\d/.test(passwordData.newPassword),
+                                    text: "One number",
+                                  },
+                                  {
+                                    check:
+                                      /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+                                        passwordData.newPassword
+                                      ),
+                                    text: "One special character",
+                                  },
+                                ].map((requirement, index) => (
+                                  <motion.div
+                                    key={requirement.text}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className={`flex items-center ${requirement.check ? "text-green-600" : "text-gray-500"}`}
+                                  >
+                                    {requirement.check ? (
+                                      <CheckIcon className="w-3 h-3 mr-1" />
+                                    ) : (
+                                      <XMarkIcon className="w-3 h-3 mr-1" />
+                                    )}
+                                    {requirement.text}
+                                  </motion.div>
+                                ))}
+                              </motion.div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.4 }}
+                          className="flex space-x-3"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={handlePasswordUpdate}
+                              disabled={
+                                saving ||
+                                !validatePasswordStrength(
+                                  passwordData.newPassword
+                                )
+                              }
+                              className="cursor-pointer"
+                              variant="dark"
+                            >
+                              {saving ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              ) : (
+                                <CheckIcon className="w-4 h-4 mr-1" />
+                              )}
+                              Update Password
+                            </Button>
+                          </motion.div>
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button
+                              onClick={() => cancelEdit("password")}
+                              variant="outline"
+                              className="cursor-pointer"
+                            >
+                              <XMarkIcon className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </motion.div>
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.5 }}
+                          className="p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                        >
+                          <p className="text-sm text-blue-700">
+                            <strong>Forgot your current password?</strong>{" "}
+                            <Link
+                              href="/forgot-password"
+                              className="text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+                            >
+                              Reset it here
+                            </Link>
+                          </p>
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="viewing-password"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <Label className="text-gray-600">Password</Label>
+                          <p className="text-gray-500 mt-1">••••••••••••</p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.1 }}
+                          className="text-sm text-gray-600"
+                        >
+                          <p>Last updated: Never</p>
+                        </motion.div>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, delay: 0.2 }}
+                        >
+                          <Link
+                            href="/forgot-password"
+                            className="text-sm text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                          >
+                            Forgot your password? Reset it here
+                          </Link>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Account Actions */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Account Actions
-              </h3>
-              <div className="space-y-3">
-                <Link
-                  href="/orders"
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Order History</p>
-                      <p className="text-sm text-gray-500">
-                        View your past orders
-                      </p>
-                    </div>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Danger Zone</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.8 }}
+                    className="p-4 border border-red-200 rounded-lg bg-red-50"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
-
-                <Link
-                  href="/wishlist"
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Wishlist</p>
-                      <p className="text-sm text-gray-500">
-                        Saved items for later
-                      </p>
-                    </div>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
-
-                <Link
-                  href="/settings"
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        Account Settings
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Privacy & preferences
-                      </p>
-                    </div>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
-
-                {/* Delete Account Section */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                    Danger Zone
-                  </h4>
-                  <div className="p-3 border border-red-200 rounded-lg bg-red-50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-red-900">
+                        <p className="font-medium text-red-900 text-sm">
                           Delete Account
                         </p>
                         <p className="text-sm text-red-700">
                           Permanently delete your account and all data
                         </p>
                       </div>
-                      <button className="px-3 py-1 text-sm font-medium text-red-700 border border-red-300 rounded-md hover:bg-red-100 transition-colors">
-                        Delete
-                      </button>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="text-red-700 border-red-300 hover:bg-red-100 cursor-pointer"
+                        >
+                          Delete
+                        </Button>
+                      </motion.div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       <Footer />
     </div>

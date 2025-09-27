@@ -8,9 +8,9 @@ import {
   ChevronRightIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Step Components
 import BasicInfoStep from "@/components/vendor/product/BasicInfoStep";
@@ -142,11 +142,21 @@ export default function ProductFormSteps({
     }
   };
 
-  const getStepStatus = (step: number) => {
-    if (step < currentStep) return "completed";
-    if (step === currentStep) return "current";
-    return "upcoming";
-  };
+  const SubmissionSkeleton = () => (
+    <Card className="border-0 shadow-sm bg-white">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-20" />
+          <div className="flex space-x-1">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="w-2 h-2 rounded-full" />
+            ))}
+          </div>
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
@@ -155,206 +165,202 @@ export default function ProductFormSteps({
         {currentStep === 1 && (
           <motion.div
             key="step1"
-            initial={{ opacity: 0, x: 30, scale: 0.98 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -30, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/3 via-indigo-500/3 to-purple-500/3 rounded-2xl blur-2xl" />
-              <div className="relative bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl shadow-lg">
-                <BasicInfoStep
-                  formData={formData}
-                  updateFormData={handleFieldUpdate}
-                  errors={errors}
-                />
-              </div>
-            </div>
+            <BasicInfoStep
+              formData={formData}
+              updateFormData={handleFieldUpdate}
+              errors={errors}
+            />
           </motion.div>
         )}
 
         {currentStep === 2 && (
           <motion.div
             key="step2"
-            initial={{ opacity: 0, x: 30, scale: 0.98 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -30, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/3 via-teal-500/3 to-cyan-500/3 rounded-2xl blur-2xl" />
-              <div className="relative bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl shadow-lg">
-                <VariantsStep
-                  formData={formData}
-                  updateFormData={handleFieldUpdate}
-                  errors={errors}
-                />
-              </div>
-            </div>
+            <VariantsStep
+              formData={formData}
+              updateFormData={handleFieldUpdate}
+              errors={errors}
+            />
           </motion.div>
         )}
 
         {currentStep === 3 && (
           <motion.div
             key="step3"
-            initial={{ opacity: 0, x: 30, scale: 0.98 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -30, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/3 via-orange-500/3 to-red-500/3 rounded-2xl blur-2xl" />
-              <div className="relative bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl shadow-lg">
-                <SpecificationsStep
-                  formData={formData}
-                  updateFormData={handleFieldUpdate}
-                  errors={errors}
-                />
-              </div>
-            </div>
+            <SpecificationsStep
+              formData={formData}
+              updateFormData={handleFieldUpdate}
+              errors={errors}
+            />
           </motion.div>
         )}
 
         {currentStep === 4 && (
           <motion.div
             key="step4"
-            initial={{ opacity: 0, x: 30, scale: 0.98 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -30, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/3 via-purple-500/3 to-fuchsia-500/3 rounded-2xl blur-2xl" />
-              <div className="relative bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl shadow-lg">
-                <MediaSettingsStep
-                  formData={formData}
-                  updateFormData={handleFieldUpdate}
-                  errors={errors}
-                />
-              </div>
-            </div>
+            <MediaSettingsStep
+              formData={formData}
+              updateFormData={handleFieldUpdate}
+              errors={errors}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Navigation */}
+      {/* Clean Navigation */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
+        transition={{ duration: 0.3 }}
       >
-        <Card className="bg-white/70 backdrop-blur-sm border border-white/40 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              {/* Previous Button */}
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className={`
-                  px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer
-                  ${
-                    currentStep === 1
-                      ? "bg-gray-100/50 text-gray-400 border-gray-200/50"
-                      : "bg-white/80 text-gray-700 border-gray-200/50 hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5"
-                  }
-                `}
-              >
-                <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                Previous
-              </Button>
+        {isSubmitting ? (
+          <SubmissionSkeleton />
+        ) : (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                {/* Previous Button */}
+                <motion.div
+                  whileHover={{ scale: currentStep === 1 ? 1 : 1.02 }}
+                  whileTap={{ scale: currentStep === 1 ? 1 : 0.98 }}
+                >
+                  <Button
+                    variant="outline"
+                    onClick={prevStep}
+                    disabled={currentStep === 1}
+                    size="sm"
+                    className={`cursor-pointer transition-colors ${
+                      currentStep === 1
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <ChevronLeftIcon className="w-3 h-3 mr-1" />
+                    Previous
+                  </Button>
+                </motion.div>
 
-              {/* Step Indicator */}
-              <div className="flex items-center space-x-3">
-                <Badge className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 px-3 py-1 text-xs font-medium shadow-md">
-                  Step {currentStep} of 4
-                </Badge>
-
-                {/* Progress Dots */}
+                {/* Clean Progress Dots */}
                 <div className="flex space-x-1.5">
                   {[1, 2, 3, 4].map((step) => (
-                    <div
+                    <motion.button
                       key={step}
-                      className={`
-                        w-2 h-2 rounded-full transition-all duration-300
-                        ${
-                          currentStep >= step
-                            ? "bg-gradient-to-r from-indigo-500 to-purple-600 shadow-sm"
-                            : "bg-gray-200"
-                        }
-                      `}
+                      onClick={() => setCurrentStep(step)}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                        currentStep >= step
+                          ? "bg-blue-600"
+                          : currentStep === step - 1
+                            ? "bg-blue-300"
+                            : "bg-gray-300"
+                      }`}
                     />
                   ))}
                 </div>
+
+                {/* Next/Submit Button */}
+                {currentStep < 4 ? (
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      onClick={nextStep}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 !text-white"
+                    >
+                      Next
+                      <ChevronRightIcon className="w-3 h-3 ml-1 !text-white" />
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                    whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+                  >
+                    <Button
+                      onClick={onSubmit}
+                      disabled={isSubmitting}
+                      size="sm"
+                      className={`cursor-pointer ${
+                        isSubmitting
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircleIcon className="w-3 h-3 mr-1" />
+                          Create Product
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                )}
               </div>
 
-              {/* Next/Submit Button */}
-              {currentStep < 4 ? (
-                <Button
-                  onClick={nextStep}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-0.5"
-                >
-                  Next Step
-                  <ChevronRightIcon className="w-4 h-4 ml-1" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={onSubmit}
-                  disabled={isSubmitting}
-                  className={`
-                    px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer
-                    ${
-                      isSubmitting
-                        ? "bg-gray-400 text-white"
-                        : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                    }
-                  `}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircleIcon className="w-4 h-4 mr-1" />
-                      Create Product
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Error Summary */}
-            {Object.keys(errors).length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="mt-3 pt-3 border-t border-gray-200"
-              >
-                <div className="bg-red-50 rounded-lg p-3">
-                  <h4 className="text-xs font-semibold text-red-800 mb-1">
-                    Please fix the following issues:
-                  </h4>
-                  <div className="space-y-1">
-                    {Object.entries(errors)
-                      .slice(0, 3)
-                      .map(([key, message]) => (
-                        <p key={key} className="text-xs text-red-600">
-                          • {message}
-                        </p>
-                      ))}
-                    {Object.keys(errors).length > 3 && (
-                      <p className="text-xs text-red-500 font-medium">
-                        + {Object.keys(errors).length - 3} more issues
+              {/* Compact Error Summary */}
+              <AnimatePresence>
+                {Object.keys(errors).length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-2 pt-2 border-t border-gray-100"
+                  >
+                    <div className="bg-red-50 rounded-md p-2">
+                      <p className="text-xs font-medium text-red-800 mb-1">
+                        Please fix {Object.keys(errors).length} issue
+                        {Object.keys(errors).length > 1 ? "s" : ""}:
                       </p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </CardContent>
-        </Card>
+                      <div className="space-y-0.5">
+                        {Object.entries(errors)
+                          .slice(0, 2)
+                          .map(([key, message]) => (
+                            <p key={key} className="text-xs text-red-600">
+                              • {message}
+                            </p>
+                          ))}
+                        {Object.keys(errors).length > 2 && (
+                          <p className="text-xs text-red-500">
+                            + {Object.keys(errors).length - 2} more
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        )}
       </motion.div>
     </div>
   );

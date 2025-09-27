@@ -4,9 +4,9 @@ import Link from "next/link";
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { formatPrice } from "@/lib/utils";
-import ProductCard from '@/components/ui/ProductCard';
-
+import ProductCard from "@/components/ui/ProductCard";
 
 const newProducts = [
   {
@@ -111,38 +111,81 @@ interface ProductCardProps {
   product: (typeof newProducts)[0];
 }
 
-
 export default function NewArrivals() {
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="text-center mb-12"
+        >
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.6,
+              delay: 0.1,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
+            className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4"
+          >
             New Arrivals
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.6,
+              delay: 0.2,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
+            className="text-lg text-gray-600 max-w-2xl mx-auto"
+          >
             Fresh tech, just dropped. Discover the latest innovations in
             electronics and computing.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {newProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {newProducts.map((product, index) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.05,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              }}
+            >
+              <ProductCard product={product} />
+            </motion.div>
           ))}
         </div>
 
         {/* View All Button */}
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.5,
+            delay: 0.3,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
+          className="text-center"
+        >
           <Link
             href="/products?filter=new"
-            className="inline-flex items-center text-gray-900 font-medium hover:text-gray-600 transition-colors group"
+            className="inline-flex items-center text-gray-900 font-medium hover:text-gray-600 transition-colors group cursor-pointer"
           >
             View all new arrivals
-            <svg
-              className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform"
+            <motion.svg
+              whileHover={{ x: 2 }}
+              className="ml-2 h-4 w-4 transition-transform"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -153,9 +196,9 @@ export default function NewArrivals() {
                 strokeWidth={2}
                 d="M9 5l7 7-7 7"
               />
-            </svg>
+            </motion.svg>
           </Link>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

@@ -28,7 +28,7 @@ import {
 } from "@heroicons/react/24/solid";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -46,15 +46,25 @@ import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 
+// Updated interface with variant support
 interface OrderItem {
   id: string;
   productId: string;
+  variantId?: string | null;
   name: string;
+  variantName?: string | null;
   brand?: string;
   image: string;
   slug: string;
   quantity: number;
   price: number;
+  variantAttributes?: {
+    color?: string;
+    storage?: string;
+    ram?: string;
+    size?: string;
+    material?: string;
+  } | null;
   vendor: {
     name: string;
   };
@@ -169,7 +179,7 @@ function StatusBadge({ status }: { status: string }) {
   const Icon = config.icon;
 
   return (
-    <Badge variant="outline" className={`text-xs ${config.color}`}>
+    <Badge variant="default" className={`text-xs ${config.color}`}>
       <Icon className="w-3 h-3 mr-1.5" />
       {config.label}
     </Badge>
@@ -228,6 +238,78 @@ function DeliveryStatus({
       {carrier && estimate.status === "shipped" && (
         <span className="text-gray-500">via {carrier}</span>
       )}
+    </div>
+  );
+}
+
+// Enhanced Product Display Component with Variant Support
+function ProductDisplay({ item }: { item: OrderItem }) {
+  const displayName = item.variantName
+    ? `${item.name} - ${item.variantName}`
+    : item.name;
+
+  const variantDetails = [];
+  if (item.variantAttributes?.color) {
+    variantDetails.push(`Color: ${item.variantAttributes.color}`);
+  }
+  if (item.variantAttributes?.storage) {
+    variantDetails.push(`Storage: ${item.variantAttributes.storage}`);
+  }
+  if (item.variantAttributes?.ram) {
+    variantDetails.push(`RAM: ${item.variantAttributes.ram}`);
+  }
+  if (item.variantAttributes?.size) {
+    variantDetails.push(`Size: ${item.variantAttributes.size}`);
+  }
+  if (item.variantAttributes?.material) {
+    variantDetails.push(`Material: ${item.variantAttributes.material}`);
+  }
+
+  return (
+    <div className="flex items-center space-x-4">
+      <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={displayName}
+            width={48}
+            height={48}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <span className="text-xs font-medium text-gray-500">
+              {item.name.substring(0, 2).toUpperCase()}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <Link
+          href={`/products/${item.slug}`}
+          className="block hover:text-gray-700"
+        >
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {displayName}
+          </p>
+          <div className="flex items-center space-x-2 text-xs text-gray-500">
+            {item.brand && <span>{item.brand}</span>}
+            {item.brand && <span>•</span>}
+            <span>Sold by {item.vendor.name}</span>
+          </div>
+          {variantDetails.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              {variantDetails.join(" • ")}
+            </div>
+          )}
+        </Link>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-medium text-gray-900">
+          {formatPrice(item.price * item.quantity)}
+        </p>
+        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+      </div>
     </div>
   );
 }
@@ -358,7 +440,7 @@ export default function CustomerOrdersPage() {
     }
   }, [status, session, router]);
 
-  // Filter orders by search term
+  // Enhanced filter for variants
   const filteredOrders = orders.filter((order) => {
     if (!searchTerm) return true;
     const query = searchTerm.toLowerCase();
@@ -366,7 +448,15 @@ export default function CustomerOrdersPage() {
       order.id.toLowerCase().includes(query) ||
       order.orderNumber?.toLowerCase().includes(query) ||
       order.trackingNumber?.toLowerCase().includes(query) ||
-      order.items.some((item) => item.name.toLowerCase().includes(query))
+      order.items.some(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.variantName?.toLowerCase().includes(query) ||
+          item.brand?.toLowerCase().includes(query) ||
+          Object.values(item.variantAttributes || {}).some((attr) =>
+            attr?.toLowerCase().includes(query)
+          )
+      )
     );
   });
 
@@ -455,7 +545,7 @@ export default function CustomerOrdersPage() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
-                      placeholder="Search by order ID, tracking number, or product..."
+                      placeholder="Search by order ID, product, variant, or brand..."
                     />
                   </div>
                 </div>
@@ -481,10 +571,7 @@ export default function CustomerOrdersPage() {
                 {/* Actions */}
                 <div className="space-y-2">
                   <Label className="invisible">Actions</Label>
-                  <Button
-                    type="submit"
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-                  >
+                  <Button type="submit" className="w-full" variant="dark">
                     Apply Filters
                   </Button>
                 </div>
@@ -607,54 +694,10 @@ export default function CustomerOrdersPage() {
                       </div>
                     )}
 
-                    {/* Order Items Preview */}
+                    {/* Order Items Preview with Variant Support */}
                     <div className="space-y-3">
                       {order.items.slice(0, 2).map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center space-x-4"
-                        >
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                            {item.image ? (
-                              <Image
-                                src={item.image}
-                                alt={item.name}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-xs font-medium text-gray-500">
-                                  {item.name.substring(0, 2).toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <Link
-                              href={`/products/${item.slug}`}
-                              className="block hover:text-gray-700"
-                            >
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {item.name}
-                              </p>
-                              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                {item.brand && <span>{item.brand}</span>}
-                                <span>•</span>
-                                <span>Sold by {item.vendor.name}</span>
-                              </div>
-                            </Link>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">
-                              {formatPrice(item.price * item.quantity)}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Qty: {item.quantity}
-                            </p>
-                          </div>
-                        </div>
+                        <ProductDisplay key={item.id} item={item} />
                       ))}
 
                       {order.items.length > 2 && (

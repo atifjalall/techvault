@@ -26,14 +26,14 @@ const smoothTransition = { duration: 0.4 };
 const fastTransition = { duration: 0.2 };
 const slowTransition = { duration: 0.6 };
 
-// Types based on your Prisma schema
+// Updated types based on your new Prisma schema
 interface Category {
   id: string;
   name: string;
   slug: string;
   description?: string;
   image?: string;
-  subcategories: Subcategory[];
+  subcategories?: Subcategory[];
 }
 
 interface Subcategory {
@@ -48,25 +48,76 @@ interface Brand {
   name: string;
 }
 
+interface ProductVariant {
+  id: string;
+  variantName: string;
+  price: number;
+  comparePrice?: number;
+  stock: number;
+  color?: string;
+  colorHex?: string;
+  storage?: string;
+  ram?: string;
+  size?: string;
+  thumbnailImage?: string;
+  images: string[];
+  isActive: boolean;
+}
+
+interface ColorOption {
+  color?: string;
+  colorHex?: string;
+  image?: string;
+  variantId: string;
+}
+
 interface DatabaseProduct {
   id: string;
   name: string;
   slug: string;
   description?: string;
-  price: number;
+  price: number; // Computed from variants
+  maxPrice?: number;
   comparePrice?: number;
+  priceRange: string;
   images: string[];
   brand?: Brand;
   category: Category;
   subcategory?: Subcategory;
-  stock: number;
+  stock: number; // Computed total stock
+  inStock: boolean;
   isActive: boolean;
   featured: boolean;
   newArrival: boolean;
-  reviews: { rating: number }[];
-  _count: {
-    reviews: number;
-  };
+  returnable: boolean;
+  avgRating: number;
+  reviewCount: number;
+  discountPercentage: number;
+  variantCount: number;
+  colorOptions: ColorOption[];
+  storageOptions: string[];
+  ramOptions: string[];
+  hasMultipleVariants: boolean;
+  variants: ProductVariant[];
+  specifications: Record<
+    string,
+    Array<{
+      name: string;
+      value: string;
+      unit?: string;
+      isHighlight: boolean;
+    }>
+  >;
+  tags: string[];
+  modelNumber?: string;
+  views: number;
+  sold: number;
+  deliveryDays?: number;
+  warranty?: string;
+  weight?: string;
+  dimensions?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const sortOptions = [
@@ -173,7 +224,7 @@ function SimpleDropdown({
   );
 }
 
-// Price Range Component with simple validation
+// FIXED: Price Range Component with debounced updates to prevent page refresh
 function PriceRange({
   min,
   max,
@@ -189,65 +240,71 @@ function PriceRange({
 }) {
   const [localMin, setLocalMin] = useState(value[0].toString());
   const [localMax, setLocalMax] = useState(value[1].toString());
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  // Update local values when props change
+  // Update local state when value prop changes
   useEffect(() => {
     setLocalMin(value[0].toString());
     setLocalMax(value[1].toString());
+    setDebouncedValue(value);
   }, [value]);
 
+  // Debounce the onChange calls to prevent excessive URL updates
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Only call onChange if the debounced value is different from the current value
+      if (debouncedValue[0] !== value[0] || debouncedValue[1] !== value[1]) {
+        onChange(debouncedValue);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [debouncedValue, onChange, value]);
+
   const handleMinChange = (inputValue: string) => {
-    // Allow empty string for deletion
-    if (inputValue === "") {
-      setLocalMin("");
-      return;
-    }
-
-    // Only allow numbers
-    const numericValue = inputValue.replace(/[^0-9]/g, "");
-    setLocalMin(numericValue);
-
-    const num = parseInt(numericValue) || min;
-    const clampedValue = Math.max(min, Math.min(num, value[1]));
-    onChange([clampedValue, value[1]]);
+    setLocalMin(inputValue);
+    const numericValue = parseInt(inputValue) || min;
+    const clampedValue = Math.max(
+      min,
+      Math.min(numericValue, debouncedValue[1])
+    );
+    setDebouncedValue([clampedValue, debouncedValue[1]]);
   };
 
   const handleMaxChange = (inputValue: string) => {
-    // Allow empty string for deletion
-    if (inputValue === "") {
-      setLocalMax("");
-      return;
-    }
-
-    // Only allow numbers
-    const numericValue = inputValue.replace(/[^0-9]/g, "");
-    setLocalMax(numericValue);
-
-    const num = parseInt(numericValue) || max;
-    const clampedValue = Math.min(max, Math.max(num, value[0]));
-    onChange([value[0], clampedValue]);
+    setLocalMax(inputValue);
+    const numericValue = parseInt(inputValue) || max;
+    const clampedValue = Math.min(
+      max,
+      Math.max(numericValue, debouncedValue[0])
+    );
+    setDebouncedValue([debouncedValue[0], clampedValue]);
   };
 
   const handleMinBlur = () => {
-    if (localMin === "" || parseInt(localMin) < min) {
-      setLocalMin(min.toString());
-      onChange([min, value[1]]);
-    }
+    const numericValue = parseInt(localMin) || min;
+    const clampedValue = Math.max(
+      min,
+      Math.min(numericValue, debouncedValue[1])
+    );
+    setLocalMin(clampedValue.toString());
+    const newValue: [number, number] = [clampedValue, debouncedValue[1]];
+    setDebouncedValue(newValue);
+    // Immediate update on blur
+    onChange(newValue);
   };
 
   const handleMaxBlur = () => {
-    if (
-      localMax === "" ||
-      parseInt(localMax) > max ||
-      parseInt(localMax) < value[0]
-    ) {
-      const correctedValue = Math.min(
-        max,
-        Math.max(value[0], parseInt(localMax) || max)
-      );
-      setLocalMax(correctedValue.toString());
-      onChange([value[0], correctedValue]);
-    }
+    const numericValue = parseInt(localMax) || max;
+    const clampedValue = Math.min(
+      max,
+      Math.max(numericValue, debouncedValue[0])
+    );
+    setLocalMax(clampedValue.toString());
+    const newValue: [number, number] = [debouncedValue[0], clampedValue];
+    setDebouncedValue(newValue);
+    // Immediate update on blur
+    onChange(newValue);
   };
 
   return (
@@ -258,31 +315,35 @@ function PriceRange({
         animate={{ opacity: 1 }}
         transition={smoothTransition}
       >
-        <span>{formatValue(value[0])}</span>
-        <span>{formatValue(value[1])}</span>
+        <span>{formatValue(debouncedValue[0])}</span>
+        <span>{formatValue(debouncedValue[1])}</span>
       </motion.div>
 
       <div className="relative">
         <div className="flex space-x-2">
           <motion.input
-            type="text"
+            type="number"
+            min={min}
+            max={max}
             value={localMin}
             onChange={(e) => handleMinChange(e.target.value)}
             onBlur={handleMinBlur}
             whileFocus={{ scale: 1.01 }}
             transition={fastTransition}
             className="w-full px-2 py-2 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
-            placeholder="Min"
+            placeholder={`Min (${min})`}
           />
           <motion.input
-            type="text"
+            type="number"
+            min={min}
+            max={max}
             value={localMax}
             onChange={(e) => handleMaxChange(e.target.value)}
             onBlur={handleMaxBlur}
             whileFocus={{ scale: 1.01 }}
             transition={fastTransition}
             className="w-full px-2 py-2 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
-            placeholder="Max"
+            placeholder={`Max (${max})`}
           />
         </div>
       </div>
@@ -290,7 +351,7 @@ function PriceRange({
   );
 }
 
-// Star Rating Component with refined animations
+// FIXED: Premium Star Rating Component
 function StarRating({
   rating,
   onChange,
@@ -301,35 +362,54 @@ function StarRating({
   const [hovered, setHovered] = useState(0);
 
   return (
-    <div className="flex space-x-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <motion.button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
-          transition={fastTransition}
-          className="focus:outline-none transition-colors duration-150 cursor-pointer"
-        >
-          <motion.div
-            animate={{
-              color: star <= (hovered || rating) ? "#fbbf24" : "#d1d5db",
-              fill: star <= (hovered || rating) ? "#fbbf24" : "none",
-            }}
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => {
+        const isActive = star <= (hovered || rating);
+        return (
+          <motion.button
+            key={star}
+            type="button"
+            onClick={() => onChange(star === rating ? 0 : star)}
+            onMouseEnter={() => setHovered(star)}
+            onMouseLeave={() => setHovered(0)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             transition={fastTransition}
+            className="focus:outline-none transition-all duration-200 cursor-pointer p-0.5 rounded"
           >
-            <StarIcon className="h-5 w-5" />
-          </motion.div>
-        </motion.button>
-      ))}
+            <motion.div
+              animate={{
+                scale: isActive ? 1 : 0.9,
+                opacity: isActive ? 1 : 0.4,
+              }}
+              transition={fastTransition}
+            >
+              <StarIcon
+                className={`h-5 w-5 transition-all duration-200 ${
+                  isActive
+                    ? "text-amber-400 fill-amber-400 drop-shadow-sm"
+                    : "text-gray-300 hover:text-amber-200"
+                }`}
+              />
+            </motion.div>
+          </motion.button>
+        );
+      })}
+      {rating > 0 && (
+        <motion.span
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={fastTransition}
+          className="text-xs text-gray-600 ml-2"
+        >
+          {rating}+ stars
+        </motion.span>
+      )}
     </div>
   );
 }
 
-// Loading Skeleton Component for both initial load and filter changes
+// Loading Skeleton Component
 function ProductGridSkeleton({
   viewMode = "grid",
   showToolbar = true,
@@ -339,7 +419,6 @@ function ProductGridSkeleton({
 }) {
   return (
     <>
-      {/* Premium Bar Skeleton - only show during initial load */}
       {showToolbar && (
         <motion.div
           className="mb-4 bg-white rounded-lg shadow-sm border border-gray-100 p-3"
@@ -351,14 +430,12 @@ function ProductGridSkeleton({
         </motion.div>
       )}
 
-      {/* Products Grid Skeleton */}
       <div
         className={`${
           viewMode === "grid"
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
             : "space-y-4"
         }`}
-        style={{ gridAutoRows: viewMode === "grid" ? "1fr" : "auto" }}
       >
         {[...Array(8)].map((_, index) => (
           <motion.div
@@ -369,62 +446,26 @@ function ProductGridSkeleton({
             className={`bg-white rounded-lg shadow-sm border border-gray-100 ${
               viewMode === "list"
                 ? "flex items-center p-3 h-32"
-                : "flex flex-col h-full"
+                : "flex flex-col h-full p-4"
             }`}
           >
             {viewMode === "list" ? (
-              // List view skeleton
               <>
-                <div className="w-12 h-12 bg-gray-200 rounded-md flex-shrink-0 animate-pulse"></div>
-                <div className="flex-1 ml-3 space-y-2">
-                  <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                <div className="w-20 h-20 bg-gray-200 rounded-md flex-shrink-0 animate-pulse"></div>
+                <div className="flex-1 ml-4 space-y-2">
                   <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                </div>
-                <div className="flex flex-col items-end space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
-                  <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+                  <div className="h-5 bg-gray-200 rounded w-1/3 animate-pulse"></div>
                 </div>
               </>
             ) : (
-              // Grid view skeleton - matches ProductCard structure
               <>
-                {/* Image area */}
-                <div className="aspect-square bg-gray-200 rounded-lg mb-3 animate-pulse relative">
-                  <div className="absolute top-2 left-2 w-8 h-4 bg-gray-300 rounded-full animate-pulse"></div>
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-gray-300 rounded-full animate-pulse"></div>
-                </div>
-
-                {/* Content area */}
-                <div className="p-4 flex-1 flex flex-col space-y-2">
-                  {/* Brand */}
+                <div className="aspect-square bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
+                <div className="space-y-2 flex-1">
                   <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-
-                  {/* Product name */}
                   <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-
-                  {/* Rating */}
-                  <div className="flex space-x-1 my-2">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-2.5 h-2.5 bg-gray-200 rounded-full animate-pulse"
-                      ></div>
-                    ))}
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center space-x-2 mt-auto">
-                    <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
-                  </div>
-
-                  {/* From label */}
-                  <div className="h-3 bg-gray-200 rounded w-8 animate-pulse"></div>
-
-                  {/* Button */}
-                  <div className="h-10 bg-gray-200 rounded-lg mt-3 animate-pulse"></div>
+                  <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse mt-auto"></div>
                 </div>
               </>
             )}
@@ -455,35 +496,37 @@ function ProductsPageSkeleton() {
   );
 }
 
+// Transform function with safer fallbacks
 function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
-  const avgRating =
-    dbProduct.reviews.length > 0
-      ? dbProduct.reviews.reduce((sum, review) => sum + review.rating, 0) /
-        dbProduct.reviews.length
-      : 0;
+  const price = dbProduct?.price || 0;
+  const images = dbProduct?.images || [];
+  const variants = dbProduct?.variants || [];
 
   return {
     id: dbProduct.id,
-    name: dbProduct.name,
+    name: dbProduct.name || "Unnamed Product",
     brand: dbProduct.brand?.name,
-    price: dbProduct.price,
+    price: price,
     originalPrice: dbProduct.comparePrice,
-    image: dbProduct.images[0] || "/api/placeholder/400/400",
-    images: dbProduct.images,
-    variants:
-      dbProduct.images.length > 1
-        ? `${dbProduct.images.length} images`
-        : undefined,
+    image: images[0] || "/api/placeholder/400/400",
+    images: images,
+    variants: dbProduct.hasMultipleVariants
+      ? `${dbProduct.variantCount} variants`
+      : undefined,
     isNew: dbProduct.newArrival,
     isFeatured: dbProduct.featured,
-    category: dbProduct.category.name,
-    rating: avgRating > 0 ? avgRating : undefined,
-    reviewCount:
-      dbProduct._count.reviews > 0 ? dbProduct._count.reviews : undefined,
-    slug: dbProduct.slug, // Ensure this is always present
+    category: dbProduct.category?.name || "Electronics",
+    rating: dbProduct.avgRating > 0 ? dbProduct.avgRating : undefined,
+    reviewCount: dbProduct.reviewCount > 0 ? dbProduct.reviewCount : undefined,
+    slug: dbProduct.slug || dbProduct.id,
     description: dbProduct.description,
     stock: dbProduct.stock,
     isActive: dbProduct.isActive,
+    colorOptions: dbProduct.colorOptions || [],
+    discountPercentage: dbProduct.discountPercentage,
+    priceRange: dbProduct.hasMultipleVariants
+      ? dbProduct.priceRange
+      : undefined,
   };
 }
 
@@ -491,6 +534,7 @@ function ProductsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
+
   // State
   const [products, setProducts] = useState<DatabaseProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -509,16 +553,18 @@ function ProductsPageContent() {
   const [minRating, setMinRating] = useState(0);
   const [onlyInStock, setOnlyInStock] = useState(false);
 
+  // Redirect vendors to dashboard
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role === "VENDOR") {
       router.replace("/vendor/dashboard");
     }
   }, [status, session, router]);
-  // Initialize filters from URL params
+
+  // Initialize filters from URL params - handle both slugs and IDs
   useEffect(() => {
-    const category = searchParams.get("category");
-    const subcategory = searchParams.get("subcategory");
-    const brand = searchParams.get("brand");
+    const categoryParam = searchParams.get("category");
+    const subcategoryParam = searchParams.get("subcategory");
+    const brandParam = searchParams.get("brand");
     const search = searchParams.get("search");
     const sort = searchParams.get("sort");
     const minPrice = searchParams.get("minPrice");
@@ -527,56 +573,165 @@ function ProductsPageContent() {
     const stock = searchParams.get("stock");
     const rating = searchParams.get("rating");
 
-    if (category) setSelectedCategory(category);
-    if (subcategory) setSelectedSubcategory(subcategory);
-    if (brand) setSelectedBrand(brand);
+    // Handle category - support both ID and slug
+    if (categoryParam) {
+      const categoryBySlug = categories.find((c) => c.slug === categoryParam);
+      const categoryById = categories.find((c) => c.id === categoryParam);
+      const foundCategory = categoryBySlug || categoryById;
+      if (foundCategory) {
+        setSelectedCategory(foundCategory.id);
+      }
+    }
+
+    // Handle subcategory - support both ID and slug
+    if (subcategoryParam && categories.length > 0) {
+      // First find all subcategories from all categories
+      const allSubcategories = categories.flatMap(
+        (cat) => cat.subcategories || []
+      );
+      const subcategoryBySlug = allSubcategories.find(
+        (s) => s.slug === subcategoryParam
+      );
+      const subcategoryById = allSubcategories.find(
+        (s) => s.id === subcategoryParam
+      );
+      const foundSubcategory = subcategoryBySlug || subcategoryById;
+      if (foundSubcategory) {
+        setSelectedSubcategory(foundSubcategory.id);
+      }
+    }
+
+    // Handle brand - support both ID and name
+    if (brandParam) {
+      const brandByName = brands.find(
+        (b) => b.name.toLowerCase().replace(/\s+/g, "-") === brandParam
+      );
+      const brandById = brands.find((b) => b.id === brandParam);
+      const foundBrand = brandByName || brandById;
+      if (foundBrand) {
+        setSelectedBrand(foundBrand.id);
+      }
+    }
+
     if (search) setSearchQuery(search);
     if (sort) setSortBy(sort);
-    if (minPrice && maxPrice)
+
+    // Only set price range from URL if both min and max are provided
+    if (minPrice && maxPrice) {
       setPriceRange([parseInt(minPrice), parseInt(maxPrice)]);
+    }
+
     if (sale === "true") setOnlyOnSale(true);
     if (stock === "true") setOnlyInStock(true);
     if (rating) setMinRating(parseInt(rating));
-  }, [searchParams]);
+  }, [searchParams, categories, brands]);
 
-  // Update URL when filters change
+  // FIXED: Update URL when filters change - use category slug instead of ID
   const updateURL = (newParams: Record<string, string | number | boolean>) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
 
+    // Always include current search params first
+    searchParams.forEach((value, key) => {
+      params.set(key, value);
+    });
+
+    // Update with new params
     Object.entries(newParams).forEach(([key, value]) => {
-      if (value === "" || value === false || value === 0) {
+      if (
+        value === "" ||
+        value === false ||
+        value === 0 ||
+        value === null ||
+        value === undefined
+      ) {
         params.delete(key);
       } else {
-        params.set(key, value.toString());
+        // Use category slug instead of ID for better URLs
+        if (key === "category" && value && typeof value === "string") {
+          const category = categories.find((c) => c.id === value);
+          if (category) {
+            params.set(key, category.slug);
+          } else {
+            params.set(key, value.toString());
+          }
+        } else if (
+          key === "subcategory" &&
+          value &&
+          typeof value === "string"
+        ) {
+          const subcategory = availableSubcategories.find(
+            (s) => s.id === value
+          );
+          if (subcategory) {
+            params.set(key, subcategory.slug);
+          } else {
+            params.set(key, value.toString());
+          }
+        } else if (key === "brand" && value && typeof value === "string") {
+          const brand = brands.find((b) => b.id === value);
+          if (brand) {
+            params.set(key, brand.name.toLowerCase().replace(/\s+/g, "-"));
+          } else {
+            params.set(key, value.toString());
+          }
+        } else {
+          params.set(key, value.toString());
+        }
       }
     });
 
-    // Clean up empty params
-    if (!searchQuery) params.delete("search");
-    if (!selectedCategory) params.delete("category");
-    if (!selectedSubcategory) params.delete("subcategory");
-    if (!selectedBrand) params.delete("brand");
-    if (sortBy === "featured") params.delete("sort");
-    if (!onlyOnSale) {
-      params.delete("sale");
-      params.delete("onlyOnSale");
+    // Handle special cases
+    if (!searchQuery && !newParams.search) params.delete("search");
+    if (!selectedCategory && !newParams.category) {
+      params.delete("category");
+      params.delete("subcategory"); // Clear subcategory when category is cleared
     }
-    if (!onlyInStock) params.delete("stock");
-    if (minRating === 0) params.delete("rating");
+    if (!selectedSubcategory && !newParams.subcategory)
+      params.delete("subcategory");
+    if (!selectedBrand && !newParams.brand) params.delete("brand");
+    if (sortBy === "featured" && !newParams.sort) params.delete("sort");
+    if (!onlyOnSale && !newParams.onlyOnSale) params.delete("sale");
+    if (!onlyInStock && !newParams.onlyInStock) params.delete("stock");
+    if (minRating === 0 && !newParams.minRating) params.delete("rating");
 
-    router.push(`/products?${params.toString()}`, { scroll: false });
+    // Update price range properly - but don't auto-update unless explicitly changed
+    function isNumberTuple(value: unknown): value is [number, number] {
+      return (
+        Array.isArray(value) &&
+        value.length === 2 &&
+        typeof value[0] === "number" &&
+        typeof value[1] === "number"
+      );
+    }
+
+    if (isNumberTuple(newParams.priceRange)) {
+      const [min, max] = newParams.priceRange;
+      params.set("minPrice", min.toString());
+      params.set("maxPrice", max.toString());
+    }
+
+    // Remove priceRange from params as we use minPrice/maxPrice instead
+    params.delete("priceRange");
+
+    const newUrl = params.toString()
+      ? `/products?${params.toString()}`
+      : "/products";
+    router.push(newUrl, { scroll: false });
   };
 
-  // Handle filter changes with loading state
+  // FIXED: Handle filter changes with proper URL updates - prevent auto price range updates
   const handleFilterChange = async (filterUpdates: Record<string, any>) => {
     setFilterLoading(true);
 
-    // Apply filter updates
+    // Apply filter updates to state
     Object.entries(filterUpdates).forEach(([key, value]) => {
       switch (key) {
         case "category":
           setSelectedCategory(value);
-          setSelectedSubcategory(""); // Reset subcategory when category changes
+          if (value !== selectedCategory) {
+            setSelectedSubcategory(""); // Reset subcategory when category changes
+            filterUpdates.subcategory = ""; // Also clear in URL
+          }
           break;
         case "subcategory":
           setSelectedSubcategory(value);
@@ -605,8 +760,41 @@ function ProductsPageContent() {
       }
     });
 
-    // Update URL
-    updateURL(filterUpdates);
+    // Update URL with all current filter states - but don't include priceRange unless explicitly changed
+    const urlParams: Record<string, any> = {
+      category:
+        filterUpdates.category !== undefined
+          ? filterUpdates.category
+          : selectedCategory,
+      subcategory:
+        filterUpdates.subcategory !== undefined
+          ? filterUpdates.subcategory
+          : selectedSubcategory,
+      brand:
+        filterUpdates.brand !== undefined ? filterUpdates.brand : selectedBrand,
+      search:
+        filterUpdates.search !== undefined ? filterUpdates.search : searchQuery,
+      sort: filterUpdates.sort !== undefined ? filterUpdates.sort : sortBy,
+      onlyOnSale:
+        filterUpdates.onlyOnSale !== undefined
+          ? filterUpdates.onlyOnSale
+          : onlyOnSale,
+      onlyInStock:
+        filterUpdates.onlyInStock !== undefined
+          ? filterUpdates.onlyInStock
+          : onlyInStock,
+      minRating:
+        filterUpdates.minRating !== undefined
+          ? filterUpdates.minRating
+          : minRating,
+    };
+
+    // Only include priceRange in URL if it was explicitly changed in this update
+    if (filterUpdates.priceRange !== undefined) {
+      urlParams.priceRange = filterUpdates.priceRange;
+    }
+
+    updateURL(urlParams);
 
     // Simulate filter processing time for smooth UX
     setTimeout(() => {
@@ -614,75 +802,89 @@ function ProductsPageContent() {
     }, 300);
   };
 
-  // Fetch data on component mount
+  // Data fetching with better error handling
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log("🔄 Starting data fetch...");
 
-        // Fetch categories with subcategories
-        try {
-          const categoriesRes = await fetch("/api/categories");
-          if (categoriesRes.ok) {
-            const categoriesData = await categoriesRes.json();
-            if (categoriesData.success) {
-              setCategories(categoriesData.categories);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching categories:", error);
+        const fetchPromises = [
+          fetch("/api/categories").then((res) => (res.ok ? res.json() : null)),
+          fetch("/api/brands").then((res) => (res.ok ? res.json() : null)),
+          fetch("/api/products").then((res) => (res.ok ? res.json() : null)),
+        ];
+
+        const [categoriesData, brandsData, productsData] =
+          await Promise.all(fetchPromises);
+
+        // Handle categories
+        if (categoriesData?.success && categoriesData.categories) {
+          console.log(
+            "✅ Categories fetched:",
+            categoriesData.categories.length
+          );
+          setCategories(categoriesData.categories);
         }
 
-        // Fetch brands
-        try {
-          const brandsRes = await fetch("/api/brands");
-          if (brandsRes.ok) {
-            const brandsData = await brandsRes.json();
-            if (brandsData.success) {
-              setBrands(brandsData.brands);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching brands:", error);
+        // Handle brands
+        if (brandsData?.success && brandsData.brands) {
+          console.log("✅ Brands fetched:", brandsData.brands.length);
+          setBrands(brandsData.brands);
         }
 
-        // Fetch products
-        try {
-          const productsRes = await fetch("/api/products");
-          if (productsRes.ok) {
-            const productsData = await productsRes.json();
-            if (productsData.success && productsData.products.length > 0) {
-              setProducts(productsData.products);
+        // Handle products - Better validation and fallbacks
+        if (productsData?.success && Array.isArray(productsData.products)) {
+          const validProducts = productsData.products.filter(
+            (p: any) =>
+              p && p.id && p.name && typeof p.price === "number" && p.price >= 0
+          );
 
-              // Set initial price range based on actual product prices
-              const prices = productsData.products.map(
-                (p: DatabaseProduct) => p.price
+          console.log("✅ Valid products:", validProducts.length);
+          setProducts(validProducts);
+
+          // Set price range based on actual product data with safety checks
+          if (validProducts.length > 0) {
+            const prices = validProducts
+              .map((p: DatabaseProduct) => p.price)
+              .filter(
+                (price: number) => typeof price === "number" && price > 0
               );
+
+            if (prices.length > 0) {
               const minPrice = Math.floor(Math.min(...prices));
               const maxPrice = Math.ceil(Math.max(...prices));
-              setPriceRange([minPrice, maxPrice]);
-            } else {
-              // No products found, set default price range
-              setPriceRange([0, 5000]);
+
+              // Only set price range if not already set from URL params
+              if (
+                !searchParams.get("minPrice") &&
+                !searchParams.get("maxPrice")
+              ) {
+                setPriceRange([0, maxPrice]);
+              }
+
+              console.log(
+                `💰 Price range available: €${minPrice} - €${maxPrice}`
+              );
             }
-          } else {
-            console.warn("Products API endpoint not found, using empty state");
-            setPriceRange([0, 5000]);
           }
-        } catch (error) {
-          console.error("Error fetching products:", error);
-          // Set default price range when API fails
-          setPriceRange([0, 5000]);
+        } else {
+          console.warn("⚠️ No valid products found");
+          setProducts([]);
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("❌ Error in fetchData:", error);
+        setProducts([]);
+        setCategories([]);
+        setBrands([]);
       } finally {
+        console.log("✅ Data fetch complete");
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [searchParams]);
 
   // Get available subcategories based on selected category
   const availableSubcategories = useMemo(() => {
@@ -691,57 +893,88 @@ function ProductsPageContent() {
     return category?.subcategories || [];
   }, [selectedCategory, categories]);
 
+  // FIXED: Clear filters with proper price range reset
   const clearFilters = () => {
+    console.log("🧹 Clearing all filters");
     setSearchQuery("");
     setSelectedCategory("");
     setSelectedSubcategory("");
     setSelectedBrand("");
-    if (products.length > 0) {
-      const prices = products.map((p) => p.price);
-      setPriceRange([
-        Math.floor(Math.min(...prices)),
-        Math.ceil(Math.max(...prices)),
-      ]);
-    }
     setOnlyOnSale(false);
     setMinRating(0);
     setOnlyInStock(false);
     setSortBy("featured");
 
+    // Reset price range to full range
+    if (products.length > 0) {
+      const prices = products.map((p) => p.price).filter((p) => p > 0);
+      if (prices.length > 0) {
+        const maxPrice = Math.ceil(Math.max(...prices));
+        setPriceRange([0, maxPrice]);
+      } else {
+        setPriceRange([0, 5000]);
+      }
+    } else {
+      setPriceRange([0, 5000]);
+    }
+
     // Clear URL params
     router.push("/products", { scroll: false });
   };
 
+  // Count active filters
   const activeFiltersCount = [
     searchQuery,
     selectedCategory,
     selectedSubcategory,
     selectedBrand,
-    products.length > 0 &&
-      (priceRange[0] > Math.min(...products.map((p) => p.price)) ||
+    priceRange[0] > 0 ||
+      (products.length > 0 &&
         priceRange[1] < Math.max(...products.map((p) => p.price))),
     onlyOnSale,
     minRating > 0,
     onlyInStock,
   ].filter(Boolean).length;
 
-  // Filter and sort products
+  // Filter and sort products with safer operations
   const filteredProducts = useMemo(() => {
+    console.log("🔍 Filtering products:", {
+      totalProducts: products.length,
+      searchQuery,
+      selectedCategory,
+      selectedBrand,
+      priceRange,
+      onlyOnSale,
+      onlyInStock,
+      minRating,
+    });
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return [];
+    }
+
     const filtered = products.filter((product) => {
+      // Safety check
+      if (!product || !product.name) return false;
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
+        const productName = (product.name || "").toLowerCase();
+        const brandName = (product.brand?.name || "").toLowerCase();
+        const description = (product.description || "").toLowerCase();
+
         if (
-          !product.name.toLowerCase().includes(query) &&
-          !product.brand?.name.toLowerCase().includes(query) &&
-          !product.description?.toLowerCase().includes(query)
+          !productName.includes(query) &&
+          !brandName.includes(query) &&
+          !description.includes(query)
         ) {
           return false;
         }
       }
 
       // Category filter
-      if (selectedCategory && product.category.id !== selectedCategory) {
+      if (selectedCategory && product.category?.id !== selectedCategory) {
         return false;
       }
 
@@ -758,8 +991,9 @@ function ProductsPageContent() {
         return false;
       }
 
-      // Price range filter
-      if (product.price < priceRange[0] || product.price > priceRange[1]) {
+      // Price range filter - safer range checking
+      const productPrice = product.price || 0;
+      if (productPrice < priceRange[0] || productPrice > priceRange[1]) {
         return false;
       }
 
@@ -769,61 +1003,47 @@ function ProductsPageContent() {
       }
 
       // Stock filter
-      if (onlyInStock && product.stock <= 0) {
+      if (onlyInStock && (product.stock || 0) <= 0) {
         return false;
       }
 
       // Rating filter
-      if (minRating > 0) {
-        const avgRating =
-          product.reviews.length > 0
-            ? product.reviews.reduce((sum, review) => sum + review.rating, 0) /
-              product.reviews.length
-            : 0;
-        if (avgRating < minRating) {
-          return false;
-        }
+      if (minRating > 0 && (product.avgRating || 0) < minRating) {
+        return false;
       }
 
       // Only show active products
-      return product.isActive;
+      return product.isActive !== false;
     });
 
+    console.log("📊 Filtered results:", filtered.length);
+
     // Sort products
+    const sortedProducts = [...filtered];
     switch (sortBy) {
       case "price-asc":
-        filtered.sort((a, b) => a.price - b.price);
+        sortedProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
         break;
       case "price-desc":
-        filtered.sort((a, b) => b.price - a.price);
+        sortedProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
       case "rating":
-        filtered.sort((a, b) => {
-          const aRating =
-            a.reviews.length > 0
-              ? a.reviews.reduce((sum, review) => sum + review.rating, 0) /
-                a.reviews.length
-              : 0;
-          const bRating =
-            b.reviews.length > 0
-              ? b.reviews.reduce((sum, review) => sum + review.rating, 0) /
-                b.reviews.length
-              : 0;
-          return bRating - aRating;
-        });
+        sortedProducts.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
         break;
       case "newest":
-        filtered.sort(
+        sortedProducts.sort(
           (a, b) => (b.newArrival ? 1 : 0) - (a.newArrival ? 1 : 0)
         );
         break;
       case "featured":
       default:
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        sortedProducts.sort(
+          (a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+        );
         break;
     }
 
-    return filtered;
+    return sortedProducts;
   }, [
     products,
     searchQuery,
@@ -858,6 +1078,7 @@ function ProductsPageContent() {
     ...brands.map((brand) => ({ label: brand.name, value: brand.id })),
   ];
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -905,11 +1126,14 @@ function ProductsPageContent() {
     );
   }
 
-  // Loading state
+  // Authentication loading state
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
+          <p className="text-sm text-gray-600 mt-2">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -1084,7 +1308,13 @@ function ProductsPageContent() {
                       min={0}
                       max={
                         products.length > 0
-                          ? Math.ceil(Math.max(...products.map((p) => p.price)))
+                          ? Math.ceil(
+                              Math.max(
+                                ...products
+                                  .map((p) => p.price)
+                                  .filter((p) => p > 0)
+                              )
+                            )
                           : 5000
                       }
                       value={priceRange}
@@ -1267,106 +1497,107 @@ function ProductsPageContent() {
               {/* Show skeleton loading during filter changes */}
               {filterLoading ? (
                 <ProductGridSkeleton viewMode={viewMode} showToolbar={false} />
-              ) : viewMode === "grid" ? (
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
-                  style={{ gridAutoRows: "1fr" }}
-                >
-                  <AnimatePresence mode="wait">
-                    {filteredProducts.map((product, index) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                        transition={{
-                          ...smoothTransition,
-                          delay: index * 0.03,
-                        }}
-                        whileHover={{ y: -1, scale: 1.01 }}
-                        className="flex"
-                      >
-                        <ProductCard
-                          product={transformProduct(product)}
-                          variant="default"
-                          showQuickActions={true}
-                          showAddToCart={true}
-                          className="h-full w-full flex flex-col"
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-              ) : (
-                <motion.div className="space-y-4">
-                  <AnimatePresence mode="wait">
-                    {filteredProducts.map((product, index) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                        transition={{
-                          ...smoothTransition,
-                          delay: index * 0.03,
-                        }}
-                        whileHover={{ y: -1, scale: 1.01 }}
-                        className="w-full"
-                      >
-                        <ProductCard
-                          product={transformProduct(product)}
-                          variant="compact"
-                          showQuickActions={true}
-                          showAddToCart={true}
+              ) : filteredProducts.length > 0 ? (
+                viewMode === "grid" ? (
+                  <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                    <AnimatePresence mode="wait">
+                      {filteredProducts.map((product, index) => (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                          transition={{
+                            ...smoothTransition,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{ y: -1, scale: 1.01 }}
+                          className="flex h-full"
+                        >
+                          <ProductCard
+                            product={transformProduct(product)}
+                            variant="default"
+                            showQuickActions={true}
+                            showAddToCart={true}
+                            className="h-full w-full flex flex-col"
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                ) : (
+                  <motion.div className="space-y-4">
+                    <AnimatePresence mode="wait">
+                      {filteredProducts.map((product, index) => (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                          transition={{
+                            ...smoothTransition,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{ y: -1, scale: 1.01 }}
                           className="w-full"
-                        />
+                        >
+                          <ProductCard
+                            product={transformProduct(product)}
+                            variant="compact"
+                            showQuickActions={true}
+                            showAddToCart={true}
+                            className="w-full"
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              ) : (
+                /* Empty State */
+                <motion.div
+                  className="text-center py-12"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ ...smoothTransition, delay: 0.3 }}
+                >
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-8 max-w-sm mx-auto">
+                    <motion.div
+                      className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center"
+                      initial={{ rotate: -5 }}
+                      animate={{ rotate: 0 }}
+                      transition={smoothTransition}
+                    >
+                      <MagnifyingGlassIcon className="w-8 h-8 text-gray-400" />
+                    </motion.div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No products found
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {products.length === 0
+                        ? "No products are currently available. Please check back later."
+                        : "Try adjusting your filters to discover more products"}
+                    </p>
+                    {activeFiltersCount > 0 && (
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={fastTransition}
+                      >
+                        <Button
+                          onClick={clearFilters}
+                          variant="default"
+                          size="sm"
+                          className="text-sm px-6 py-2 cursor-pointer"
+                        >
+                          Clear All Filters
+                        </Button>
                       </motion.div>
-                    ))}
-                  </AnimatePresence>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </motion.div>
-
-            {/* Empty State */}
-            {filteredProducts.length === 0 && !filterLoading && (
-              <motion.div
-                className="text-center py-12"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ ...smoothTransition, delay: 0.3 }}
-              >
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 max-w-sm mx-auto">
-                  <motion.div
-                    className="w-12 h-12 bg-gray-100 rounded-full mx-auto mb-3 flex items-center justify-center"
-                    initial={{ rotate: -5 }}
-                    animate={{ rotate: 0 }}
-                    transition={smoothTransition}
-                  >
-                    <MagnifyingGlassIcon className="w-6 h-6 text-gray-400" />
-                  </motion.div>
-                  <h3 className="text-base font-medium text-gray-900 mb-2">
-                    No products found
-                  </h3>
-                  <p className="text-xs text-gray-600 mb-4">
-                    Try adjusting your filters to discover more products
-                  </p>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={fastTransition}
-                  >
-                    <Button
-                      onClick={clearFilters}
-                      variant="default"
-                      size="sm"
-                      className="text-xs px-4 py-1.5 cursor-pointer"
-                    >
-                      Clear All Filters
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
           </div>
         </div>
       </div>
@@ -1404,38 +1635,29 @@ function ProductsPageContent() {
                   </motion.button>
                 </div>
 
+                {/* Mobile filter content - same as desktop but with mobile styling */}
                 <div className="space-y-6">
                   {/* Mobile Search */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.1 }}
-                  >
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Search
                     </label>
                     <div className="relative">
                       <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <motion.input
+                      <input
                         type="text"
                         placeholder="Search products..."
                         value={searchQuery}
                         onChange={(e) =>
                           handleFilterChange({ search: e.target.value })
                         }
-                        whileFocus={{ scale: 1.01 }}
-                        transition={fastTransition}
                         className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                       />
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Mobile Category */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.2 }}
-                  >
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Category
                     </label>
@@ -1446,37 +1668,26 @@ function ProductsPageContent() {
                         handleFilterChange({ category: value })
                       }
                     />
-                  </motion.div>
+                  </div>
 
-                  {/* Mobile Subcategory - Only show when category is selected */}
-                  <AnimatePresence>
-                    {availableSubcategories.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0, x: -16 }}
-                        animate={{ opacity: 1, height: "auto", x: 0 }}
-                        exit={{ opacity: 0, height: 0, x: -16 }}
-                        transition={{ ...smoothTransition, delay: 0.3 }}
-                      >
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          Subcategory
-                        </label>
-                        <SimpleDropdown
-                          options={subcategoryOptions}
-                          value={selectedSubcategory}
-                          onChange={(value) =>
-                            handleFilterChange({ subcategory: value })
-                          }
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Mobile Subcategory */}
+                  {availableSubcategories.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Subcategory
+                      </label>
+                      <SimpleDropdown
+                        options={subcategoryOptions}
+                        value={selectedSubcategory}
+                        onChange={(value) =>
+                          handleFilterChange({ subcategory: value })
+                        }
+                      />
+                    </div>
+                  )}
 
                   {/* Mobile Brand */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.4 }}
-                  >
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Brand
                     </label>
@@ -1485,14 +1696,10 @@ function ProductsPageContent() {
                       value={selectedBrand}
                       onChange={(value) => handleFilterChange({ brand: value })}
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Mobile Price Range */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.5 }}
-                  >
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Price Range
                     </label>
@@ -1500,7 +1707,13 @@ function ProductsPageContent() {
                       min={0}
                       max={
                         products.length > 0
-                          ? Math.ceil(Math.max(...products.map((p) => p.price)))
+                          ? Math.ceil(
+                              Math.max(
+                                ...products
+                                  .map((p) => p.price)
+                                  .filter((p) => p > 0)
+                              )
+                            )
                           : 5000
                       }
                       value={priceRange}
@@ -1509,14 +1722,10 @@ function ProductsPageContent() {
                       }
                       formatValue={(val) => `€${val}`}
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Mobile Rating */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.6 }}
-                  >
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Minimum Rating
                     </label>
@@ -1526,95 +1735,62 @@ function ProductsPageContent() {
                         handleFilterChange({ minRating: value })
                       }
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Mobile Toggles */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.7 }}
-                    className="space-y-4"
-                  >
-                    <motion.label
-                      className="flex items-center cursor-pointer"
-                      whileHover={{ x: 2 }}
-                      transition={fastTransition}
-                    >
-                      <motion.input
+                  <div className="space-y-4">
+                    <label className="flex items-center cursor-pointer">
+                      <input
                         type="checkbox"
                         checked={onlyOnSale}
                         onChange={(e) =>
                           handleFilterChange({ onlyOnSale: e.target.checked })
                         }
-                        whileTap={{ scale: 0.95 }}
-                        transition={fastTransition}
                         className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded cursor-pointer"
                       />
                       <span className="ml-2 text-sm text-gray-700">
                         On Sale Only
                       </span>
-                    </motion.label>
+                    </label>
 
-                    <motion.label
-                      className="flex items-center cursor-pointer"
-                      whileHover={{ x: 2 }}
-                      transition={fastTransition}
-                    >
-                      <motion.input
+                    <label className="flex items-center cursor-pointer">
+                      <input
                         type="checkbox"
                         checked={onlyInStock}
                         onChange={(e) =>
                           handleFilterChange({ onlyInStock: e.target.checked })
                         }
-                        whileTap={{ scale: 0.95 }}
-                        transition={fastTransition}
                         className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded cursor-pointer"
                       />
                       <span className="ml-2 text-sm text-gray-700">
                         In Stock Only
                       </span>
-                    </motion.label>
-                  </motion.div>
+                    </label>
+                  </div>
 
                   {/* Apply Filters Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...smoothTransition, delay: 0.8 }}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                  <Button
+                    onClick={() => setShowFilters(false)}
+                    variant="default"
+                    size="sm"
+                    className="w-full text-sm px-4 py-3 cursor-pointer"
                   >
-                    <Button
-                      onClick={() => setShowFilters(false)}
-                      variant="default"
-                      size="sm"
-                      className="w-full text-sm px-4 py-3 cursor-pointer"
-                    >
-                      Apply Filters
-                    </Button>
-                  </motion.div>
+                    Apply Filters
+                  </Button>
 
                   {/* Clear Filters */}
                   {activeFiltersCount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...smoothTransition, delay: 0.9 }}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
+                    <Button
+                      onClick={() => {
+                        clearFilters();
+                        setShowFilters(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-sm px-4 py-3 cursor-pointer"
                     >
-                      <Button
-                        onClick={() => {
-                          clearFilters();
-                          setShowFilters(false);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-sm px-4 py-3 cursor-pointer"
-                      >
-                        Clear All Filters ({activeFiltersCount})
-                      </Button>
-                    </motion.div>
+                      Clear All Filters ({activeFiltersCount})
+                    </Button>
                   )}
                 </div>
               </div>
@@ -1635,3 +1811,5 @@ export default function ProductsPage() {
     </Suspense>
   );
 }
+
+///ok version

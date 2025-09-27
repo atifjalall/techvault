@@ -41,10 +41,17 @@ export async function GET() {
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    // Get vendor's products
+    // Get vendor's products with their variants
     const vendorProducts = await db.product.findMany({
-      where: { vendorId: user.id },
-      select: { id: true },
+      where: {
+        vendorId: user.id,
+        isActive: true,
+      },
+      include: {
+        variants: {
+          where: { isActive: true },
+        },
+      },
     });
 
     const productIds = vendorProducts.map((p) => p.id);
@@ -58,6 +65,7 @@ export async function GET() {
             totalRevenue: 0,
             totalOrders: 0,
             totalProducts: 0,
+            totalVariants: 0,
             productViews: 0,
             revenueChange: 0,
             ordersChange: 0,
@@ -70,7 +78,7 @@ export async function GET() {
       });
     }
 
-    // Get current month orders - including both regular items and variant items
+    // Get current month orders - both regular items and variant items
     const currentMonthOrders = await db.order.findMany({
       where: {
         createdAt: { gte: currentMonthStart },
@@ -211,6 +219,10 @@ export async function GET() {
     const currentOrdersCount = currentMonthOrders.length;
     const prevOrdersCount = prevMonthOrders.length;
     const totalProducts = productIds.length;
+    const totalVariants = vendorProducts.reduce(
+      (sum, product) => sum + product.variants.length,
+      0
+    );
 
     // Calculate growth percentages
     const revenueChange =
@@ -262,10 +274,11 @@ export async function GET() {
         totalSold: number;
         totalRevenue: number;
         image: string;
+        basePrice: number;
       }
     >();
 
-    // Process regular order items
+    // Process regular order items (legacy products)
     currentMonthOrders.forEach((order) => {
       order.items.forEach((item) => {
         const productId = item.productId;
@@ -281,12 +294,13 @@ export async function GET() {
             totalSold: item.quantity,
             totalRevenue: revenue,
             image: item.product.images[0] || "",
+            basePrice: Number(item.price),
           });
         }
       });
     });
 
-    // Process variant order items
+    // Process variant order items (new system)
     currentMonthOrders.forEach((order) => {
       order.variantItems.forEach((item) => {
         const productId = item.productVariant.product.id;
@@ -302,6 +316,7 @@ export async function GET() {
             totalSold: item.quantity,
             totalRevenue: revenue,
             image: item.productVariant.product.images[0] || "",
+            basePrice: Number(item.price),
           });
         }
       });
@@ -314,6 +329,7 @@ export async function GET() {
         id,
         name: product.name,
         image: product.image,
+        price: product.basePrice,
         sold: product.totalSold,
         revenue: product.totalRevenue,
       }));
@@ -324,6 +340,7 @@ export async function GET() {
         totalRevenue: currentRevenue,
         totalOrders: currentOrdersCount,
         totalProducts: totalProducts,
+        totalVariants: totalVariants,
         productViews: productViews,
         revenueChange: revenueChange,
         ordersChange: ordersChange,

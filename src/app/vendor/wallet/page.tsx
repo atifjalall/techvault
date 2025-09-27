@@ -7,33 +7,22 @@ import { motion } from "framer-motion";
 import {
   BanknotesIcon,
   ArrowDownTrayIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   ClockIcon,
   CheckCircleIcon,
   CreditCardIcon,
-  BuildingLibraryIcon,
   EyeIcon,
   EyeSlashIcon,
   ArrowTrendingUpIcon,
-  PlusIcon,
-  Cog6ToothIcon,
+  ArrowTrendingDownIcon,
   ExclamationTriangleIcon,
   CalendarDaysIcon,
+  CurrencyEuroIcon,
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { formatPrice } from "@/lib/utils";
@@ -102,9 +91,9 @@ function StatCard({
               <p className="text-xl font-bold text-gray-900">{value}</p>
               <div className="flex items-center space-x-1">
                 {isPositive ? (
-                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
                 ) : (
-                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
                 )}
                 <span
                   className={`text-xs font-medium ${
@@ -132,13 +121,21 @@ function StatCard({
 // Transaction Icon Component - compact style
 function TransactionIcon({ type }: { type: string }) {
   const iconConfig = {
-    sale: { icon: ArrowUpIcon, color: "text-green-600", bg: "bg-green-50" },
+    sale: {
+      icon: ArrowTrendingUpIcon,
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
     payout: {
       icon: ArrowDownTrayIcon,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
-    refund: { icon: ArrowUpIcon, color: "text-orange-600", bg: "bg-orange-50" },
+    refund: {
+      icon: ArrowTrendingUpIcon,
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
     fee: { icon: CreditCardIcon, color: "text-gray-600", bg: "bg-gray-50" },
   };
 
@@ -180,8 +177,10 @@ function StatusBadge({ status }: { status: string }) {
   const Icon = config.icon;
 
   return (
-    <Badge className={`text-xs px-2 py-0.5 ${config.className}`}>
-      <Icon className="w-3 h-3 mr-1" />
+    <Badge
+      className={`text-[10px] px-1 py-0.5 ${config.className}`}
+      icon={Icon}
+    >
       {config.label}
     </Badge>
   );
@@ -198,7 +197,7 @@ function StatsSkeleton() {
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-32" />
               </div>
               <Skeleton className="w-10 h-10 rounded-lg" />
             </div>
@@ -431,14 +430,10 @@ export default function VendorWalletPage() {
               variant="outline"
               asChild
               className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
-            >
-              <Link href="/vendor/wallet/settings">
-                <Cog6ToothIcon className="w-3 h-3 mr-1.5" />
-                Settings
-              </Link>
-            </Button>
-            <Button className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-3 text-xs cursor-pointer">
-              <PlusIcon className="w-3 h-3 mr-1.5" />
+            ></Button>
+
+            <Button variant="active" className="text-blue-700">
+              <CurrencyEuroIcon className="text-current h-4 w-4 mr-1.5" />
               Request Payout
             </Button>
           </div>
@@ -515,11 +510,7 @@ export default function VendorWalletPage() {
                 <CardTitle className="text-sm font-semibold text-gray-900">
                   Payout Schedule
                 </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white border-gray-200 hover:bg-gray-50 h-7 px-2 text-xs cursor-pointer"
-                >
+                <Button variant="outline" size="sm">
                   Manage
                 </Button>
               </div>

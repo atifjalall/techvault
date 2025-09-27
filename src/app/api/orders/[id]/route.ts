@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// GET /api/orders/[id] - Get specific order details
+// GET /api/orders/[id] - Get specific order details with full variant support
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,13 +34,14 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get order with all enhanced details
+    // Get order with all enhanced details including variant items
     const order = await db.order.findFirst({
       where: {
         id: id,
         userId: user.id, // Ensure user owns this order
       },
       include: {
+        // Include regular order items (legacy)
         items: {
           include: {
             product: {
@@ -67,6 +68,37 @@ export async function GET(
             },
           },
         },
+        // Include variant-specific order items
+        variantItems: {
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                    slug: true,
+                    brand: {
+                      select: { name: true },
+                    },
+                    vendor: {
+                      select: {
+                        id: true,
+                        name: true,
+                        vendorSettings: {
+                          select: {
+                            storeName: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         statusHistory: {
           orderBy: {
             createdAt: "asc",
@@ -79,10 +111,14 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Calculate detailed totals
+    // Calculate detailed totals including variant items
     const subtotal = order.subtotal
       ? Number(order.subtotal)
       : order.items.reduce(
+          (sum, item) => sum + Number(item.price) * item.quantity,
+          0
+        ) +
+        order.variantItems.reduce(
           (sum, item) => sum + Number(item.price) * item.quantity,
           0
         );
@@ -92,7 +128,7 @@ export async function GET(
     const discount = Number(order.discountAmount || 0);
     const calculatedTotal = subtotal + shipping + tax - discount;
 
-    // Transform order data with enhanced tracking info
+    // Transform order data with enhanced tracking info and variant support
     const transformedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -109,6 +145,7 @@ export async function GET(
       // Payment and order details
       paymentStatus: order.paymentStatus,
       paymentMethod: order.paymentMethod,
+      paymentIntentId: order.paymentIntentId,
       priority: order.priority,
       notes: order.customerNotes, // Customer notes only
 
@@ -120,23 +157,58 @@ export async function GET(
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
 
-      // Items with vendor information
-      items: order.items.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        name: item.product.name,
-        brand: item.product.brand?.name,
-        image: item.product.images[0] || "",
-        slug: item.product.slug,
-        quantity: item.quantity,
-        price: Number(item.price),
-        vendor: {
-          name:
-            item.product.vendor?.vendorSettings?.storeName ||
-            item.product.vendor?.name ||
-            "TechVault",
-        },
-      })),
+      // Combined items with full variant support
+      items: [
+        // Regular order items (legacy)
+        ...order.items.map((item) => ({
+          id: item.id,
+          type: "product" as const,
+          productId: item.productId,
+          variantId: null,
+          name: item.product.name,
+          variantName: null,
+          brand: item.product.brand?.name,
+          image: item.product.images[0] || "",
+          slug: item.product.slug,
+          quantity: item.quantity,
+          price: Number(item.price),
+          variantSnapshot: null,
+          vendor: {
+            name:
+              item.product.vendor?.vendorSettings?.storeName ||
+              item.product.vendor?.name ||
+              "TechVault",
+          },
+        })),
+        // Variant-specific items
+        ...order.variantItems.map((item) => {
+          const snapshot = item.variantSnapshot as any;
+          return {
+            id: item.id,
+            type: "variant" as const,
+            productId: item.productVariant.product.id,
+            variantId: item.productVariantId,
+            name: item.productVariant.product.name,
+            variantName:
+              snapshot?.variantName || item.productVariant.variantName,
+            brand: item.productVariant.product.brand?.name,
+            image:
+              item.productVariant.images?.[0] ||
+              item.productVariant.product.images[0] ||
+              "",
+            slug: item.productVariant.product.slug,
+            quantity: item.quantity,
+            price: Number(item.price),
+            variantSnapshot: snapshot,
+            vendor: {
+              name:
+                item.productVariant.product.vendor?.vendorSettings?.storeName ||
+                item.productVariant.product.vendor?.name ||
+                "TechVault",
+            },
+          };
+        }),
+      ],
 
       // Enhanced totals
       totals: {
@@ -156,7 +228,9 @@ export async function GET(
         createdAt: history.createdAt,
       })),
 
-      itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount:
+        order.items.reduce((sum, item) => sum + item.quantity, 0) +
+        order.variantItems.reduce((sum, item) => sum + item.quantity, 0),
 
       // Delivery estimation logic
       deliveryEstimate: getDeliveryEstimate(order),
@@ -185,6 +259,15 @@ function getDeliveryEstimate(order: any) {
       status: "delivered",
       message: "Package delivered",
       date: order.deliveredAt,
+    };
+  }
+
+  // If cancelled
+  if (order.cancelledAt) {
+    return {
+      status: "cancelled",
+      message: "Order cancelled",
+      date: order.cancelledAt,
     };
   }
 

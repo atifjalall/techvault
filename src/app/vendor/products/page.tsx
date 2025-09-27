@@ -1,3 +1,5 @@
+// File: src/app/vendor/products/page.tsx
+
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -18,16 +20,16 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   StarIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   CubeIcon,
   FunnelIcon,
   CurrencyEuroIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -64,13 +66,31 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// UPDATED: Interface matching new variant-based schema
+interface ProductVariant {
+  id: string;
+  variantName: string;
+  price: number;
+  comparePrice?: number;
+  stock: number;
+  lowStockAlert: number;
+  color?: string;
+  colorHex?: string;
+  storage?: string;
+  ram?: string;
+  size?: string;
+  isActive: boolean;
+  images: string[];
+  thumbnailImage?: string;
+}
+
 interface Product {
   id: string;
   name: string;
   slug: string;
   description?: string;
-  price: number;
-  comparePrice?: number;
+  basePrice: number; // Computed from variants
+  totalStock: number; // Computed from variants
   images: string[];
   brand?: {
     id: string;
@@ -78,8 +98,6 @@ interface Product {
     createdAt: string;
     updatedAt: string;
   };
-  stock: number;
-  lowStockAlert: number;
   isActive: boolean;
   featured: boolean;
   categoryId: string;
@@ -89,10 +107,21 @@ interface Product {
     id: string;
     name: string;
   };
+  variants: ProductVariant[]; // NEW: Array of variants
+  stockInfo?: {
+    totalStock: number;
+    activeVariants: number;
+    totalVariants: number;
+    hasLowStock: boolean;
+    hasOutOfStock: boolean;
+    priceRange: {
+      min: number;
+      max: number;
+    };
+  };
   _count?: {
     reviews: number;
-    cartItems: number;
-    orderItems: number;
+    variants: number;
   };
 }
 
@@ -146,9 +175,9 @@ function StatCard({
               <p className="text-xl font-bold text-gray-900">{value}</p>
               <div className="flex items-center space-x-1">
                 {isPositive ? (
-                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
                 ) : (
-                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
                 )}
                 <span
                   className={`text-xs font-medium ${
@@ -199,9 +228,9 @@ function SortButton({
         {currentSort === field && (
           <div className="text-slate-900">
             {currentOrder === "asc" ? (
-              <ArrowUpIcon className="w-3 h-3" />
+              <ArrowTrendingUpIcon className="w-3 h-3" />
             ) : (
-              <ArrowDownIcon className="w-3 h-3" />
+              <ArrowTrendingDownIcon className="w-3 h-3" />
             )}
           </div>
         )}
@@ -221,7 +250,7 @@ function StatsSkeleton() {
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-32" />
               </div>
               <Skeleton className="w-10 h-10 rounded-lg" />
             </div>
@@ -262,7 +291,7 @@ function TableSkeleton() {
   );
 }
 
-// Product Row Component
+// UPDATED: Product Row Component for variant-based products with fixed alignment and ICONS
 function ProductRow({
   product,
   onEdit,
@@ -274,34 +303,36 @@ function ProductRow({
   onDelete: (product: Product) => void;
   onToggleStatus: (product: Product) => void;
 }) {
-  const stockStatus =
-    product.stock === 0
-      ? {
-          label: "Out of Stock",
-          color: "bg-red-100 text-red-800 border-red-200",
-        }
-      : product.stock <= product.lowStockAlert
-        ? {
-            label: "Low Stock",
-            color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          }
-        : {
-            label: "In Stock",
-            color: "bg-green-100 text-green-800 border-green-200",
-          };
+  // Calculate stock status from variants
+  const activeVariants = product.variants.filter((v) => v.isActive);
+  const totalStock =
+    product.totalStock || activeVariants.reduce((sum, v) => sum + v.stock, 0);
+  const lowStockThreshold = 10; // You can make this configurable
 
-  const formatPrice = (price: number | string) =>
-    `€${Number(price).toFixed(2)}`;
+  // Get price range from variants
+  const prices = activeVariants.map((v) => v.price);
+  const minPrice =
+    prices.length > 0 ? Math.min(...prices) : product.basePrice || 0;
+  const maxPrice =
+    prices.length > 0 ? Math.max(...prices) : product.basePrice || 0;
+
+  const formatPrice = (price: number) => `€${Number(price).toFixed(2)}`;
+
+  // Get primary product image (from product or first variant)
+  const primaryImage =
+    product.images?.[0] ||
+    activeVariants.find((v) => v.thumbnailImage)?.thumbnailImage ||
+    activeVariants.find((v) => v.images?.length > 0)?.images[0];
 
   return (
     <TableRow className="hover:bg-gray-50/50 border-b border-gray-50">
-      {/* Product Info */}
-      <TableCell className="py-3">
+      {/* Product Info - Left aligned */}
+      <TableCell className="py-3 text-left pl-4">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-            {product.images[0] ? (
+            {primaryImage ? (
               <Image
-                src={product.images[0]}
+                src={primaryImage}
                 alt={product.name}
                 width={32}
                 height={32}
@@ -320,80 +351,98 @@ function ProductRow({
             <p className="text-xs text-gray-500 truncate">
               {product.brand?.name} • {product.category.name}
             </p>
-            {product.featured && (
-              <div className="flex items-center mt-1">
-                <StarIconSolid className="h-3 w-3 text-yellow-400" />
-                <span className="text-xs text-yellow-600 ml-1">Featured</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2 mt-1">
+              {product.featured && (
+                <div className="flex items-center">
+                  <StarIconSolid className="h-3 w-3 text-yellow-400" />
+                  <span className="text-xs text-yellow-600 ml-1">Featured</span>
+                </div>
+              )}
+              {product.variants.length > 1 && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                  {product.variants.length} variants
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </TableCell>
 
-      {/* Price */}
-      <TableCell className="py-3">
+      {/* Price - Left aligned */}
+      <TableCell className="py-3 text-left pl-4">
         <div>
-          <p className="text-sm font-semibold text-gray-900">
-            {formatPrice(product.price)}
-          </p>
-          {product.comparePrice && (
-            <p className="text-xs text-gray-500 line-through">
-              {formatPrice(product.comparePrice)}
+          {minPrice === maxPrice ? (
+            <p className="text-sm font-semibold text-gray-900">
+              {formatPrice(minPrice)}
             </p>
+          ) : (
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                {formatPrice(minPrice)} - {formatPrice(maxPrice)}
+              </p>
+              <p className="text-xs text-gray-500">Price range</p>
+            </div>
           )}
         </div>
       </TableCell>
 
-      {/* Stock */}
-      <TableCell className="py-3">
-        <div className="text-center">
-          <div className="flex flex-col items-center space-y-1">
-            <span className="text-sm font-medium text-gray-900">
-              {product.stock}
+      {/* Stock - Center aligned with ICONS */}
+      <TableCell className="py-3 text-center">
+        <div className="inline-flex flex-col items-center space-y-1">
+          <span className="text-sm font-medium text-gray-900">
+            {totalStock}
+          </span>
+          {/* UPDATED: Stock status badges with icons */}
+          {totalStock === 0 ? (
+            <Badge variant="out_of_stock" size="sm" icon="auto">
+              Out of Stock
+            </Badge>
+          ) : totalStock <= lowStockThreshold ? (
+            <Badge variant="high" size="sm" icon="auto">
+              Low Stock
+            </Badge>
+          ) : (
+            <Badge variant="active" size="sm" icon="auto">
+              In Stock
+            </Badge>
+          )}
+          {product.variants.length > 1 && (
+            <span className="text-xs text-gray-400">
+              across {activeVariants.length} variants
             </span>
-            <span
-              className={`inline-block text-xs px-2 py-0.5 rounded-md border ${stockStatus.color}`}
-            >
-              {stockStatus.label}
-            </span>
-          </div>
+          )}
         </div>
       </TableCell>
 
-      {/* Status */}
-      <TableCell className="py-3">
-        <div className="text-center">
-          <button
-            onClick={() => onToggleStatus(product)}
-            className="cursor-pointer"
+      {/* Status - Center aligned with ICONS */}
+      <TableCell className="py-3 text-center">
+        <button
+          onClick={() => onToggleStatus(product)}
+          className="cursor-pointer"
+        >
+          {/* UPDATED: Product status badges with icons */}
+          <Badge
+            variant={product.isActive ? "active" : "inactive"}
+            size="sm"
+            icon="auto"
           >
-            <span
-              className={`inline-block text-xs px-2 py-0.5 rounded-md border ${
-                product.isActive
-                  ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-red-100 text-red-800 border-red-200"
-              }`}
-            >
-              {product.isActive ? "Active" : "Draft"}
-            </span>
-          </button>
+            {product.isActive ? "Active" : "Draft"}
+          </Badge>
+        </button>
+      </TableCell>
+
+      {/* Reviews - Center aligned */}
+      <TableCell className="py-3 text-center">
+        <div className="inline-flex flex-col items-center">
+          <span className="text-sm font-medium text-gray-900">
+            {product._count?.reviews || 0}
+          </span>
+          <span className="text-xs text-gray-500">reviews</span>
         </div>
       </TableCell>
 
-      {/* Sales */}
-      <TableCell className="py-3">
-        <div className="text-center">
-          <div className="flex flex-col items-center">
-            <span className="text-sm font-medium text-gray-900">
-              {product._count?.orderItems || 0}
-            </span>
-            <span className="text-xs text-gray-500">sold</span>
-          </div>
-        </div>
-      </TableCell>
-
-      {/* Actions */}
-      <TableCell className="py-3">
+      {/* Actions - Center aligned */}
+      <TableCell className="py-3 text-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -412,12 +461,10 @@ function ProductRow({
               <PencilIcon className="h-3 w-3 mr-2" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href={`/products/${product.slug}`} target="_blank">
-                <EyeIcon className="h-3 w-3 mr-2" />
-                View
-              </Link>
-            </DropdownMenuItem>
+            <DropdownMenuItem
+              asChild
+              className="cursor-pointer"
+            ></DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onToggleStatus(product)}
               className="cursor-pointer"
@@ -503,7 +550,7 @@ function VendorProductsPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Stats state
+  // Stats state - UPDATED for variant-based calculations
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeProducts: 0,
@@ -530,15 +577,15 @@ function VendorProductsPageContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  // Load products and stats
+  // UPDATED: Load products and stats with variant support
   const loadProducts = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: "10",
-        sort: sortBy,
-        order: sortOrder,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
       });
 
       if (searchTerm) params.append("search", searchTerm);
@@ -553,6 +600,7 @@ function VendorProductsPageContent() {
       if (productsResponse.ok) {
         const data = await productsResponse.json();
         if (data.success) {
+          console.log("📦 Loaded products:", data.products.length);
           setProducts(data.products);
           setTotalCount(data.pagination.totalCount);
           setTotalPages(data.pagination.totalPages);
@@ -566,7 +614,7 @@ function VendorProductsPageContent() {
         }
       }
 
-      // Load stats
+      // UPDATED: Load stats with variant-based calculations
       const statsResponse = await fetch("/api/vendor/products?limit=1000");
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
@@ -576,19 +624,33 @@ function VendorProductsPageContent() {
           const activeProducts = allProducts.filter(
             (p: Product) => p.isActive
           ).length;
-          const lowStockItems = allProducts.filter(
-            (p: Product) => p.stock <= p.lowStockAlert
-          ).length;
-          const totalValue = allProducts.reduce(
-            (sum: number, p: Product) => sum + Number(p.price) * p.stock,
-            0
-          );
+
+          // Calculate low stock items based on total stock
+          const lowStockItems = allProducts.filter((p: Product) => {
+            const totalStock = p.totalStock || 0;
+            return totalStock <= 10; // Low stock threshold
+          }).length;
+
+          // Calculate total inventory value from all variants
+          const totalValue = allProducts.reduce((sum: number, p: Product) => {
+            const productValue = p.variants
+              .filter((v) => v.isActive)
+              .reduce((variantSum, v) => variantSum + v.price * v.stock, 0);
+            return sum + productValue;
+          }, 0);
 
           setStats({
             totalProducts,
             activeProducts,
             lowStockItems,
             totalValue,
+          });
+
+          console.log("📊 Stats calculated:", {
+            totalProducts,
+            activeProducts,
+            lowStockItems,
+            totalValue: totalValue.toFixed(2),
           });
         }
       }
@@ -680,15 +742,12 @@ function VendorProductsPageContent() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">Products</h1>
             <p className="text-sm text-gray-600">
-              Manage and track your product inventory
+              Manage your product inventory with variant support
             </p>
           </div>
-          <Button
-            asChild
-            className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
-          >
+          <Button asChild size="sm" variant="active">
             <Link href="/vendor/products/add">
-              <PlusIcon className="h-4 w-4 mr-2" />
+              <PlusIcon className="h-4 w-4 mr-1.5" />
               Add Product
             </Link>
           </Button>
@@ -814,6 +873,8 @@ function VendorProductsPageContent() {
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="lowstock">Low Stock</SelectItem>
+                      <SelectItem value="outofstock">Out of Stock</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -823,10 +884,8 @@ function VendorProductsPageContent() {
                 <p className="text-xs text-gray-600">
                   {totalCount} products found
                 </p>
-                <Button
-                  type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
-                >
+                <Button variant="active" className="text-blue-700">
+                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
@@ -849,12 +908,9 @@ function VendorProductsPageContent() {
                   ? "Try adjusting your filters or search terms"
                   : "Get started by creating your first product"}
               </p>
-              <Button
-                asChild
-                className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
-              >
+              <Button asChild size="sm" variant="active">
                 <Link href="/vendor/products/add">
-                  <PlusIcon className="h-4 w-4 mr-2" />
+                  <PlusIcon className="h-4 w-4 mr-1.5" />
                   Add Product
                 </Link>
               </Button>
@@ -866,7 +922,7 @@ function VendorProductsPageContent() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="name"
                         currentSort={sortBy}
@@ -876,9 +932,9 @@ function VendorProductsPageContent() {
                         Product
                       </SortButton>
                     </TableHead>
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
-                        field="price"
+                        field="basePrice"
                         currentSort={sortBy}
                         currentOrder={sortOrder}
                         onSort={handleSort}
@@ -888,7 +944,7 @@ function VendorProductsPageContent() {
                     </TableHead>
                     <TableHead className="h-10 text-center">
                       <SortButton
-                        field="stock"
+                        field="totalStock"
                         currentSort={sortBy}
                         currentOrder={sortOrder}
                         onSort={handleSort}
@@ -897,8 +953,10 @@ function VendorProductsPageContent() {
                       </SortButton>
                     </TableHead>
                     <TableHead className="h-10 text-center">Status</TableHead>
-                    <TableHead className="h-10 text-center">Sales</TableHead>
-                    <TableHead className="w-[50px] h-10">Actions</TableHead>
+                    <TableHead className="h-10 text-center">Reviews</TableHead>
+                    <TableHead className="w-[50px] h-10 text-center">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -990,7 +1048,7 @@ function VendorProductsPageContent() {
             <DialogTitle className="text-sm">Delete Product</DialogTitle>
             <DialogDescription className="text-xs">
               Are you sure you want to delete &quot;{productToDelete?.name}
-              &quot;? This action cannot be undone.
+              &quot;? This will also delete all variants and cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex space-x-2">

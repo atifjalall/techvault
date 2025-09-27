@@ -5,6 +5,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+// Helper function to generate display order number from ID
+function generateOrderNumber(orderId: string): string {
+  return `TF-${orderId.slice(-8).toUpperCase()}`;
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,6 +35,13 @@ export async function GET(request: Request) {
       );
     }
 
+    if (user.role !== "VENDOR") {
+      return NextResponse.json(
+        { success: false, error: "Vendor access required" },
+        { status: 403 }
+      );
+    }
+
     // Parse query parameters
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "15");
@@ -39,43 +51,39 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get("sort") || "createdAt";
     const sortOrder = searchParams.get("order") || "desc";
 
-    // Get vendor's products first
-    let vendorProductIds: string[] = [];
-    if (user.role === "VENDOR") {
-      const vendorProducts = await db.product.findMany({
-        where: { vendorId: user.id },
-        select: { id: true },
-      });
-      vendorProductIds = vendorProducts.map((p) => p.id);
+    // Get vendor's products (both for regular and variant items)
+    const vendorProducts = await db.product.findMany({
+      where: { vendorId: user.id, isActive: true },
+      select: { id: true },
+    });
 
-      if (vendorProductIds.length === 0) {
-        // Vendor has no products, return empty data
-        return NextResponse.json({
-          success: true,
-          orders: [],
-          pagination: {
-            page: 1,
-            limit,
-            totalCount: 0,
-            totalPages: 0,
-          },
-          stats: {
-            totalRevenue: 0,
-            pendingOrders: 0,
-            processingOrders: 0,
-            completedOrders: 0,
-            totalOrders: 0,
-          },
-        });
-      }
+    const vendorProductIds = vendorProducts.map((p) => p.id);
+
+    if (vendorProductIds.length === 0) {
+      // Vendor has no products, return empty data
+      return NextResponse.json({
+        success: true,
+        orders: [],
+        pagination: {
+          page: 1,
+          limit,
+          totalCount: 0,
+          totalPages: 0,
+        },
+        stats: {
+          totalRevenue: 0,
+          pendingOrders: 0,
+          processingOrders: 0,
+          completedOrders: 0,
+          totalOrders: 0,
+        },
+      });
     }
 
     // Build where conditions for orders
-    const whereConditions: any = {};
-
-    // For vendors, only show orders that contain their products (regular or variant items)
-    if (user.role === "VENDOR") {
-      whereConditions.OR = [
+    const whereConditions: any = {
+      // Only show orders that contain vendor's products (regular or variant items)
+      OR: [
         {
           items: {
             some: {
@@ -92,31 +100,41 @@ export async function GET(request: Request) {
             },
           },
         },
-      ];
-    }
+      ],
+    };
 
     // Search filter
     if (search) {
-      whereConditions.AND = [
-        whereConditions.OR ? { OR: whereConditions.OR } : {},
-        {
-          OR: [
-            { id: { contains: search, mode: "insensitive" } },
-            { orderNumber: { contains: search, mode: "insensitive" } },
-            { user: { name: { contains: search, mode: "insensitive" } } },
-            { user: { email: { contains: search, mode: "insensitive" } } },
-          ],
-        },
-      ];
-      delete whereConditions.OR;
+      const searchConditions = {
+        OR: [
+          { id: { contains: search, mode: "insensitive" } },
+          { user: { name: { contains: search, mode: "insensitive" } } },
+          { user: { email: { contains: search, mode: "insensitive" } } },
+        ],
+      };
+
+      whereConditions.AND = [searchConditions];
     }
 
-    // Status filter
+    // Status filter - Fixed enum mapping
     if (status && status !== "all") {
-      if (whereConditions.AND) {
-        whereConditions.AND.push({ status: status.toUpperCase() });
-      } else {
-        whereConditions.status = status.toUpperCase();
+      const statusMapping: { [key: string]: string } = {
+        pending: "PENDING",
+        confirmed: "CONFIRMED",
+        processing: "PROCESSING",
+        shipped: "SHIPPED",
+        delivered: "DELIVERED",
+        cancelled: "CANCELLED",
+        refunded: "REFUNDED",
+      };
+
+      const mappedStatus = statusMapping[status.toLowerCase()];
+      if (mappedStatus) {
+        if (whereConditions.AND) {
+          whereConditions.AND.push({ status: mappedStatus });
+        } else {
+          whereConditions.status = mappedStatus;
+        }
       }
     }
 
@@ -143,11 +161,8 @@ export async function GET(request: Request) {
       const dateCondition = { createdAt: { gte: startDate } };
       if (whereConditions.AND) {
         whereConditions.AND.push(dateCondition);
-      } else if (whereConditions.OR) {
-        whereConditions.AND = [{ OR: whereConditions.OR }, dateCondition];
-        delete whereConditions.OR;
       } else {
-        whereConditions.createdAt = { gte: startDate };
+        whereConditions.AND = [dateCondition];
       }
     }
 
@@ -179,13 +194,10 @@ export async function GET(request: Request) {
             },
           },
           items: {
-            // For vendors, only include their products
-            where:
-              user.role === "VENDOR"
-                ? {
-                    productId: { in: vendorProductIds },
-                  }
-                : undefined,
+            // Only include items that belong to this vendor
+            where: {
+              productId: { in: vendorProductIds },
+            },
             include: {
               product: {
                 select: {
@@ -198,15 +210,12 @@ export async function GET(request: Request) {
             },
           },
           variantItems: {
-            // For vendors, only include their variant products
-            where:
-              user.role === "VENDOR"
-                ? {
-                    productVariant: {
-                      productId: { in: vendorProductIds },
-                    },
-                  }
-                : undefined,
+            // Only include variant items that belong to this vendor
+            where: {
+              productVariant: {
+                productId: { in: vendorProductIds },
+              },
+            },
             include: {
               productVariant: {
                 include: {
@@ -230,49 +239,17 @@ export async function GET(request: Request) {
       db.order.count({ where: whereConditions }),
     ]);
 
-    // Calculate statistics for all vendor orders
-    const allOrdersForStats = await db.order.findMany({
-      where:
-        user.role === "VENDOR"
-          ? {
-              OR: [
-                {
-                  items: {
-                    some: {
-                      productId: { in: vendorProductIds },
-                    },
-                  },
-                },
-                {
-                  variantItems: {
-                    some: {
-                      productVariant: {
-                        productId: { in: vendorProductIds },
-                      },
-                    },
-                  },
-                },
-              ],
-            }
-          : {},
+    // Get all orders for statistics calculation
+    const allVendorOrders = await db.order.findMany({
+      where: whereConditions,
       include: {
         items: {
-          where:
-            user.role === "VENDOR"
-              ? {
-                  productId: { in: vendorProductIds },
-                }
-              : undefined,
+          where: { productId: { in: vendorProductIds } },
         },
         variantItems: {
-          where:
-            user.role === "VENDOR"
-              ? {
-                  productVariant: {
-                    productId: { in: vendorProductIds },
-                  },
-                }
-              : undefined,
+          where: {
+            productVariant: { productId: { in: vendorProductIds } },
+          },
         },
       },
     });
@@ -280,25 +257,11 @@ export async function GET(request: Request) {
     // Helper function to calculate vendor-specific order total
     const calculateOrderTotal = (order: any) => {
       const regularItemsTotal = order.items.reduce((sum: number, item: any) => {
-        // Only count items from this vendor's products
-        if (
-          user.role === "VENDOR" &&
-          !vendorProductIds.includes(item.productId)
-        ) {
-          return sum;
-        }
         return sum + Number(item.price) * item.quantity;
       }, 0);
 
       const variantItemsTotal = order.variantItems.reduce(
         (sum: number, item: any) => {
-          // Only count variant items from this vendor's products
-          if (
-            user.role === "VENDOR" &&
-            !vendorProductIds.includes(item.productVariant.product.id)
-          ) {
-            return sum;
-          }
           return sum + Number(item.price) * item.quantity;
         },
         0
@@ -307,21 +270,22 @@ export async function GET(request: Request) {
       return regularItemsTotal + variantItemsTotal;
     };
 
+    // Calculate statistics
     const stats = {
-      totalRevenue: allOrdersForStats.reduce(
+      totalRevenue: allVendorOrders.reduce(
         (sum, order) => sum + calculateOrderTotal(order),
         0
       ),
-      pendingOrders: allOrdersForStats.filter(
+      pendingOrders: allVendorOrders.filter(
         (order) => order.status === "PENDING"
       ).length,
-      processingOrders: allOrdersForStats.filter(
+      processingOrders: allVendorOrders.filter(
         (order) => order.status === "PROCESSING"
       ).length,
-      completedOrders: allOrdersForStats.filter(
+      completedOrders: allVendorOrders.filter(
         (order) => order.status === "DELIVERED"
       ).length,
-      totalOrders: allOrdersForStats.length,
+      totalOrders: allVendorOrders.length,
     };
 
     // Transform orders data for frontend
@@ -351,7 +315,7 @@ export async function GET(request: Request) {
             productName: item.productVariant.product.name,
             variantName: snapshot?.variantName || "Variant",
             productImage:
-              item.productVariant.images?.[0] ||
+              (item.productVariant as any).images?.[0] ||
               item.productVariant.product.images?.[0] ||
               "/products/default.jpg",
             quantity: item.quantity,
@@ -372,8 +336,7 @@ export async function GET(request: Request) {
 
       return {
         id: order.id,
-        orderNumber:
-          order.orderNumber || `TF-${order.id.slice(-8).toUpperCase()}`,
+        orderNumber: generateOrderNumber(order.id),
         customerId: order.user.id,
         customerName: order.user.name || "Unknown Customer",
         customerEmail: order.user.email,
@@ -389,7 +352,7 @@ export async function GET(request: Request) {
           postalCode: "",
           country: "Germany",
         },
-        paymentMethod: order.paymentMethod || "card",
+        paymentMethod: order.paymentMethod || "stripe",
         paymentStatus: order.paymentStatus?.toLowerCase() || "pending",
         createdAt: order.createdAt.toISOString(),
         updatedAt: order.updatedAt.toISOString(),
@@ -398,9 +361,10 @@ export async function GET(request: Request) {
           new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         trackingNumber:
           order.trackingNumber || `TK${order.id.slice(-6).toUpperCase()}`,
-        shippingCarrier: order.shippingCarrier,
+        shippingCarrier: order.shippingCarrier || "DHL",
         notes: order.notes || "",
         priority: order.priority || "NORMAL",
+        paymentIntentId: order.paymentIntentId,
       };
     });
 
@@ -459,24 +423,26 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Validate status
-    const validStatuses = [
-      "pending",
-      "confirmed",
-      "processing",
-      "shipped",
-      "delivered",
-      "cancelled",
-      "refunded",
-    ];
-    if (!validStatuses.includes(status)) {
+    // Validate status and map to enum values
+    const statusMapping: { [key: string]: string } = {
+      pending: "PENDING",
+      confirmed: "CONFIRMED",
+      processing: "PROCESSING",
+      shipped: "SHIPPED",
+      delivered: "DELIVERED",
+      cancelled: "CANCELLED",
+      refunded: "REFUNDED",
+    };
+
+    const mappedStatus = statusMapping[status.toLowerCase()];
+    if (!mappedStatus) {
       return NextResponse.json(
         { success: false, error: "Invalid status" },
         { status: 400 }
       );
     }
 
-    // Check if vendor has access to this order (contains their products)
+    // Check if vendor has access to this order
     const vendorProducts = await db.product.findMany({
       where: { vendorId: user.id },
       select: { id: true },
@@ -514,29 +480,61 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Update order status
+    // Update order status with additional fields based on status
+    const updateData: any = {
+      status: mappedStatus,
+      updatedAt: new Date(),
+    };
+
+    // Set additional fields based on status
+    if (mappedStatus === "SHIPPED" && !order.shippedAt) {
+      updateData.shippedAt = new Date();
+      if (!order.trackingNumber) {
+        updateData.trackingNumber = `TK${order.id.slice(-6).toUpperCase()}`;
+      }
+      if (!order.shippingCarrier) {
+        updateData.shippingCarrier = "DHL";
+      }
+    }
+
+    if (mappedStatus === "DELIVERED" && !order.deliveredAt) {
+      updateData.deliveredAt = new Date();
+      if (!order.shippedAt) {
+        updateData.shippedAt = new Date();
+      }
+    }
+
+    if (mappedStatus === "CANCELLED" && !order.cancelledAt) {
+      updateData.cancelledAt = new Date();
+    }
+
     const updatedOrder = await db.order.update({
       where: { id: orderId },
-      data: {
-        status: status.toUpperCase(),
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     // Create notification for status change
-    await db.notification.create({
-      data: {
-        userId: order.userId,
-        orderId: order.id,
-        type: "ORDER_UPDATED",
-        message: `Your order status has been updated to ${status}`,
-        severity: "INFO",
-      },
-    });
+    try {
+      await db.notification.create({
+        data: {
+          userId: order.userId,
+          orderId: order.id,
+          type: "ORDER_UPDATED",
+          message: `Your order ${generateOrderNumber(order.id)} status has been updated to ${status}`,
+          severity: "INFO",
+        },
+      });
+    } catch (notificationError) {
+      console.error("Error creating notification:", notificationError);
+      // Don't fail the order update if notification creation fails
+    }
 
     return NextResponse.json({
       success: true,
-      order: updatedOrder,
+      order: {
+        ...updatedOrder,
+        status: updatedOrder.status.toLowerCase(),
+      },
     });
   } catch (error) {
     console.error("Update order status error:", error);

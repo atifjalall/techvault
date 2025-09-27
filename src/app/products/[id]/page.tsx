@@ -28,8 +28,37 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Define types based on your database schema
+// Updated interfaces for the new variant system
+interface ProductVariant {
+  id: string;
+  variantName: string;
+  sku: string | null;
+  price: number;
+  comparePrice: number | null;
+  stock: number;
+  lowStockAlert: number;
+  inStock: boolean;
+  isLowStock: boolean;
+
+  // Variant attributes
+  color: string | null;
+  colorHex: string | null;
+  storage: string | null;
+  ram: string | null;
+  size: string | null;
+  length: string | null;
+  material: string | null;
+  attributes: any;
+
+  // Images
+  images: string[];
+  thumbnailImage: string | null;
+
+  discountPercentage: number;
+}
+
 interface Brand {
   id: string;
   name: string;
@@ -50,16 +79,9 @@ interface Subcategory {
 interface Vendor {
   id: string;
   name: string;
-  vendorSettings: {
-    storeName: string | null;
-    businessName: string | null;
-  } | null;
-}
-
-interface ProductColor {
-  id: string;
-  color: string;
-  image: string;
+  storeName: string;
+  businessName: string | null;
+  logo: string | null;
 }
 
 interface Review {
@@ -78,43 +100,61 @@ interface Product {
   name: string;
   slug: string;
   description: string | null;
-  price: number;
-  comparePrice: number | null;
   images: string[];
   brand: Brand | null;
   category: Category;
   subcategory: Subcategory | null;
   vendor: Vendor;
-  stock: number;
-  lowStockAlert: number;
-  isActive: boolean;
+
+  // Computed from variants
+  basePrice: number;
+  maxPrice: number | null;
+  comparePrice: number | null;
+  priceRange: string;
+  totalStock: number;
+  inStock: boolean;
+
+  // Product attributes
   featured: boolean;
   newArrival: boolean;
+  returnable: boolean;
+  isActive: boolean;
+
+  // Stats
+  avgRating: number;
+  reviewCount: number;
+  wishlistCount: number;
+  discountPercentage: number;
+
+  // Product details
+  tags: string[];
   modelNumber: string | null;
+  views: number;
+  sold: number;
+  deliveryDays: number | null;
   warranty: string | null;
   weight: string | null;
   dimensions: string | null;
-  storage: string | null;
-  length: string | null;
-  deliveryDays: number | null;
-  tags: string[];
-  color: string | null;
-  material: string | null;
-  views: number;
-  sold: number;
-  returnable: boolean;
-  specifications: Record<string, any>;
-  colors: ProductColor[];
+
+  // Variants and specifications
+  variants: ProductVariant[];
+  variantCount: number;
+  inStockVariantCount: number;
+
+  // Variant options for selection
+  variantOptions: {
+    colors: string[];
+    storage: string[];
+    ram: string[];
+    sizes: string[];
+  };
+
+  // Specifications
+  specifications: any[];
+  highlightedSpecs: any[];
+
+  // Reviews
   reviews: Review[];
-  avgRating: number;
-  discountPercentage: number;
-  inStock: boolean;
-  isNew: boolean;
-  reviewCount: number;
-  cartCount: number;
-  wishlistCount: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // Loading skeleton components
@@ -125,35 +165,29 @@ function ProductSkeleton() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Gallery Skeleton */}
           <div className="space-y-3">
-            <div className="aspect-square bg-slate-200 rounded-xl animate-pulse"></div>
+            <Skeleton className="aspect-square w-full rounded-xl" />
             <div className="flex space-x-2">
               {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-16 h-16 bg-slate-200 rounded-lg animate-pulse"
-                ></div>
+                <Skeleton key={i} className="w-16 h-16 rounded-lg" />
               ))}
             </div>
           </div>
 
           {/* Product Info Skeleton */}
           <div className="space-y-4">
-            <div className="h-4 bg-slate-200 rounded w-20 animate-pulse"></div>
-            <div className="h-8 bg-slate-200 rounded w-3/4 animate-pulse"></div>
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-3/4" />
             <div className="flex space-x-2">
               {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-4 h-4 bg-slate-200 rounded animate-pulse"
-                ></div>
+                <Skeleton key={i} className="w-4 h-4 rounded" />
               ))}
             </div>
-            <div className="h-6 bg-slate-200 rounded w-1/3 animate-pulse"></div>
-            <div className="h-4 bg-slate-200 rounded w-full animate-pulse"></div>
-            <div className="h-4 bg-slate-200 rounded w-2/3 animate-pulse"></div>
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
             <div className="space-y-3 pt-4">
-              <div className="h-10 bg-slate-200 rounded-lg animate-pulse"></div>
-              <div className="h-10 bg-slate-200 rounded-lg animate-pulse"></div>
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
             </div>
           </div>
         </div>
@@ -174,9 +208,10 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    null
+  );
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedTab, setSelectedTab] = useState("description");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showMagnifier, setShowMagnifier] = useState(false);
@@ -188,7 +223,10 @@ export default function ProductPage() {
   const [reviewRating, setReviewRating] = useState(0);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // Type assertion for user role to fix TypeScript error
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
+
+  // Type assertion for user role
   const userRole = session?.user?.role as
     | "CUSTOMER"
     | "VENDOR"
@@ -215,9 +253,194 @@ export default function ProductPage() {
 
         if (data.success && data.product) {
           setProduct(data.product);
-          // Set first color as default if colors exist
-          if (data.product.colors && data.product.colors.length > 0) {
-            setSelectedColor(data.product.colors[0].color);
+        } else {
+          setError("Product not found");
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+        setError("Failed to load product");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchProduct();
+    }
+  }, [slug]);
+
+  const handleWishlistToggle = async () => {
+    if (!session?.user || !product) {
+      router.push("/signin");
+      return;
+    }
+
+    // Require variant selection for products with variants
+    if (!selectedVariant && product.variants.length > 0) {
+      // Show error message or toast
+      alert("Please select a variant before adding to wishlist");
+      return;
+    }
+
+    try {
+      const method = isWishlisted ? "DELETE" : "POST";
+
+      const requestBody: any = {
+        productId: product.id,
+      };
+
+      // Include variant if selected
+      if (selectedVariant) {
+        requestBody.productVariantId = selectedVariant.id;
+      }
+
+      const response = await fetch("/api/wishlist", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsWishlisted(!isWishlisted);
+
+        const action = !isWishlisted ? "added to" : "removed from";
+        const itemName = selectedVariant
+          ? `${product.name} - ${selectedVariant.variantName}`
+          : product.name;
+
+        console.log(`${itemName} ${action} wishlist`);
+
+        // Trigger wishlist update event
+        window.dispatchEvent(new CustomEvent("wishlistUpdated"));
+      } else {
+        console.error("Wishlist error:", data.error);
+
+        if (data.error === "Item already in wishlist") {
+          setIsWishlisted(true);
+        } else if (data.error === "Item not found in wishlist") {
+          setIsWishlisted(false);
+        }
+
+        window.dispatchEvent(new CustomEvent("wishlistUpdated"));
+      }
+    } catch (error) {
+      console.error("Error updating wishlist:", error);
+    }
+  };
+
+  // Also, update the useEffect that checks wishlist status to be more reliable:
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (!session?.user || !product) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/wishlist");
+        if (response.ok) {
+          const data = await response.json();
+
+          // Check if current product/variant combination is in wishlist
+          const wishlistItem = data.items?.find((item: any) => {
+            if (selectedVariant) {
+              // Check for specific variant
+              return (
+                item.productId === product.id &&
+                item.productVariantId === selectedVariant.id
+              );
+            } else {
+              // Check for product without variant
+              return item.productId === product.id && !item.productVariantId;
+            }
+          });
+
+          setIsWishlisted(!!wishlistItem);
+        }
+      } catch (error) {
+        console.error("Error checking wishlist status:", error);
+      }
+    };
+
+    checkWishlistStatus();
+  }, [session?.user?.id, product?.id, selectedVariant?.id]);
+
+  // Redirect vendors to dashboard
+  useEffect(() => {
+    if (status === "authenticated" && userRole === "VENDOR") {
+      router.replace("/vendor/dashboard");
+    }
+  }, [status, userRole, router]);
+
+  // Handle quantity changes
+  const handleQuantityChange = (action: "increase" | "decrease") => {
+    if (!selectedVariant) return;
+
+    if (action === "increase" && quantity < selectedVariant.stock) {
+      setQuantity(quantity + 1);
+    } else if (action === "decrease" && quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/products/${slug}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("Product not found");
+          } else {
+            setError("Failed to load product");
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.product) {
+          setProduct(data.product);
+
+          // NEW: Auto-select variant from URL parameter
+          const urlParams = new URLSearchParams(window.location.search);
+          const variantId = urlParams.get("variant");
+
+          if (variantId && data.product.variants) {
+            // Find the variant that matches the URL parameter
+            const targetVariant = data.product.variants.find(
+              (v: any) => v.id === variantId
+            );
+
+            if (targetVariant) {
+              // Auto-select this variant
+              setSelectedVariant(targetVariant);
+              console.log(
+                "Auto-selected variant from wishlist:",
+                targetVariant.variantName
+              );
+            } else {
+              // Fallback to first available variant if specified variant not found
+              const firstVariant = data.product.variants.find(
+                (v: any) => v.inStock
+              );
+              if (firstVariant) {
+                setSelectedVariant(firstVariant);
+              }
+            }
+          } else {
+            // Original logic: select first available variant
+            const firstVariant = data.product.variants?.find(
+              (v: any) => v.inStock
+            );
+            if (firstVariant) {
+              setSelectedVariant(firstVariant);
+            }
           }
         } else {
           setError("Product not found");
@@ -235,47 +458,84 @@ export default function ProductPage() {
     }
   }, [slug]);
 
-  // Redirect vendors to dashboard
   useEffect(() => {
-    if (status === "authenticated" && userRole === "VENDOR") {
-      router.replace("/vendor/dashboard");
-    }
-  }, [status, userRole, router]);
+    const checkWishlistStatus = async () => {
+      if (!session?.user || !product) {
+        return;
+      }
 
-  // Handle quantity changes
-  const handleQuantityChange = (action: "increase" | "decrease") => {
-    if (!product) return;
+      try {
+        const response = await fetch("/api/wishlist");
+        if (response.ok) {
+          const data = await response.json();
 
-    if (action === "increase" && quantity < product.stock) {
-      setQuantity(quantity + 1);
-    } else if (action === "decrease" && quantity > 1) {
-      setQuantity(quantity - 1);
+          // Check if current product/variant combination is in wishlist
+          const wishlistItem = data.items?.find((item: any) => {
+            if (selectedVariant) {
+              // Check for specific variant
+              return (
+                item.productId === product.id &&
+                item.productVariantId === selectedVariant.id
+              );
+            } else {
+              // Check for product without variant (fallback)
+              return item.productId === product.id && !item.productVariantId;
+            }
+          });
+
+          setIsWishlisted(!!wishlistItem);
+        }
+      } catch (error) {
+        console.error("Error checking wishlist status:", error);
+      }
+    };
+
+    // Only check wishlist status after both product and selectedVariant are set
+    if (product && selectedVariant) {
+      checkWishlistStatus();
     }
-  };
+  }, [session?.user?.id, product?.id, selectedVariant?.id]);
+
+  // OPTIONAL: Clean up URL after variant is selected (removes the ?variant= parameter)
+  useEffect(() => {
+    if (selectedVariant && window.location.search.includes("variant=")) {
+      // Clean up URL without page reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("variant");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, [selectedVariant]);
 
   // Handle add to cart
   const handleAddToCart = async () => {
-    if (!product) return;
+    if (!selectedVariant || !session?.user) {
+      if (!session?.user) {
+        router.push("/signin");
+        return;
+      }
+      return;
+    }
 
     setIsAddingToCart(true);
 
     try {
-      const response = await fetch("/api/cart", {
+      const response = await fetch("/api/cart/variant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          productId: product.id,
+          productVariantId: selectedVariant.id,
           quantity,
-          selectedColor,
         }),
       });
 
       if (response.ok) {
-        console.log(`Added ${quantity} ${product.name} to cart`);
+        window.dispatchEvent(new CustomEvent("cartUpdated"));
+        console.log(`Added ${quantity} ${selectedVariant.variantName} to cart`);
       } else {
-        console.error("Failed to add to cart");
+        const errorData = await response.json();
+        console.error("Failed to add to cart:", errorData.error);
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
@@ -284,16 +544,9 @@ export default function ProductPage() {
     }
   };
 
-  // Handle buy now
-  const handleBuyNow = () => {
-    if (!product) return;
-    console.log(`Buy now: ${quantity} ${product.name}`);
-    router.push(`/checkout?product=${product.id}&quantity=${quantity}`);
-  };
-
   // Handle image magnifier
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageLoaded || !product) return;
+    if (!imageLoaded) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -319,32 +572,23 @@ export default function ProductPage() {
     }
   };
 
-  // Get current image based on selected color or default
-  const getCurrentImage = () => {
-    if (!product) return "";
-
-    if (selectedColor) {
-      const colorVariant = product.colors.find(
-        (c) => c.color === selectedColor
-      );
-      if (colorVariant) return colorVariant.image;
-    }
-
-    return product.images[selectedImage] || product.images[0] || "";
-  };
-
-  // Get current images to display (either product images or color variant image)
+  // Get current images to display
   const getCurrentImages = () => {
     if (!product) return [];
 
-    if (selectedColor) {
-      const colorVariant = product.colors.find(
-        (c) => c.color === selectedColor
-      );
-      if (colorVariant) return [colorVariant.image];
+    // If variant is selected and has images, use variant images
+    if (selectedVariant && selectedVariant.images.length > 0) {
+      return selectedVariant.images;
     }
 
+    // Otherwise use product images
     return product.images;
+  };
+
+  // Get current image
+  const getCurrentImage = () => {
+    const images = getCurrentImages();
+    return images[selectedImage] || images[0] || "";
   };
 
   // Handle review submission
@@ -367,11 +611,10 @@ export default function ProductPage() {
       });
 
       if (response.ok) {
-        // Reset form
         setReviewText("");
         setReviewRating(0);
 
-        // Refresh product data to show new review
+        // Refresh product data
         const updatedResponse = await fetch(`/api/products/${slug}`);
         if (updatedResponse.ok) {
           const updatedData = await updatedResponse.json();
@@ -379,32 +622,12 @@ export default function ProductPage() {
             setProduct(updatedData.product);
           }
         }
-      } else {
-        console.error("Failed to submit review");
       }
     } catch (error) {
       console.error("Error submitting review:", error);
     } finally {
       setIsSubmittingReview(false);
     }
-  };
-
-  // Parse specifications from JSON
-  const getSpecifications = () => {
-    if (!product?.specifications) return [];
-
-    try {
-      if (typeof product.specifications === "object") {
-        return Object.entries(product.specifications).map(([key, value]) => ({
-          label: key,
-          value: String(value),
-        }));
-      }
-    } catch (error) {
-      console.error("Error parsing specifications:", error);
-    }
-
-    return [];
   };
 
   // Loading state
@@ -436,17 +659,11 @@ export default function ProductPage() {
     );
   }
 
-  // Loading state for session
-  if (status === "loading") {
-    return <ProductSkeleton />;
-  }
-
-  // Don't render content for vendors
+  // Don't render for vendors
   if (userRole === "VENDOR") {
     return null;
   }
 
-  const specifications = getSpecifications();
   const currentImages = getCurrentImages();
 
   return (
@@ -501,7 +718,7 @@ export default function ProductPage() {
               </AnimatePresence>
 
               {/* Badges */}
-              {product.isNew && (
+              {product.newArrival && (
                 <motion.div
                   className="absolute top-3 left-3 bg-slate-900 text-white px-2 py-1 rounded-md text-xs font-medium"
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -511,19 +728,19 @@ export default function ProductPage() {
                   New
                 </motion.div>
               )}
-              {product.discountPercentage > 0 && (
+              {selectedVariant && selectedVariant.discountPercentage > 0 && (
                 <motion.div
                   className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4 }}
                 >
-                  -{product.discountPercentage}%
+                  -{selectedVariant.discountPercentage}%
                 </motion.div>
               )}
 
-              {/* Navigation arrows - only show if there are multiple images and no color is selected */}
-              {currentImages.length > 1 && !selectedColor && (
+              {/* Navigation arrows */}
+              {currentImages.length > 1 && (
                 <>
                   <motion.button
                     onClick={() =>
@@ -557,8 +774,8 @@ export default function ProductPage() {
               )}
             </motion.div>
 
-            {/* Thumbnail Images - only show if no color is selected */}
-            {currentImages.length > 1 && !selectedColor && (
+            {/* Thumbnail Images */}
+            {currentImages.length > 1 && (
               <div className="flex space-x-2 overflow-x-auto pb-1">
                 {currentImages.map((image, index) => (
                   <motion.button
@@ -583,76 +800,11 @@ export default function ProductPage() {
                 ))}
               </div>
             )}
-
-            {/* Color Variants - Show color variant images */}
-            {product.colors && product.colors.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-slate-700">
-                  Available Colors:
-                </p>
-                <div className="flex space-x-3 flex-wrap">
-                  {/* Default product option */}
-                  <motion.button
-                    onClick={() => {
-                      setSelectedColor(null);
-                      setSelectedImage(0);
-                    }}
-                    className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
-                      selectedColor === null
-                        ? "border-slate-900 ring-2 ring-slate-900 ring-offset-2"
-                        : "border-slate-200 hover:border-slate-300"
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Image
-                      src={product.images[0] || "/api/placeholder/80/80"}
-                      alt="Default"
-                      width={80}
-                      height={80}
-                      className="object-cover w-full h-full"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 text-center">
-                      Default
-                    </div>
-                  </motion.button>
-
-                  {/* Color variant options */}
-                  {product.colors.map((colorVariant) => (
-                    <motion.button
-                      key={colorVariant.id}
-                      onClick={() => {
-                        setSelectedColor(colorVariant.color);
-                        setSelectedImage(0);
-                      }}
-                      className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
-                        selectedColor === colorVariant.color
-                          ? "border-slate-900 ring-2 ring-slate-900 ring-offset-2"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Image
-                        src={colorVariant.image}
-                        alt={colorVariant.color}
-                        width={80}
-                        height={80}
-                        className="object-cover w-full h-full"
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs px-1 py-0.5 text-center truncate">
-                        {colorVariant.color}
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Product Information */}
           <div className="space-y-4">
-            {/* Brand and Name */}
+            {/* Brand, Name, Vendor and Rating */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -671,36 +823,39 @@ export default function ProductPage() {
                   Model: {product.modelNumber}
                 </p>
               )}
-            </motion.div>
 
-            {/* Rating and Reviews */}
-            {product.reviewCount > 0 && (
-              <motion.div
-                className="flex items-center space-x-3"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
+              {/* Rating under model number - Always show even if no reviews */}
+              <div className="flex items-center space-x-2 mt-2">
                 <div className="flex items-center space-x-1">
                   {[...Array(5)].map((_, i) => (
                     <StarIconSolid
                       key={i}
                       className={`w-4 h-4 ${
-                        i < Math.floor(product.avgRating)
+                        i < Math.floor(product.avgRating || 0)
                           ? "text-yellow-400"
                           : "text-slate-300"
                       }`}
                     />
                   ))}
-                  <span className="text-sm font-medium text-slate-900 ml-1">
-                    {product.avgRating.toFixed(1)}
-                  </span>
                 </div>
-                <span className="text-sm text-slate-500">
-                  ({product.reviewCount.toLocaleString()} reviews)
+                <span className="text-sm text-slate-600">
+                  {product.reviewCount > 0
+                    ? `${product.avgRating.toFixed(1)} (${product.reviewCount} reviews)`
+                    : "No reviews yet"}
                 </span>
-              </motion.div>
-            )}
+              </div>
+
+              {/* Vendor Info */}
+              <div className="mt-3">
+                <span className="text-sm text-slate-600">Sold by: </span>
+                <a
+                  href={`/store/${product.vendor.id}`}
+                  className="text-sm font-medium text-slate-900 hover:text-slate-700 transition-colors cursor-pointer"
+                >
+                  {product.vendor.storeName || product.vendor.name}
+                </a>
+              </div>
+            </motion.div>
 
             {/* Pricing */}
             <motion.div
@@ -711,16 +866,20 @@ export default function ProductPage() {
             >
               <div className="flex items-center space-x-2">
                 <span className="text-2xl font-bold text-slate-900">
-                  {formatPrice(product.price)}
+                  {selectedVariant
+                    ? formatPrice(selectedVariant.price)
+                    : product.maxPrice && product.maxPrice !== product.basePrice
+                      ? product.priceRange
+                      : formatPrice(product.basePrice)}
                 </span>
-                {product.comparePrice && (
+                {selectedVariant?.comparePrice && (
                   <span className="text-lg text-slate-500 line-through">
-                    {formatPrice(product.comparePrice)}
+                    {formatPrice(selectedVariant.comparePrice)}
                   </span>
                 )}
-                {product.discountPercentage > 0 && (
+                {selectedVariant && selectedVariant.discountPercentage > 0 && (
                   <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    Save {product.discountPercentage}%
+                    Save {selectedVariant.discountPercentage}%
                   </span>
                 )}
               </div>
@@ -731,42 +890,107 @@ export default function ProductPage() {
               </p>
             </motion.div>
 
-            {/* Stock Status */}
-            <motion.div
-              className="flex items-center space-x-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.3 }}
-            >
-              {product.inStock ? (
-                <>
-                  <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-medium text-green-600">
-                    In stock ({product.stock} available)
-                    {product.stock <= product.lowStockAlert && " - Low stock!"}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <XMarkIcon className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-medium text-red-600">
-                    Out of stock
-                  </span>
-                </>
-              )}
-            </motion.div>
-
-            {/* Selected Color Display */}
-            {selectedColor && (
+            {/* Stock Status - Only show when out of stock */}
+            {selectedVariant && !selectedVariant.inStock && (
               <motion.div
-                className="text-sm text-slate-600"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                className="flex items-center space-x-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
               >
-                <span className="font-medium">Selected Color: </span>
-                <span className="text-slate-900">{selectedColor}</span>
+                <XMarkIcon className="w-4 h-4 text-red-500" />
+                <span className="text-sm font-medium text-red-600">
+                  Out of stock
+                </span>
               </motion.div>
             )}
+
+            {/* Variant Selection */}
+            <motion.div
+              className="space-y-4 pt-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+            >
+              {/* Clean variant images without overlay text */}
+              {product.variants.length > 0 && (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-slate-700">
+                      Available Options:
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                      {product.variants.map((variant) => (
+                        <motion.button
+                          key={variant.id}
+                          onClick={() => {
+                            setSelectedVariant(variant);
+                            setSelectedImage(0);
+                          }}
+                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+                            selectedVariant?.id === variant.id
+                              ? "border-slate-900 ring-2 ring-slate-900 ring-offset-1"
+                              : "border-slate-200 hover:border-slate-300"
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          disabled={!variant.inStock}
+                        >
+                          <Image
+                            src={
+                              variant.thumbnailImage ||
+                              variant.images[0] ||
+                              product.images[0] ||
+                              "/api/placeholder/80/80"
+                            }
+                            alt={variant.variantName}
+                            fill
+                            className={`object-cover ${!variant.inStock ? "grayscale opacity-50" : ""}`}
+                            sizes="80px"
+                          />
+
+                          {/* Stock indicators only */}
+                          {variant.inStock && variant.isLowStock && (
+                            <div className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></div>
+                          )}
+                          {!variant.inStock && (
+                            <div className="absolute inset-0 bg-white/20 flex items-center justify-center">
+                              <XMarkIcon className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Selected Color Display */}
+                  {selectedVariant?.color && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">
+                        Color (according to manufacturer):
+                      </label>
+                      <div className="text-sm text-slate-900 font-medium">
+                        {selectedVariant.color}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Storage Selection */}
+                  {selectedVariant?.storage && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">
+                        Storage capacity:
+                      </label>
+                      <div className="flex space-x-2">
+                        <motion.button className="px-3 py-2 border-2 border-slate-900 bg-slate-900 text-white rounded-lg text-sm font-medium cursor-default">
+                          {selectedVariant.storage}
+                        </motion.button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
 
             {/* Description */}
             {product.description && (
@@ -774,40 +998,19 @@ export default function ProductPage() {
                 className="text-sm text-slate-600 leading-relaxed"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
+                transition={{ duration: 0.3, delay: 0.45 }}
               >
                 <p>{product.description}</p>
               </motion.div>
             )}
 
-            {/* Vendor Info */}
-            <motion.div
-              className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.45 }}
-            >
-              <p>
-                Sold by:{" "}
-                <span className="font-medium">
-                  {product.vendor.vendorSettings?.storeName ||
-                    product.vendor.vendorSettings?.businessName ||
-                    product.vendor.name}
-                </span>
-              </p>
-              <p className="mt-1">
-                {product.views.toLocaleString()} views •{" "}
-                {product.sold.toLocaleString()} sold
-              </p>
-            </motion.div>
-
-            {/* Quantity and Add to Cart */}
-            {product.inStock && (
+            {/* Quantity and Add to Cart - Only show when variant is selected */}
+            {selectedVariant?.inStock && (
               <motion.div
                 className="space-y-3 pt-2"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 }}
+                transition={{ duration: 0.3, delay: 0.55 }}
               >
                 <div className="flex items-center space-x-3">
                   <label className="text-sm font-medium text-slate-700">
@@ -828,7 +1031,7 @@ export default function ProductPage() {
                     </span>
                     <motion.button
                       onClick={() => handleQuantityChange("increase")}
-                      disabled={quantity >= product.stock}
+                      disabled={quantity >= (selectedVariant?.stock || 0)}
                       className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg cursor-pointer"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -838,11 +1041,11 @@ export default function ProductPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Only Add to Cart */}
                 <div className="flex space-x-3">
                   <motion.button
                     onClick={handleAddToCart}
-                    disabled={!product.inStock || isAddingToCart}
+                    disabled={!selectedVariant?.inStock || isAddingToCart}
                     className="flex-1 bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -854,8 +1057,25 @@ export default function ProductPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
-                        />
+                        >
+                          <div className="flex space-x-1">
+                            {[0, 1, 2].map((i) => (
+                              <motion.div
+                                key={i}
+                                className="w-1 h-1 bg-white rounded-full"
+                                animate={{
+                                  scale: [1, 1.5, 1],
+                                  opacity: [0.5, 1, 0.5],
+                                }}
+                                transition={{
+                                  duration: 0.8,
+                                  repeat: Infinity,
+                                  delay: i * 0.2,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
                       ) : (
                         <motion.div
                           key="content"
@@ -872,10 +1092,22 @@ export default function ProductPage() {
                   </motion.button>
 
                   <motion.button
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer"
+                    onClick={handleWishlistToggle}
+                    disabled={!selectedVariant && product.variants.length > 0}
+                    className={`p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer ${
+                      !selectedVariant && product.variants.length > 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    title={
+                      !selectedVariant && product.variants.length > 0
+                        ? "Please select a variant first"
+                        : isWishlisted
+                          ? "Remove from wishlist"
+                          : "Add to wishlist"
+                    }
                   >
                     {isWishlisted ? (
                       <HeartIconSolid className="w-4 h-4 text-red-500" />
@@ -892,17 +1124,23 @@ export default function ProductPage() {
                     <ShareIcon className="w-4 h-4" />
                   </motion.button>
                 </div>
+              </motion.div>
+            )}
 
-                {/* Buy Now Button */}
-                <motion.button
-                  onClick={handleBuyNow}
-                  disabled={!product.inStock}
-                  className="w-full bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  Buy Now
-                </motion.button>
+            {/* Message when no variant selected */}
+            {!selectedVariant && product.variants.length > 0 && (
+              <motion.div
+                className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.55 }}
+              >
+                <p className="text-sm text-blue-700 font-medium">
+                  Please select a variant to add to cart
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Choose from available options above
+                </p>
               </motion.div>
             )}
 
@@ -1009,23 +1247,13 @@ export default function ProductPage() {
                           </span>
                         </div>
                       )}
-                      {product.material && (
+                      {selectedVariant?.material && (
                         <div className="flex justify-between">
                           <span className="text-sm font-medium text-slate-900">
                             Material:
                           </span>
                           <span className="text-sm text-slate-600">
-                            {product.material}
-                          </span>
-                        </div>
-                      )}
-                      {product.storage && (
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-slate-900">
-                            Storage:
-                          </span>
-                          <span className="text-sm text-slate-600">
-                            {product.storage}
+                            {selectedVariant.material}
                           </span>
                         </div>
                       )}
@@ -1065,26 +1293,100 @@ export default function ProductPage() {
                   <h3 className="text-lg font-medium text-slate-900 mb-3">
                     Technical Specifications
                   </h3>
-                  {specifications.length > 0 ? (
-                    <div className="bg-slate-50 rounded-lg p-4">
+
+                  {/* Selected Variant Specifications */}
+                  {selectedVariant && (
+                    <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                      <h4 className="text-base font-medium text-slate-900 mb-3">
+                        Selected Configuration
+                      </h4>
                       <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-                        {specifications.map((spec, index) => (
+                        {selectedVariant.storage && (
                           <motion.div
-                            key={index}
                             className="border-b border-slate-200 pb-2 last:border-b-0"
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                            transition={{ duration: 0.2 }}
                           >
                             <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                              {spec.label}
+                              Storage
                             </dt>
                             <dd className="text-sm text-slate-900 mt-1">
-                              {spec.value}
+                              {selectedVariant.storage}
                             </dd>
                           </motion.div>
-                        ))}
+                        )}
+
+                        {selectedVariant.ram && (
+                          <motion.div
+                            className="border-b border-slate-200 pb-2 last:border-b-0"
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: 0.05 }}
+                          >
+                            <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                              RAM
+                            </dt>
+                            <dd className="text-sm text-slate-900 mt-1">
+                              {selectedVariant.ram}
+                            </dd>
+                          </motion.div>
+                        )}
+
+                        {selectedVariant.size && (
+                          <motion.div
+                            className="border-b border-slate-200 pb-2 last:border-b-0"
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: 0.1 }}
+                          >
+                            <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                              Screen Size
+                            </dt>
+                            <dd className="text-sm text-slate-900 mt-1">
+                              {selectedVariant.size}
+                            </dd>
+                          </motion.div>
+                        )}
                       </dl>
+                    </div>
+                  )}
+
+                  {/* Product Specifications */}
+                  {product.specifications.length > 0 ? (
+                    <div className="space-y-6">
+                      {product.specifications.map((specGroup, groupIndex) => (
+                        <div
+                          key={groupIndex}
+                          className="bg-slate-50 rounded-lg p-4"
+                        >
+                          <h4 className="text-base font-medium text-slate-900 mb-3">
+                            {specGroup.category}
+                          </h4>
+                          <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+                            {specGroup.specs.map((spec: any, index: number) => (
+                              <motion.div
+                                key={index}
+                                className="border-b border-slate-200 pb-2 last:border-b-0"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                  duration: 0.2,
+                                  delay: index * 0.05,
+                                }}
+                              >
+                                <dt className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                                  {spec.name}
+                                </dt>
+                                <dd className="text-sm text-slate-900 mt-1">
+                                  {spec.value}
+                                  {spec.unit && ` ${spec.unit}`}
+                                </dd>
+                              </motion.div>
+                            ))}
+                          </dl>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="bg-slate-50 rounded-lg p-6 text-center">
@@ -1172,7 +1474,7 @@ export default function ProductPage() {
                     </div>
                   </div>
 
-                  {/* Write Review Section - Only for authenticated users */}
+                  {/* Write Review Section */}
                   {session?.user && (
                     <motion.div
                       className="bg-white border border-slate-200 rounded-xl p-6 mb-8"
@@ -1238,7 +1540,23 @@ export default function ProductPage() {
                         className="flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
                       >
                         {isSubmittingReview ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <div className="flex space-x-1">
+                            {[0, 1, 2].map((i) => (
+                              <motion.div
+                                key={i}
+                                className="w-1 h-1 bg-white rounded-full"
+                                animate={{
+                                  scale: [1, 1.5, 1],
+                                  opacity: [0.5, 1, 0.5],
+                                }}
+                                transition={{
+                                  duration: 0.8,
+                                  repeat: Infinity,
+                                  delay: i * 0.2,
+                                }}
+                              />
+                            ))}
+                          </div>
                         ) : (
                           <PaperAirplaneIcon className="w-4 h-4" />
                         )}
@@ -1331,16 +1649,6 @@ export default function ProductPage() {
                       <p className="text-sm text-slate-600 mb-4">
                         Be the first to share your thoughts about this product.
                       </p>
-                      {session?.user && (
-                        <motion.button
-                          onClick={() => setSelectedTab("reviews")}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="text-sm font-medium text-slate-900 hover:text-slate-700 cursor-pointer"
-                        >
-                          Write the first review
-                        </motion.button>
-                      )}
                     </div>
                   )}
                 </motion.div>
@@ -1354,3 +1662,5 @@ export default function ProductPage() {
     </div>
   );
 }
+
+//okk version

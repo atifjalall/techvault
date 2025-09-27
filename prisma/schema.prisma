@@ -264,6 +264,8 @@ model ProductVariant {
   cartItems     VariantCartItem[]
   orderItems    VariantOrderItem[]
   
+  wishlistItems    WishlistItem[]
+
   @@index([productId])
   @@index([sku])
   @@index([stock])
@@ -328,15 +330,20 @@ model VariantCartItem {
 }
 
 model WishlistItem {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  userId           String
+  productId        String
+  productVariantId String?  // Add this
+  createdAt        DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation("ProductWishlistItems", fields: [productId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         Product         @relation("ProductWishlistItems", fields: [productId], references: [id], onDelete: Cascade)
+  productVariant  ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Cascade) // Add this
 
-  @@unique([userId, productId])
+  @@unique([userId, productId, productVariantId]) // Update this
+  @@index([userId])
+  @@index([productId])
+  @@index([productVariantId]) // Add this
 }
 
 // Order System

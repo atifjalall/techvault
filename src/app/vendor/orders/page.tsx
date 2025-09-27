@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   EllipsisVerticalIcon,
@@ -15,22 +16,17 @@ import {
   ClockIcon,
   TruckIcon,
   ExclamationTriangleIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   ShoppingBagIcon,
   ArrowPathIcon,
   CurrencyEuroIcon,
   UserIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
-import {
-  CheckCircleIcon as CheckCircleIconSolid,
-  XCircleIcon as XCircleIconSolid,
-  ClockIcon as ClockIconSolid,
-  TruckIcon as TruckIconSolid,
-} from "@heroicons/react/24/solid";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -63,12 +59,22 @@ import { formatPrice } from "@/lib/utils";
 
 interface OrderItem {
   id: string;
+  type: "regular" | "variant";
   productId: string;
+  variantId?: string | null;
   productName: string;
+  variantName?: string | null;
   productImage: string;
   quantity: number;
   price: number;
   total: number;
+  variantDetails?: {
+    color?: string;
+    storage?: string;
+    ram?: string;
+    size?: string;
+    material?: string;
+  } | null;
 }
 
 interface Order {
@@ -78,14 +84,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
-  status:
-    | "pending"
-    | "confirmed"
-    | "processing"
-    | "shipped"
-    | "delivered"
-    | "cancelled"
-    | "refunded";
+  status: string;
   totalAmount: number;
   shippingAmount: number;
   taxAmount: number;
@@ -97,12 +96,15 @@ interface Order {
     country: string;
   };
   paymentMethod: string;
-  paymentStatus: "pending" | "paid" | "failed" | "refunded";
+  paymentStatus: string;
+  paymentIntentId?: string;
   createdAt: string;
   updatedAt: string;
   estimatedDelivery?: string;
   trackingNumber?: string;
+  shippingCarrier?: string;
   notes?: string;
+  priority?: string;
 }
 
 interface OrdersResponse {
@@ -120,97 +122,148 @@ interface OrdersResponse {
     processingOrders: number;
     completedOrders: number;
     totalOrders: number;
+    averageOrderValue: number;
+    revenueGrowth: number;
+    orderGrowth: number;
+    pendingGrowth: number;
+    processingGrowth: number;
   };
 }
 
-// Order Status Configuration
-const ORDER_STATUSES = {
-  pending: {
-    label: "Pending",
-    color: "bg-amber-100 text-amber-800 border-amber-200",
-    icon: ClockIconSolid,
-  },
-  confirmed: {
-    label: "Confirmed",
-    color: "bg-blue-100 text-blue-800 border-blue-200",
-    icon: CheckCircleIconSolid,
-  },
-  processing: {
-    label: "Processing",
-    color: "bg-violet-100 text-violet-800 border-violet-200",
-    icon: ArrowPathIcon,
-  },
-  shipped: {
-    label: "Shipped",
-    color: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    icon: TruckIconSolid,
-  },
-  delivered: {
-    label: "Delivered",
-    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    icon: CheckCircleIconSolid,
-  },
-  cancelled: {
-    label: "Cancelled",
-    color: "bg-rose-100 text-rose-800 border-rose-200",
-    icon: XCircleIconSolid,
-  },
-  refunded: {
-    label: "Refunded",
-    color: "bg-slate-100 text-slate-800 border-slate-200",
-    icon: ExclamationTriangleIcon,
-  },
-};
-
-// Payment Status Configuration
-const PAYMENT_STATUSES = {
-  pending: {
-    label: "Pending",
-    color: "bg-amber-100 text-amber-800 border-amber-200",
-  },
-  paid: {
-    label: "Paid",
-    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  },
-  failed: {
-    label: "Failed",
-    color: "bg-rose-100 text-rose-800 border-rose-200",
-  },
-  refunded: {
-    label: "Refunded",
-    color: "bg-slate-100 text-slate-800 border-slate-200",
-  },
-};
-
-// Status Badge Component
-function StatusBadge({
-  status,
-  showIcon = true,
+// Enhanced Stats Card Component matching customers page style
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  change,
+  iconColor,
+  bgColor,
+  subtitle,
 }: {
-  status: string;
-  showIcon?: boolean;
+  title: string;
+  value: number | string;
+  icon: React.ElementType;
+  change: number;
+  iconColor: string;
+  bgColor: string;
+  subtitle?: string;
 }) {
-  const config = ORDER_STATUSES[status as keyof typeof ORDER_STATUSES];
-  if (!config) return null;
-
-  const Icon = config.icon;
+  const isPositive = change >= 0;
 
   return (
-    <Badge variant="outline" className={`text-xs ${config.color}`}>
-      {showIcon && <Icon className="w-3 h-3 mr-1.5" />}
-      {config.label}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-0 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">{title}</p>
+              <p className="text-xl font-bold text-gray-900">{value}</p>
+              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+              <div className="flex items-center space-x-1">
+                {isPositive ? (
+                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                ) : (
+                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                )}
+                <span
+                  className={`text-xs font-medium ${
+                    isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {isPositive ? "+" : ""}
+                  {Math.abs(change).toFixed(1)}%
+                </span>
+                <span className="text-xs text-gray-500">vs last month</span>
+              </div>
+            </div>
+            <div
+              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+            >
+              <Icon className={`h-5 w-5 ${iconColor}`} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// Status Badge Component using your Badge component with icons
+function StatusBadge({ status }: { status: string }) {
+  const getStatusVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "pending";
+      case "confirmed":
+        return "confirmed";
+      case "processing":
+        return "processing";
+      case "shipped":
+        return "shipped";
+      case "delivered":
+        return "delivered";
+      case "cancelled":
+        return "cancelled";
+      case "refunded":
+        return "refunded";
+      default:
+        return "default";
+    }
+  };
+
+  return (
+    <Badge variant={getStatusVariant(status)} size="sm" icon="auto">
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
   );
 }
 
-// Payment Status Badge Component
+// Payment Status Badge Component using your Badge component with icons
 function PaymentStatusBadge({ status }: { status: string }) {
-  const config = PAYMENT_STATUSES[status as keyof typeof PAYMENT_STATUSES];
-  if (!config) return null;
+  const getPaymentVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pending":
+        return "payment_pending";
+      case "completed":
+        return "payment_completed";
+      case "processing":
+        return "payment_processing";
+      case "failed":
+        return "payment_failed";
+      case "refunded":
+        return "refunded";
+      case "cancelled":
+        return "payment_cancelled";
+      default:
+        return "default";
+    }
+  };
+
+  const getPaymentLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "Paid";
+      case "processing":
+        return "Processing";
+      case "failed":
+        return "Failed";
+      case "refunded":
+        return "Refunded";
+      case "cancelled":
+        return "Cancelled";
+      case "pending":
+      default:
+        return "Pending";
+    }
+  };
 
   return (
-    <Badge variant="outline" className={`text-xs ${config.color}`}>
-      {config.label}
+    <Badge variant={getPaymentVariant(status)} size="sm" icon="auto">
+      {getPaymentLabel(status)}
     </Badge>
   );
 }
@@ -234,16 +287,16 @@ function SortButton({
       variant="ghost"
       size="sm"
       onClick={() => onSort(field)}
-      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-slate-600 uppercase tracking-wide"
+      className="hover:bg-transparent p-0 h-auto font-semibold text-xs text-slate-600 uppercase tracking-wide cursor-pointer"
     >
       <span className="flex items-center space-x-1">
         <span>{children}</span>
         {currentSort === field && (
           <div className="text-slate-900">
             {currentOrder === "asc" ? (
-              <ArrowUpIcon className="w-3 h-3" />
+              <ArrowTrendingUpIcon className="w-3 h-3" />
             ) : (
-              <ArrowDownIcon className="w-3 h-3" />
+              <ArrowTrendingDownIcon className="w-3 h-3" />
             )}
           </div>
         )}
@@ -252,16 +305,37 @@ function SortButton({
   );
 }
 
-// Loading Skeletons
+// Enhanced Loading Skeletons matching customers page
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="w-10 h-10 rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function OrdersTableSkeleton() {
   return (
-    <Card className="border-0 shadow-sm bg-white/80">
+    <Card className="border-0 shadow-sm bg-white">
       <CardContent className="p-0">
         <div className="p-6 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-4 bg-slate-50/50 rounded-lg"
+              className="flex items-center justify-between p-4 bg-slate-50 rounded-lg"
             >
               <div className="flex items-center space-x-4">
                 <div className="space-y-2">
@@ -318,6 +392,11 @@ export default function VendorOrdersPage() {
     processingOrders: 0,
     completedOrders: 0,
     totalOrders: 0,
+    averageOrderValue: 0,
+    revenueGrowth: 0,
+    orderGrowth: 0,
+    pendingGrowth: 0,
+    processingGrowth: 0,
   });
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -344,7 +423,6 @@ export default function VendorOrdersPage() {
         }
 
         const result: OrdersResponse = await response.json();
-        console.log("Orders API result:", result); // 🔍 Debugging
 
         if (result.success) {
           setOrders(result.orders || []);
@@ -356,6 +434,11 @@ export default function VendorOrdersPage() {
             processingOrders: result.stats?.processingOrders || 0,
             completedOrders: result.stats?.completedOrders || 0,
             totalOrders: result.stats?.totalOrders || 0,
+            averageOrderValue: result.stats?.averageOrderValue || 0,
+            revenueGrowth: result.stats?.revenueGrowth || 0,
+            orderGrowth: result.stats?.orderGrowth || 0,
+            pendingGrowth: result.stats?.pendingGrowth || 0,
+            processingGrowth: result.stats?.processingGrowth || 0,
           });
         } else {
           throw new Error("Failed to load orders data");
@@ -408,7 +491,7 @@ export default function VendorOrdersPage() {
           order.id === orderId
             ? {
                 ...order,
-                status: newStatus as any,
+                status: newStatus,
                 updatedAt: new Date().toISOString(),
               }
             : order
@@ -424,7 +507,6 @@ export default function VendorOrdersPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    // The effect will trigger automatically due to state changes
   };
 
   const handleSort = (field: string) => {
@@ -442,6 +524,14 @@ export default function VendorOrdersPage() {
       [];
 
     if (currentStatus === "pending") {
+      actions.push(
+        { value: "confirmed", label: "Confirm Order", icon: CheckCircleIcon },
+        { value: "processing", label: "Start Processing", icon: ArrowPathIcon },
+        { value: "cancelled", label: "Cancel Order", icon: XCircleIcon }
+      );
+    }
+
+    if (currentStatus === "confirmed") {
       actions.push(
         { value: "processing", label: "Start Processing", icon: ArrowPathIcon },
         { value: "cancelled", label: "Cancel Order", icon: XCircleIcon }
@@ -479,25 +569,11 @@ export default function VendorOrdersPage() {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <Skeleton className="h-3 w-20" />
-                      <Skeleton className="h-6 w-16" />
-                    </div>
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Enhanced Stats Grid */}
+          <StatsSkeleton />
 
           {/* Filters */}
-          <Card className="border-0 shadow-sm bg-white/80">
+          <Card className="border-0 shadow-sm bg-white">
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
@@ -533,7 +609,7 @@ export default function VendorOrdersPage() {
           <p className="text-slate-500 mb-6">{error}</p>
           <Button
             onClick={() => window.location.reload()}
-            className="bg-slate-900 hover:bg-slate-800 text-white"
+            className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
           >
             Try Again
           </Button>
@@ -555,89 +631,63 @@ export default function VendorOrdersPage() {
           </div>
         </div>
 
-        {/* Stats Grid - Updated UI */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-600">
-                    Total Revenue
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {formatPrice(stats.totalRevenue)}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <CurrencyEuroIcon className="h-5 w-5 text-emerald-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Enhanced Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <StatCard
+            title="Total Revenue"
+            value={formatPrice(stats.totalRevenue)}
+            change={stats.revenueGrowth}
+            icon={CurrencyEuroIcon}
+            iconColor="text-emerald-600"
+            bgColor="bg-emerald-50"
+          />
 
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-600">
-                    Total Orders
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {stats.totalOrders}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <ShoppingBagIcon className="h-5 w-5 text-blue-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total Orders"
+            value={stats.totalOrders}
+            change={stats.orderGrowth}
+            icon={ShoppingBagIcon}
+            iconColor="text-blue-600"
+            bgColor="bg-blue-50"
+          />
 
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-600">
-                    Pending Orders
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {stats.pendingOrders}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                  <ClockIcon className="h-5 w-5 text-amber-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Pending Orders"
+            value={stats.pendingOrders}
+            change={stats.pendingGrowth}
+            icon={ClockIcon}
+            iconColor="text-amber-600"
+            bgColor="bg-amber-50"
+          />
 
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-600">
-                    Processing Orders
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {stats.processingOrders}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <ArrowPathIcon className="h-5 w-5 text-purple-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <StatCard
+            title="Processing Orders"
+            value={stats.processingOrders}
+            change={stats.processingGrowth}
+            icon={ArrowPathIcon}
+            iconColor="text-purple-600"
+            bgColor="bg-purple-50"
+          />
+        </motion.div>
 
         {/* Filters */}
-        <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
+        <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-6">
             <form onSubmit={handleSearch} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Search */}
                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="search">Search Orders</Label>
+                  <Label
+                    htmlFor="search"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Search Orders
+                  </Label>
                   <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
@@ -645,7 +695,7 @@ export default function VendorOrdersPage() {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 h-9 text-sm"
                       placeholder="Search by order number, customer name..."
                     />
                   </div>
@@ -653,37 +703,49 @@ export default function VendorOrdersPage() {
 
                 {/* Status Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label
+                    htmlFor="status"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Status
+                  </Label>
                   <Select
                     value={statusFilter || "all"}
                     onValueChange={(value) =>
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="processing">Processing</SelectItem>
                       <SelectItem value="shipped">Shipped</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Date Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date Range</Label>
+                  <Label
+                    htmlFor="date"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Date Range
+                  </Label>
                   <Select
                     value={dateFilter || "all"}
                     onValueChange={(value) =>
                       setDateFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="All Dates" />
                     </SelectTrigger>
                     <SelectContent>
@@ -697,14 +759,12 @@ export default function VendorOrdersPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t">
-                <p className="text-sm text-slate-600">
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-600">
                   {totalCount} orders found
                 </p>
-                <Button
-                  type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
-                >
+                <Button variant="active" className="text-blue-700">
+                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
@@ -713,7 +773,7 @@ export default function VendorOrdersPage() {
         </Card>
 
         {/* Orders Table */}
-        <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
+        <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-0">
             {orders.length === 0 ? (
               <div className="p-12 text-center">
@@ -730,7 +790,7 @@ export default function VendorOrdersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead>
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="id"
                         currentSort={sortBy}
@@ -740,7 +800,7 @@ export default function VendorOrdersPage() {
                         Order
                       </SortButton>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="customerName"
                         currentSort={sortBy}
@@ -750,8 +810,8 @@ export default function VendorOrdersPage() {
                         Customer
                       </SortButton>
                     </TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>
+                    <TableHead className="h-10 text-left pl-4">Items</TableHead>
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="total"
                         currentSort={sortBy}
@@ -761,9 +821,9 @@ export default function VendorOrdersPage() {
                         Total
                       </SortButton>
                     </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>
+                    <TableHead className="h-10 text-center">Status</TableHead>
+                    <TableHead className="h-10 text-center">Payment</TableHead>
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="createdAt"
                         currentSort={sortBy}
@@ -773,7 +833,9 @@ export default function VendorOrdersPage() {
                         Date
                       </SortButton>
                     </TableHead>
-                    <TableHead className="w-[50px]">Actions</TableHead>
+                    <TableHead className="w-[50px] h-10 text-center">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -782,7 +844,8 @@ export default function VendorOrdersPage() {
                       key={order.id}
                       className="hover:bg-slate-50/50 border-slate-100"
                     >
-                      <TableCell>
+                      {/* Order Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div>
                           <p className="font-medium text-slate-900 text-sm">
                             {order.orderNumber}
@@ -793,40 +856,50 @@ export default function VendorOrdersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      {/* Customer Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
                             <UserIcon className="w-4 h-4 text-slate-600" />
                           </div>
-                          <div>
-                            <p className="font-medium text-slate-900 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-slate-900 text-sm truncate">
                               {order.customerName}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-500 truncate">
                               {order.customerEmail}
                             </p>
                           </div>
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      {/* Items Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div className="flex items-center space-x-2">
-                          {order.items.slice(0, 2).map((item) => (
+                          {order.items.slice(0, 2).map((item, index) => (
                             <div
-                              key={item.id}
-                              className="w-8 h-8 bg-slate-100 rounded border overflow-hidden"
+                              key={`${item.id}-${index}`}
+                              className="w-8 h-8 bg-slate-100 rounded border overflow-hidden flex-shrink-0"
                             >
                               <Image
                                 src={item.productImage}
-                                alt={item.productName}
+                                alt={`${item.productName}${
+                                  item.variantName
+                                    ? ` - ${item.variantName}`
+                                    : ""
+                                }`}
                                 width={32}
                                 height={32}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "/products/default.jpg";
+                                }}
                               />
                             </div>
                           ))}
                           {order.items.length > 2 && (
-                            <div className="w-8 h-8 bg-slate-200 rounded border flex items-center justify-center">
+                            <div className="w-8 h-8 bg-slate-200 rounded border flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-medium text-slate-600">
                                 +{order.items.length - 2}
                               </span>
@@ -838,21 +911,25 @@ export default function VendorOrdersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      {/* Total Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <p className="font-bold text-slate-900 text-sm">
                           {formatPrice(order.totalAmount)}
                         </p>
                       </TableCell>
 
-                      <TableCell>
+                      {/* Status Column */}
+                      <TableCell className="py-3 text-center">
                         <StatusBadge status={order.status} />
                       </TableCell>
 
-                      <TableCell>
+                      {/* Payment Column */}
+                      <TableCell className="py-3 text-center">
                         <PaymentStatusBadge status={order.paymentStatus} />
                       </TableCell>
 
-                      <TableCell>
+                      {/* Date Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div>
                           <p className="font-medium text-slate-900 text-sm">
                             {new Date(order.createdAt).toLocaleDateString(
@@ -876,21 +953,25 @@ export default function VendorOrdersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      {/* Actions Column */}
+                      <TableCell className="py-3 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 hover:bg-slate-100"
+                              className="h-7 w-7 p-0 hover:bg-slate-100 cursor-pointer"
                             >
-                              <EllipsisVerticalIcon className="h-4 w-4" />
+                              <EllipsisVerticalIcon className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link href={`/vendor/orders/${order.id}`}>
-                                <EyeIcon className="w-4 h-4 mr-2" />
+                              <Link
+                                href={`/vendor/orders/${order.id}`}
+                                className="cursor-pointer"
+                              >
+                                <EyeIcon className="w-3 h-3 mr-2" />
                                 View Details
                               </Link>
                             </DropdownMenuItem>
@@ -905,9 +986,9 @@ export default function VendorOrdersPage() {
                                     handleStatusUpdate(order.id, action.value)
                                   }
                                   disabled={updating === order.id}
-                                  className="text-slate-600 focus:text-slate-900"
+                                  className="text-slate-600 focus:text-slate-900 cursor-pointer"
                                 >
-                                  <action.icon className="w-4 h-4 mr-2" />
+                                  <action.icon className="w-3 h-3 mr-2" />
                                   {updating === order.id
                                     ? "Updating..."
                                     : action.label}
@@ -928,7 +1009,7 @@ export default function VendorOrdersPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-700">
+            <p className="text-xs text-slate-700">
               Showing {(currentPage - 1) * 15 + 1} to{" "}
               {Math.min(currentPage * 15, totalCount)} of {totalCount} orders
             </p>
@@ -939,6 +1020,7 @@ export default function VendorOrdersPage() {
                 size="sm"
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
+                className="h-8 px-3 text-xs cursor-pointer"
               >
                 Previous
               </Button>
@@ -964,7 +1046,7 @@ export default function VendorOrdersPage() {
                       }
                       size="sm"
                       onClick={() => setCurrentPage(pageNumber)}
-                      className={`w-10 ${
+                      className={`w-8 h-8 text-xs cursor-pointer ${
                         currentPage === pageNumber
                           ? "bg-slate-900 hover:bg-slate-800 text-white"
                           : ""
@@ -981,6 +1063,7 @@ export default function VendorOrdersPage() {
                 size="sm"
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                className="h-8 px-3 text-xs cursor-pointer"
               >
                 Next
               </Button>

@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HomeIcon,
-  ShoppingBagIcon,
   CubeIcon,
-  CurrencyEuroIcon,
+  WalletIcon,
   ChartBarIcon,
   UsersIcon,
   XMarkIcon,
   PlusIcon,
   BellIcon,
+  TruckIcon
 } from "@heroicons/react/24/outline";
 
 // Removed Settings from navigation since it's now in the top bar
@@ -20,10 +20,10 @@ const navigation = [
   { name: "Dashboard", href: "/vendor/dashboard", icon: HomeIcon },
   { name: "Products", href: "/vendor/products", icon: CubeIcon },
   { name: "Add Product", href: "/vendor/products/add", icon: PlusIcon },
-  { name: "Orders", href: "/vendor/orders", icon: ShoppingBagIcon },
+  { name: "Orders", href: "/vendor/orders", icon: TruckIcon },
   { name: "Insights", href: "/vendor/insights", icon: ChartBarIcon },
   { name: "Customers", href: "/vendor/customers", icon: UsersIcon },
-  { name: "Wallet", href: "/vendor/wallet", icon: CurrencyEuroIcon },
+  { name: "Wallet", href: "/vendor/wallet", icon: WalletIcon },
   { name: "Notifications", href: "/vendor/notifications", icon: BellIcon },
 ];
 

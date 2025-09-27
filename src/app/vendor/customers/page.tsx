@@ -1,3 +1,5 @@
+// File: src/app/vendor/customers/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,18 +14,18 @@ import {
   UserIcon,
   EnvelopeIcon,
   PhoneIcon,
-  CalendarDaysIcon,
   ShoppingBagIcon,
   CurrencyEuroIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   UsersIcon,
   EyeIcon,
   ChatBubbleLeftRightIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -121,9 +123,9 @@ function StatCard({
               <p className="text-xl font-bold text-gray-900">{value}</p>
               <div className="flex items-center space-x-1">
                 {isPositive ? (
-                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
                 ) : (
-                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
                 )}
                 <span
                   className={`text-xs font-medium ${
@@ -174,9 +176,9 @@ function SortButton({
         {currentSort === field && (
           <div className="text-slate-900">
             {currentOrder === "asc" ? (
-              <ArrowUpIcon className="w-3 h-3" />
+              <ArrowTrendingUpIcon className="w-3 h-3" />
             ) : (
-              <ArrowDownIcon className="w-3 h-3" />
+              <ArrowTrendingDownIcon className="w-3 h-3" />
             )}
           </div>
         )}
@@ -514,10 +516,8 @@ export default function VendorCustomersPage() {
                 <p className="text-xs text-gray-600">
                   {totalCount} customers found
                 </p>
-                <Button
-                  type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
-                >
+                <Button variant="active" className="text-blue-700">
+                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
@@ -546,7 +546,7 @@ export default function VendorCustomersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="name"
                         currentSort={sortBy}
@@ -556,8 +556,10 @@ export default function VendorCustomersPage() {
                         Customer
                       </SortButton>
                     </TableHead>
-                    <TableHead className="h-10">Contact</TableHead>
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-left pl-4">
+                      Contact
+                    </TableHead>
+                    <TableHead className="h-10 text-center">
                       <SortButton
                         field="role"
                         currentSort={sortBy}
@@ -567,10 +569,12 @@ export default function VendorCustomersPage() {
                         Role
                       </SortButton>
                     </TableHead>
-                    <TableHead className="h-10">Orders</TableHead>
-                    <TableHead className="h-10">Total Spent</TableHead>
-                    <TableHead className="h-10">Status</TableHead>
-                    <TableHead className="h-10">
+                    <TableHead className="h-10 text-center">Orders</TableHead>
+                    <TableHead className="h-10 text-center">
+                      Total Spent
+                    </TableHead>
+                    <TableHead className="h-10 text-center">Status</TableHead>
+                    <TableHead className="h-10 text-left pl-4">
                       <SortButton
                         field="createdAt"
                         currentSort={sortBy}
@@ -580,7 +584,9 @@ export default function VendorCustomersPage() {
                         Joined
                       </SortButton>
                     </TableHead>
-                    <TableHead className="w-[50px] h-10">Actions</TableHead>
+                    <TableHead className="w-[50px] h-10 text-center">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -589,9 +595,10 @@ export default function VendorCustomersPage() {
                       key={customer.id}
                       className="hover:bg-gray-50/50 border-b border-gray-50"
                     >
-                      <TableCell className="py-3">
+                      {/* Customer Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                             {customer.image ? (
                               <Image
                                 src={customer.image}
@@ -606,18 +613,19 @@ export default function VendorCustomersPage() {
                               </span>
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
                               {customer.name || "Anonymous"}
                             </p>
-                            <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                            <p className="text-xs text-gray-500 truncate">
                               {customer.email}
                             </p>
                           </div>
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3">
+                      {/* Contact Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div className="space-y-1">
                           <div className="flex items-center text-xs text-gray-600">
                             <EnvelopeIcon className="w-3 h-3 mr-1.5 text-gray-400" />
@@ -634,23 +642,26 @@ export default function VendorCustomersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3">
-                        <Badge
-                          variant={
-                            customer.role === "VENDOR"
-                              ? "default"
-                              : customer.role === "ADMIN"
-                                ? "destructive"
-                                : "secondary"
-                          }
-                          className="text-xs px-2 py-0.5"
-                        >
-                          {customer.role}
-                        </Badge>
+                      {/* Role Column - UPDATED with consistent badges */}
+                      <TableCell className="py-3 text-center">
+                        {customer.role === "VENDOR" ? (
+                          <Badge variant="default" size="sm" icon="auto">
+                            Vendor
+                          </Badge>
+                        ) : customer.role === "ADMIN" ? (
+                          <Badge variant="destructive" size="sm" icon="auto">
+                            Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" size="sm" icon="auto">
+                            Customer
+                          </Badge>
+                        )}
                       </TableCell>
 
-                      <TableCell className="py-3">
-                        <div className="text-center">
+                      {/* Orders Column */}
+                      <TableCell className="py-3 text-center">
+                        <div className="inline-flex flex-col items-center">
                           <p className="text-sm font-medium text-gray-900">
                             {customer._count.orders}
                           </p>
@@ -658,34 +669,35 @@ export default function VendorCustomersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3">
+                      {/* Total Spent Column */}
+                      <TableCell className="py-3 text-center">
                         <p className="text-sm font-semibold text-gray-900">
                           {formatPrice(customer.totalSpent || 0)}
                         </p>
                       </TableCell>
 
-                      <TableCell className="py-3">
-                        <div className="flex items-center space-x-1">
+                      {/* Status Column - UPDATED with consistent badges */}
+                      <TableCell className="py-3 text-center">
+                        <div className="flex flex-col items-center space-y-1">
                           <Badge
                             variant={
-                              customer.isVerified ? "default" : "secondary"
+                              customer.isVerified ? "verified" : "unverified"
                             }
-                            className="text-xs px-2 py-0.5"
+                            size="sm"
+                            icon="auto"
                           >
                             {customer.isVerified ? "Verified" : "Unverified"}
                           </Badge>
                           {customer.emailVerified && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-1.5 py-0.5"
-                            >
+                            <Badge variant="success" size="sm">
                               Email ✓
                             </Badge>
                           )}
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3">
+                      {/* Joined Column */}
+                      <TableCell className="py-3 text-left pl-4">
                         <div>
                           <p className="text-sm font-medium text-gray-900">
                             {new Date(customer.createdAt).toLocaleDateString(
@@ -703,7 +715,8 @@ export default function VendorCustomersPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3">
+                      {/* Actions Column */}
+                      <TableCell className="py-3 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

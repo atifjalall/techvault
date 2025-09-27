@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,40 +16,142 @@ import {
   MapPinIcon,
   CreditCardIcon,
   ExclamationTriangleIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { Suspense } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function CheckoutSuccessPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/3 mx-auto mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto mb-8"></div>
-          <div className="space-y-4">
-            <div className="h-32 bg-gray-200 rounded-lg"></div>
-            <div className="h-24 bg-gray-200 rounded-lg"></div>
+    <div className="min-h-screen bg-gray-50">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="container mx-auto px-4 py-4"
+      >
+        {/* Header Skeleton */}
+        <div className="mb-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <Skeleton className="w-12 h-12 rounded-full mx-auto mb-3" />
+              <Skeleton className="h-5 w-48 mx-auto mb-2" />
+              <Skeleton className="h-4 w-64 mx-auto mb-1" />
+              <Skeleton className="h-3 w-32 mx-auto" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Main content skeleton */}
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center space-x-3 pb-3 border-b border-gray-200 last:border-b-0"
+                    >
+                      <Skeleton className="w-10 h-10 rounded-lg" />
+                      <div className="flex-1">
+                        <Skeleton className="h-3 w-3/4 mb-1" />
+                        <Skeleton className="h-2 w-1/2 mb-1" />
+                        <Skeleton className="h-2 w-1/4" />
+                      </div>
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-3">
+                    <Skeleton className="w-4 h-4 mr-2" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-3">
+                    <Skeleton className="w-4 h-4 mr-2" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Sidebar skeleton */}
+          <div className="lg:col-span-1">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-20" />
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-start space-x-3">
+                      <Skeleton className="w-6 h-6 rounded-full" />
+                      <div className="flex-1">
+                        <Skeleton className="h-3 w-2/3 mb-1" />
+                        <Skeleton className="h-2 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2 mt-6">
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                  <Skeleton className="h-9 w-full rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
-// Types
+
+// Updated types for variant support
 interface OrderItem {
   id: string;
+  type: "product" | "variant";
   productId: string;
+  variantId?: string;
   name: string;
+  variantName?: string;
   brand?: string;
   image: string;
   slug: string;
   quantity: number;
   price: number;
+  variantSnapshot?: any; // Store variant details at time of order
 }
 
 interface OrderData {
   id: string;
+  orderNumber: string;
   status: string;
   total: number;
   shippingAddress: {
@@ -79,9 +182,8 @@ function CheckoutSuccessPageContent() {
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
 
-  // Fetch order data
+  // Fetch order data with variant support
   const fetchOrderData = async () => {
     if (!orderId || !session?.user) {
       setError("Order ID not found or user not authenticated");
@@ -90,16 +192,51 @@ function CheckoutSuccessPageContent() {
     }
 
     try {
+      console.log("Fetching order with ID:", orderId);
       const response = await fetch(`/api/orders/${orderId}`);
+
+      console.log("Response status:", response.status);
 
       if (response.ok) {
         const data = await response.json();
-        setOrderData(data.order);
-        setShowConfetti(true);
+        console.log("Full API response:", data);
+
+        // Check if order data exists
+        if (!data.order) {
+          console.error("No order found in response:", data);
+          setError("Order data not found in response");
+          setLoading(false);
+          return;
+        }
+
+        // Transform the API response to match our expected format
+        const transformedOrder = {
+          id: data.order.id,
+          orderNumber: data.order.orderNumber || data.order.id,
+          status: data.order.status,
+          total: data.order.total,
+          shippingAddress: data.order.shippingAddress,
+          paymentIntentId: data.order.paymentIntentId,
+          createdAt: data.order.createdAt,
+          items: data.order.items || [],
+          totals: data.order.totals || {
+            subtotal: data.order.subtotal || 0,
+            shipping: data.order.shippingCost || 0,
+            tax: data.order.taxAmount || 0,
+            total: data.order.total || 0,
+          },
+        };
+
+        console.log("Transformed order:", transformedOrder);
+        setOrderData(transformedOrder);
         setError(null);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || "Failed to fetch order details");
+        console.error("API Error Response:", response.status, errorData);
+        setError(
+          errorData.error ||
+            `API returned ${response.status}: Failed to fetch order details`
+        );
       }
     } catch (err) {
       console.error("Error fetching order:", err);
@@ -147,8 +284,8 @@ function CheckoutSuccessPageContent() {
     }).format(price);
   };
 
-  const formatOrderNumber = (orderId: string) => {
-    return `TV-${orderId.slice(-8).toUpperCase()}`;
+  const formatOrderNumber = (orderNumber: string) => {
+    return `TV-${orderNumber.slice(-8).toUpperCase()}`;
   };
 
   const getEstimatedDelivery = () => {
@@ -164,413 +301,424 @@ function CheckoutSuccessPageContent() {
     return "**** **** **** ••••";
   };
 
-  // Loading state
+  // Show loading state with skeleton
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center">
-              <div className="w-8 h-8 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-sm text-slate-600">Loading order details...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <CheckoutSuccessPageSkeleton />;
   }
 
   // Error state
   if (error || !orderData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center max-w-md"
-            >
-              <ExclamationTriangleIcon className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">
-                Order Not Found
-              </h2>
-              <p className="text-sm text-slate-600 mb-4">
-                {error || "We couldn't find the order details."}
-              </p>
-              <div className="space-y-3">
-                <Link
-                  href="/orders"
-                  className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-lg font-medium text-sm hover:bg-slate-800 transition-all block cursor-pointer"
-                >
-                  View My Orders
-                </Link>
-                <Link
-                  href="/products"
-                  className="w-full bg-white/60 text-slate-700 py-2.5 px-4 rounded-lg font-medium text-sm border border-slate-200/50 hover:bg-white/80 transition-all block cursor-pointer"
-                >
-                  Continue Shopping
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md mx-auto text-center"
+          >
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />
+                </div>
+                <h1 className="text-base font-semibold text-gray-900 mb-1">
+                  Order Not Found
+                </h1>
+                <p className="text-sm text-gray-600 mb-4">
+                  {error || "We couldn't find the order details."}
+                </p>
+                <div className="space-y-2">
+                  <Link
+                    href="/orders"
+                    className="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+                  >
+                    View My Orders
+                  </Link>
+                  <div>
+                    <Link
+                      href="/products"
+                      className="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      Continue Shopping
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      {/* Confetti Animation */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
-          {[...Array(50)].map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{
-                y: -100,
-                x:
-                  Math.random() *
-                  (typeof window !== "undefined" ? window.innerWidth : 1200),
-                rotate: 0,
-                opacity: 1,
-              }}
-              animate={{
-                y:
-                  (typeof window !== "undefined" ? window.innerHeight : 800) +
-                  100,
-                rotate: 360,
-                opacity: 0,
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                delay: Math.random() * 2,
-                ease: "linear",
-              }}
-              className={`absolute w-3 h-3 ${
-                [
-                  "bg-green-400",
-                  "bg-blue-400",
-                  "bg-purple-400",
-                  "bg-pink-400",
-                  "bg-yellow-400",
-                ][Math.floor(Math.random() * 5)]
-              } rounded-full`}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="container mx-auto px-4 py-4 space-y-4"
+      >
         {/* Success Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          transition={{ duration: 0.6 }}
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
-          >
-            <CheckCircleIcon className="w-8 h-8 text-white" />
-          </motion.div>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3"
+              >
+                <CheckCircleIcon className="w-6 h-6 text-white" />
+              </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-xl font-bold text-slate-900 mb-2"
-          >
-            Order Confirmed!
-          </motion.h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-lg font-bold text-gray-900 mb-1"
+              >
+                Order Confirmed!
+              </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="text-sm text-slate-600 mb-1"
-          >
-            Thank you for your purchase, {orderData.shippingAddress.firstName}{" "}
-            {orderData.shippingAddress.lastName}!
-          </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="text-sm text-gray-600 mb-1"
+              >
+                Thank you for your purchase,{" "}
+                {orderData.shippingAddress.firstName}{" "}
+                {orderData.shippingAddress.lastName}!
+              </motion.p>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="text-xs text-slate-500"
-          >
-            Order #{formatOrderNumber(orderData.id)}
-          </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="text-xs text-gray-500"
+              >
+                Order #{formatOrderNumber(orderData.orderNumber)}
+              </motion.p>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Order Details - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Order Summary */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Order Summary with Variant Support */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0 }}
-              className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6"
+              transition={{ delay: 0.2 }}
             >
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
-                Order Summary
-              </h2>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    {orderData.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center space-x-3 pb-3 border-b border-gray-200 last:border-b-0"
+                      >
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200"></div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900 text-sm">
+                            {item.variantName
+                              ? `${item.name} - ${item.variantName}`
+                              : item.name}
+                          </h3>
+                          {item.brand && (
+                            <p className="text-xs text-gray-600">
+                              {item.brand}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500">
+                            Qty: {item.quantity}
+                          </p>
 
-              <div className="space-y-4">
-                {orderData.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center space-x-3 pb-3 border-b border-slate-200/50 last:border-b-0"
-                  >
-                    <div className="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-slate-200"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-slate-900 text-xs">
-                        {item.name}
-                      </h3>
-                      {item.brand && (
-                        <p className="text-xs text-slate-600">{item.brand}</p>
-                      )}
-                      <p className="text-xs text-slate-500">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <p className="font-semibold text-slate-900 text-xs">
-                      {formatPrice(item.price * item.quantity)}
-                    </p>
-                  </div>
-                ))}
+                          {/* Show variant details if available */}
+                          {item.variantSnapshot && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {item.variantSnapshot.color && (
+                                <span className="mr-2">
+                                  Color: {item.variantSnapshot.color}
+                                </span>
+                              )}
+                              {item.variantSnapshot.storage && (
+                                <span className="mr-2">
+                                  Storage: {item.variantSnapshot.storage}
+                                </span>
+                              )}
+                              {item.variantSnapshot.size && (
+                                <span className="mr-2">
+                                  Size: {item.variantSnapshot.size}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      </div>
+                    ))}
 
-                {/* Order Totals */}
-                <div className="space-y-1 pt-3 border-t border-slate-200/50">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600">Subtotal</span>
-                    <span className="text-slate-900">
-                      {formatPrice(orderData.totals.subtotal)}
-                    </span>
+                    {/* Order Totals */}
+                    <div className="space-y-2 pt-3 border-t border-gray-200">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="text-gray-900">
+                          {formatPrice(orderData.totals.subtotal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Shipping</span>
+                        <span className="text-gray-900">
+                          {orderData.totals.shipping === 0
+                            ? "Free"
+                            : formatPrice(orderData.totals.shipping)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Tax (VAT 19%)</span>
+                        <span className="text-gray-900">
+                          {formatPrice(orderData.totals.tax)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                        <span className="text-sm font-semibold text-gray-900">
+                          Total
+                        </span>
+                        <span className="text-base font-bold text-gray-900">
+                          {formatPrice(orderData.total)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600">Shipping</span>
-                    <span className="text-slate-900">
-                      {orderData.totals.shipping === 0
-                        ? "Free"
-                        : formatPrice(orderData.totals.shipping)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-600">Tax (VAT 19%)</span>
-                    <span className="text-slate-900">
-                      {formatPrice(orderData.totals.tax)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200/50">
-                    <span className="text-sm font-semibold text-slate-900">
-                      Total
-                    </span>
-                    <span className="text-base font-bold text-slate-900">
-                      {formatPrice(orderData.total)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </motion.div>
 
             {/* Shipping & Payment Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2 }}
+              transition={{ delay: 0.3 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               {/* Shipping Address */}
-              <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-4">
-                <div className="flex items-center mb-3">
-                  <MapPinIcon className="w-4 h-4 text-slate-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Shipping Address
-                  </h3>
-                </div>
-                <div className="text-slate-700 space-y-0.5">
-                  <p className="font-medium text-xs">
-                    {orderData.shippingAddress.firstName}{" "}
-                    {orderData.shippingAddress.lastName}
-                  </p>
-                  <p className="text-xs">{orderData.shippingAddress.address}</p>
-                  <p className="text-xs">
-                    {orderData.shippingAddress.city},{" "}
-                    {orderData.shippingAddress.postalCode}
-                  </p>
-                  <p className="text-xs">{orderData.shippingAddress.country}</p>
-                </div>
-              </div>
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-3">
+                    <MapPinIcon className="w-4 h-4 text-gray-600 mr-2" />
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Shipping Address
+                    </h3>
+                  </div>
+                  <div className="text-gray-700 space-y-1">
+                    <p className="font-medium text-xs">
+                      {orderData.shippingAddress.firstName}{" "}
+                      {orderData.shippingAddress.lastName}
+                    </p>
+                    <p className="text-xs">
+                      {orderData.shippingAddress.address}
+                    </p>
+                    <p className="text-xs">
+                      {orderData.shippingAddress.city},{" "}
+                      {orderData.shippingAddress.postalCode}
+                    </p>
+                    <p className="text-xs">
+                      {orderData.shippingAddress.country}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Payment Method */}
-              <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-4">
-                <div className="flex items-center mb-3">
-                  <CreditCardIcon className="w-4 h-4 text-slate-600 mr-2" />
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Payment Method
-                  </h3>
-                </div>
-                <div className="text-slate-700">
-                  <p className="font-medium text-xs">Credit Card</p>
-                  <p className="text-xs">{getPaymentMethodDisplay()}</p>
-                  <p className="text-xs text-emerald-600 mt-2">
-                    ✓ Payment Successful
-                  </p>
-                  {orderData.paymentIntentId && (
-                    <p className="text-xs text-slate-500 mt-1">
-                      Payment ID: {orderData.paymentIntentId}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-3">
+                    <CreditCardIcon className="w-4 h-4 text-gray-600 mr-2" />
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Payment Method
+                    </h3>
+                  </div>
+                  <div className="text-gray-700">
+                    <p className="font-medium text-xs">Credit Card</p>
+                    <p className="text-xs">{getPaymentMethodDisplay()}</p>
+                    <p className="text-xs text-green-600 mt-2">
+                      ✓ Payment Successful
                     </p>
-                  )}
-                </div>
-              </div>
+                    {orderData.paymentIntentId && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Payment ID: {orderData.paymentIntentId}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           </div>
 
           {/* Sidebar - Next Steps */}
-          <div className="lg:col-span-1">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.4 }}
-              className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-4 sticky top-24"
-            >
-              <h3 className="text-sm font-semibold text-slate-900 mb-4">
-                What&apos;s Next?
-              </h3>
-
-              <div className="space-y-4">
-                {/* Delivery Info */}
-                <div className="flex items-start space-x-2.5">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <TruckIcon className="w-3 h-3 text-blue-600" />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="lg:col-span-1"
+          >
+            <Card className="border-0 shadow-sm sticky top-24">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">What&apos;s Next?</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-4">
+                  {/* Delivery Info */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <TruckIcon className="w-3 h-3 text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 text-xs">
+                        Estimated Delivery
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {getEstimatedDelivery()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {orderData.totals.shipping === 0
+                          ? "Free standard shipping"
+                          : "Standard shipping"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-slate-900 text-xs">
-                      Estimated Delivery
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      {getEstimatedDelivery()}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {orderData.totals.shipping === 0
-                        ? "Free standard shipping"
-                        : "Standard shipping"}
-                    </p>
+
+                  {/* Email Confirmation */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <EnvelopeIcon className="w-3 h-3 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 text-xs">
+                        Order Confirmation
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Check your email for order details and tracking
+                        information.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Order Tracking */}
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CalendarDaysIcon className="w-3 h-3 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 text-xs">
+                        Track Your Order
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        You&apos;ll receive tracking details once your order
+                        ships.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Email Confirmation */}
-                <div className="flex items-start space-x-2.5">
-                  <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <EnvelopeIcon className="w-3 h-3 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-slate-900 text-xs">
-                      Order Confirmation
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      Check your email for order details and tracking
-                      information.
-                    </p>
-                  </div>
+                {/* Action Buttons */}
+                <div className="space-y-2 mt-6 pt-4 border-t border-gray-200">
+                  <Link
+                    href={`/orders`}
+                    className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-gray-800 transition-all cursor-pointer"
+                  >
+                    View Order Details
+                  </Link>
+
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full bg-white text-gray-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  >
+                    <PrinterIcon className="w-3 h-3" />
+                    <span>Print Receipt</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full bg-white text-gray-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  >
+                    <ArrowDownTrayIcon className="w-3 h-3" />
+                    <span>Download Invoice</span>
+                  </motion.button>
                 </div>
 
-                {/* Order Tracking */}
-                <div className="flex items-start space-x-2.5">
-                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <CalendarDaysIcon className="w-3 h-3 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-slate-900 text-xs">
-                      Track Your Order
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      You&apos;ll receive tracking details once your order
-                      ships.
-                    </p>
-                  </div>
+                {/* Continue Shopping */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Link
+                    href="/products"
+                    className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-blue-700 transition-all cursor-pointer"
+                  >
+                    Continue Shopping
+                  </Link>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-2.5 mt-6 pt-4 border-t border-slate-200/50">
-                <Link
-                  href={`/orders`}
-                  className="w-full bg-slate-900 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-slate-800 transition-all shadow-lg cursor-pointer"
-                >
-                  View Order Details
-                </Link>
-
-                <button className="w-full bg-white/60 backdrop-blur-sm text-slate-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-slate-200/50 hover:bg-white/80 transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
-                  <PrinterIcon className="w-3 h-3" />
-                  <span>Print Receipt</span>
-                </button>
-
-                <button className="w-full bg-white/60 backdrop-blur-sm text-slate-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-slate-200/50 hover:bg-white/80 transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
-                  <ArrowDownTrayIcon className="w-3 h-3" />
-                  <span>Download Invoice</span>
-                </button>
-              </div>
-
-              {/* Continue Shopping */}
-              <div className="mt-4 pt-4 border-t border-slate-200/50">
-                <Link
-                  href="/products"
-                  className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-blue-700 transition-all shadow-lg cursor-pointer"
-                >
-                  Continue Shopping
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Support Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.6 }}
-          className="mt-8 text-center"
+          transition={{ delay: 0.5 }}
         >
-          <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6">
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">
-              Need Help with Your Order?
-            </h3>
-            <p className="text-xs text-slate-600 mb-4">
-              Our customer support team is here to help you with any questions.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/support"
-                className="px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium text-xs hover:bg-slate-800 transition-all cursor-pointer"
-              >
-                Contact Support
-              </Link>
-              <Link
-                href="/faq"
-                className="px-4 py-2.5 bg-white/60 backdrop-blur-sm text-slate-700 rounded-lg font-medium text-xs border border-slate-200/50 hover:bg-white/80 transition-all cursor-pointer"
-              >
-                View FAQ
-              </Link>
-            </div>
-          </div>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-6 text-center">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                Need Help with Your Order?
+              </h3>
+              <p className="text-xs text-gray-600 mb-4">
+                Our customer support team is here to help you with any
+                questions.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/support"
+                  className="px-4 py-2.5 bg-gray-900 text-white rounded-lg font-medium text-xs hover:bg-gray-800 transition-all cursor-pointer"
+                >
+                  Contact Support
+                </Link>
+                <Link
+                  href="/faq"
+                  className="px-4 py-2.5 bg-white text-gray-700 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  View FAQ
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }

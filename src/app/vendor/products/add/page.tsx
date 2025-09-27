@@ -359,61 +359,65 @@ export default function AddProductPage() {
   };
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Header */}
-      <Card className="bg-white/70 backdrop-blur-md border border-white/20">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                Add New Product
-              </h1>
-              <p className="text-sm text-gray-600">
-                Create a new product with variants and specifications
-              </p>
-            </div>
-            <Badge
-              variant="secondary"
-              className="bg-blue-50 text-blue-700 text-xs"
-            >
-              {getCompletionPercentage()}% Complete
-            </Badge>
-          </div>
+    <div className="p-4 space-y-4 bg-gray-50/30 min-h-screen">
+      {/* Compact Header - Matching Dashboard Style */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between mb-4"
+      >
+        <div>
+          <h1 className="text-lg font-bold text-gray-900 mb-0.5">
+            Add New Product
+          </h1>
+          <p className="text-xs text-gray-600">
+            Create a new product with variants and specifications
+          </p>
+        </div>
+        <Badge
+          variant="secondary"
+          size="sm"
+          icon="auto"
+          className="bg-blue-50 text-blue-700"
+        >
+          {getCompletionPercentage()}% Complete
+        </Badge>
+      </motion.div>
 
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="bg-white/30 backdrop-blur-sm rounded-full h-2 overflow-hidden">
-              <motion.div
-                className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </div>
-            <div className="flex justify-between mt-2">
-              {STEPS.map((step) => (
-                <Button
-                  key={step.id}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentStep(step.id)}
-                  className={`text-xs cursor-pointer ${
-                    currentStep >= step.id
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {step.name}
-                </Button>
-              ))}
-            </div>
+      {/* Compact Progress Bar */}
+      <Card className="border-0 shadow-sm bg-white">
+        <CardContent className="p-3">
+          <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+            <motion.div
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          </div>
+          <div className="flex justify-between">
+            {STEPS.map((step) => (
+              <motion.button
+                key={step.id}
+                onClick={() => setCurrentStep(step.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`text-xs font-medium transition-colors cursor-pointer px-2 py-1 rounded-md ${
+                  currentStep >= step.id
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-600 hover:bg-blue-50/50"
+                }`}
+              >
+                {step.name}
+              </motion.button>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Main Content */}
+      {/* Compact Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Form Steps - 2/3 width */}
+        {/* Form Steps - Compact Cards */}
         <div className="lg:col-span-2">
           <ProductFormSteps
             currentStep={currentStep}
@@ -425,7 +429,7 @@ export default function AddProductPage() {
           />
         </div>
 
-        {/* Preview Sidebar - 1/3 width */}
+        {/* Compact Preview Sidebar */}
         <div className="lg:col-span-1">
           <div className="sticky top-4">
             <ProductPreview formData={formData} />

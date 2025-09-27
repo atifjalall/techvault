@@ -17,8 +17,8 @@ import {
   ExclamationTriangleIcon,
   CurrencyEuroIcon,
   Cog6ToothIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   TrashIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
@@ -111,9 +111,9 @@ function StatCard({
               <p className="text-xl font-bold text-gray-900">{value}</p>
               <div className="flex items-center space-x-1">
                 {isPositive ? (
-                  <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
                 ) : (
-                  <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
                 )}
                 <span
                   className={`text-xs font-medium ${
