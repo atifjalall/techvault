@@ -138,6 +138,7 @@ export default function WishlistPage() {
   if (session?.user?.role === "VENDOR") {
     return null;
   }
+
   // Get unique categories from actual data
   const categories = [
     "all",
@@ -199,36 +200,58 @@ export default function WishlistPage() {
     setCartLoading("all");
 
     try {
-      // Add all in-stock items to cart
-      const addToCartPromises = inStockItems.map((item) =>
-        fetch("/api/cart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            productId: item.productId,
-            quantity: 1,
-          }),
-        })
-      );
+      // Add all in-stock items to cart with proper variant handling
+      const addToCartPromises = inStockItems.map((item) => {
+        // Type-safe access to potentially undefined properties
+        const hasVariant = "productVariantId" in item && item.productVariantId;
+
+        if (hasVariant) {
+          // Use variant cart API if variant exists
+          return fetch("/api/cart/variant", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              productVariantId: item.productVariantId,
+              quantity: 1,
+            }),
+          });
+        } else {
+          // Fallback to regular cart API
+          return fetch("/api/cart", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              productId: item.productId,
+              quantity: 1,
+            }),
+          });
+        }
+      });
 
       const cartResponses = await Promise.all(addToCartPromises);
       const cartSuccessful = cartResponses.every((response) => response.ok);
 
       if (cartSuccessful) {
-        // Remove all successfully added items from wishlist
-        const removeFromWishlistPromises = inStockItems.map((item) =>
-          fetch("/api/wishlist", {
+        // Remove all successfully added items from wishlist with proper variant handling
+        const removeFromWishlistPromises = inStockItems.map((item) => {
+          const hasVariant =
+            "productVariantId" in item && item.productVariantId;
+
+          return fetch("/api/wishlist", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
               productId: item.productId,
+              productVariantId: hasVariant ? item.productVariantId : null,
             }),
-          })
-        );
+          });
+        });
 
         await Promise.all(removeFromWishlistPromises);
 
@@ -474,6 +497,13 @@ export default function WishlistPage() {
                     slug: item.slug,
                     isNew: false,
                     isFeatured: false,
+                    // Safe variant handling - only pass if properties exist
+                    selectedVariantId:
+                      "productVariantId" in item
+                        ? item.productVariantId
+                        : undefined,
+                    variantDetails:
+                      "variant" in item ? item.variant : undefined,
                   }}
                   variant="default"
                   showQuickActions={true}

@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 interface WishlistItem {
   id: string;
   productId: string;
+  productVariantId?: string;
   name: string;
   brand?: string;
   price: number;
@@ -16,6 +18,17 @@ interface WishlistItem {
   reviewCount?: number;
   slug: string;
   dateAdded: string;
+
+  variant?: {
+    id: string;
+    name: string;
+    color?: string;
+    storage?: string;
+    ram?: string;
+    size?: string;
+    length?: string;
+    material?: string;
+  };
 }
 
 export function useWishlist() {
@@ -51,17 +64,23 @@ export function useWishlist() {
     }
   }, [session]);
 
+  // Updated: Add variant support
   const addToWishlist = useCallback(
-    async (productId: string) => {
+    async (productId: string, productVariantId?: string) => {
       if (!session?.user) {
         throw new Error("Please sign in to add items to wishlist");
       }
 
       try {
+        const requestBody: any = { productId };
+        if (productVariantId) {
+          requestBody.productVariantId = productVariantId;
+        }
+
         const response = await fetch("/api/wishlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId }),
+          body: JSON.stringify(requestBody),
         });
 
         const data = await response.json();
@@ -80,17 +99,23 @@ export function useWishlist() {
     [session, fetchWishlist]
   );
 
+  // Updated: Add variant support
   const removeFromWishlist = useCallback(
-    async (productId: string) => {
+    async (productId: string, productVariantId?: string) => {
       if (!session?.user) {
         throw new Error("Please sign in to manage wishlist");
       }
 
       try {
+        const requestBody: any = { productId };
+        if (productVariantId) {
+          requestBody.productVariantId = productVariantId;
+        }
+
         const response = await fetch("/api/wishlist", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId }),
+          body: JSON.stringify(requestBody),
         });
 
         const data = await response.json();
@@ -109,22 +134,60 @@ export function useWishlist() {
     [session, fetchWishlist]
   );
 
+  // FIXED: Proper variant-specific checking logic
   const isInWishlist = useCallback(
+    (productId: string, productVariantId?: string) => {
+      return items.some((item) => {
+        if (productVariantId) {
+          // Check for EXACT match: same product AND same variant
+          return (
+            item.productId === productId &&
+            item.productVariantId === productVariantId
+          );
+        } else {
+          // Check for product with NO variant (base product)
+          return item.productId === productId && !item.productVariantId;
+        }
+      });
+    },
+    [items]
+  );
+
+  // Updated: Toggle with variant support
+  const toggleWishlist = useCallback(
+    async (productId: string, productVariantId?: string) => {
+      if (isInWishlist(productId, productVariantId)) {
+        return await removeFromWishlist(productId, productVariantId);
+      } else {
+        return await addToWishlist(productId, productVariantId);
+      }
+    },
+    [isInWishlist, addToWishlist, removeFromWishlist]
+  );
+
+  // Helper to check if any variant of a product is in wishlist
+  const isProductInWishlist = useCallback(
     (productId: string) => {
       return items.some((item) => item.productId === productId);
     },
     [items]
   );
 
-  const toggleWishlist = useCallback(
-    async (productId: string) => {
-      if (isInWishlist(productId)) {
-        return await removeFromWishlist(productId);
-      } else {
-        return await addToWishlist(productId);
-      }
+  // Get specific wishlist item for a product/variant combination
+  const getWishlistItem = useCallback(
+    (productId: string, productVariantId?: string) => {
+      return items.find((item) => {
+        if (productVariantId) {
+          return (
+            item.productId === productId &&
+            item.productVariantId === productVariantId
+          );
+        } else {
+          return item.productId === productId && !item.productVariantId;
+        }
+      });
     },
-    [isInWishlist, addToWishlist, removeFromWishlist]
+    [items]
   );
 
   // Fetch wishlist on session change
@@ -152,6 +215,8 @@ export function useWishlist() {
     removeFromWishlist,
     toggleWishlist,
     isInWishlist,
+    isProductInWishlist, // Check if any variant of product is in wishlist
+    getWishlistItem, // Get specific wishlist item
     refetch: fetchWishlist,
     count: items.length,
   };

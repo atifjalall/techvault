@@ -6,15 +6,13 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   ChartBarIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
   CurrencyEuroIcon,
   ShoppingBagIcon,
   UsersIcon,
   EyeIcon,
   ClockIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   MapPinIcon,
   ArrowDownTrayIcon,
   ExclamationTriangleIcon,
@@ -44,8 +42,6 @@ import {
   Area,
 } from "recharts";
 import Image from "next/image";
-
-// UI Components
 import { Button } from "@/components/ui/buttonSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,8 +53,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { formatPrice } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface InsightsData {
   overview: {
@@ -176,9 +172,9 @@ function StatCard({
               {growth !== undefined && (
                 <div className="flex items-center space-x-1">
                   {isPositive ? (
-                    <ArrowUpIcon className="h-3 w-3 text-green-500" />
+                    <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
                   ) : (
-                    <ArrowDownIcon className="h-3 w-3 text-red-500" />
+                    <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
                   )}
                   <span
                     className={`text-xs font-medium ${
@@ -204,29 +200,27 @@ function StatCard({
   );
 }
 
-// Custom Tooltip
+// Professional Custom Tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-3">
-          <p className="text-xs font-medium text-gray-900 mb-1">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-xs" style={{ color: entry.color }}>
-              {entry.name}:{" "}
-              {entry.name === "Revenue" || entry.name === "revenue"
-                ? formatPrice(entry.value)
-                : entry.value.toLocaleString()}
-            </p>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="bg-white border-0 shadow-lg rounded-lg p-3 border border-gray-200">
+        <p className="text-xs font-medium text-gray-900 mb-1">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-xs" style={{ color: entry.color }}>
+            {entry.name}:{" "}
+            {entry.name === "Revenue" || entry.name === "revenue"
+              ? formatPrice(entry.value)
+              : entry.value.toLocaleString()}
+          </p>
+        ))}
+      </div>
     );
   }
   return null;
 };
 
-// Recommendation Card
+// Professional Recommendation Card
 function RecommendationCard({
   recommendation,
 }: {
@@ -245,16 +239,29 @@ function RecommendationCard({
     }
   };
 
+  const getTypeColor = () => {
+    switch (recommendation.type) {
+      case "opportunity":
+        return "text-blue-600";
+      case "warning":
+        return "text-orange-600";
+      case "success":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
+    }
+  };
+
   const getImpactColor = () => {
     switch (recommendation.impact) {
       case "high":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 text-red-600 border-red-200";
       case "medium":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-100 text-yellow-600 border-yellow-200";
       case "low":
-        return "bg-green-100 text-green-700";
+        return "bg-green-100 text-green-600 border-green-200";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-600 border-gray-200";
     }
   };
 
@@ -264,13 +271,15 @@ function RecommendationCard({
     <Card className="border-0 shadow-sm bg-white">
       <CardContent className="p-3">
         <div className="flex items-start space-x-2">
-          <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-600" />
+          <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getTypeColor()}`} />
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-xs font-medium text-gray-900">
                 {recommendation.title}
               </h4>
-              <Badge className={`text-xs px-1.5 py-0.5 ${getImpactColor()}`}>
+              <Badge
+                className={`text-xs px-1.5 py-0.5 border ${getImpactColor()}`}
+              >
                 {recommendation.impact}
               </Badge>
             </div>
@@ -281,7 +290,7 @@ function RecommendationCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs h-6 px-2 cursor-pointer"
+                className="text-xs h-6 px-2 cursor-pointer hover:bg-gray-100"
               >
                 Take Action →
               </Button>
@@ -293,7 +302,7 @@ function RecommendationCard({
   );
 }
 
-// Consistent Loading Skeletons - matching dashboard style
+// Professional Loading Skeletons - matching dashboard style
 function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -304,7 +313,7 @@ function StatsSkeleton() {
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-32" />
               </div>
               <Skeleton className="w-10 h-10 rounded-lg" />
             </div>
@@ -320,12 +329,12 @@ function ChartSkeleton() {
     <Card className="border-0 shadow-sm bg-white">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-7 w-20" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-6 w-20" />
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <Skeleton className="h-[280px] w-full" />
+        <Skeleton className="h-[220px] w-full" />
       </CardContent>
     </Card>
   );
@@ -335,25 +344,25 @@ function TableSkeleton() {
   return (
     <Card className="border-0 shadow-sm bg-white">
       <CardHeader className="pb-3">
-        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-32" />
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
             >
-              <div className="flex items-center space-x-3">
-                <Skeleton className="w-6 h-5" />
-                <Skeleton className="w-8 h-8 rounded-md" />
+              <div className="flex items-center space-x-2">
+                <Skeleton className="w-4 h-4" />
+                <Skeleton className="w-6 h-6 rounded-md" />
                 <div className="space-y-1">
-                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-32" />
                   <Skeleton className="h-3 w-20" />
                 </div>
               </div>
               <div className="text-right space-y-1">
-                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-3 w-16" />
                 <Skeleton className="h-3 w-12" />
               </div>
             </div>
@@ -372,187 +381,17 @@ export default function VendorInsightsDashboard() {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedMetric, setSelectedMetric] = useState("revenue");
 
-  // Load insights data from API
+  // Load insights data from API - fully dynamic
   useEffect(() => {
     const loadInsights = async () => {
       try {
         setLoading(true);
+        setError(null);
+
         const response = await fetch(`/api/vendor/insights?range=${timeRange}`);
 
         if (!response.ok) {
-          // Provide default data if API doesn't exist
-          if (response.status === 404) {
-            const defaultData: InsightsData = {
-              overview: {
-                totalRevenue: 45678.9,
-                revenueGrowth: 15.3,
-                totalOrders: 234,
-                ordersGrowth: 8.7,
-                avgOrderValue: 195.23,
-                avgOrderGrowth: 6.2,
-                conversionRate: 3.4,
-                conversionGrowth: 0.8,
-                totalCustomers: 156,
-                customerGrowth: 12.1,
-                totalProducts: 89,
-                activeProducts: 67,
-              },
-              timeSeriesData: [
-                {
-                  date: "Jan 1",
-                  revenue: 3400,
-                  orders: 18,
-                  visitors: 450,
-                  conversion: 4.0,
-                },
-                {
-                  date: "Jan 8",
-                  revenue: 4200,
-                  orders: 22,
-                  visitors: 520,
-                  conversion: 4.2,
-                },
-                {
-                  date: "Jan 15",
-                  revenue: 3800,
-                  orders: 20,
-                  visitors: 480,
-                  conversion: 4.1,
-                },
-                {
-                  date: "Jan 22",
-                  revenue: 5100,
-                  orders: 28,
-                  visitors: 650,
-                  conversion: 4.3,
-                },
-                {
-                  date: "Jan 29",
-                  revenue: 4600,
-                  orders: 24,
-                  visitors: 580,
-                  conversion: 4.1,
-                },
-              ],
-              topProducts: [
-                {
-                  id: "1",
-                  name: "iPhone 15 Pro Max",
-                  image: "/api/placeholder/32/32",
-                  revenue: 12450.0,
-                  orders: 42,
-                  growth: 23.5,
-                  stock: 15,
-                },
-                {
-                  id: "2",
-                  name: "MacBook Pro M3",
-                  image: "/api/placeholder/32/32",
-                  revenue: 8900.0,
-                  orders: 18,
-                  growth: 15.2,
-                  stock: 8,
-                },
-                {
-                  id: "3",
-                  name: "AirPods Pro",
-                  image: "/api/placeholder/32/32",
-                  revenue: 5600.0,
-                  orders: 28,
-                  growth: -5.1,
-                  stock: 45,
-                },
-              ],
-              customerSegments: [
-                {
-                  segment: "New",
-                  count: 67,
-                  revenue: 15600,
-                  percentage: 43,
-                  color: "#3b82f6",
-                },
-                {
-                  segment: "Returning",
-                  count: 89,
-                  revenue: 30078,
-                  percentage: 57,
-                  color: "#10b981",
-                },
-              ],
-              geographicData: [
-                {
-                  country: "Germany",
-                  orders: 156,
-                  revenue: 32450,
-                  percentage: 45,
-                },
-                {
-                  country: "Austria",
-                  orders: 89,
-                  revenue: 18900,
-                  percentage: 28,
-                },
-                {
-                  country: "Switzerland",
-                  orders: 67,
-                  revenue: 15600,
-                  percentage: 27,
-                },
-              ],
-              deviceData: [
-                {
-                  device: "Desktop",
-                  visitors: 1250,
-                  orders: 89,
-                  conversion: 7.1,
-                  color: "#3b82f6",
-                },
-                {
-                  device: "Mobile",
-                  visitors: 2100,
-                  orders: 134,
-                  conversion: 6.4,
-                  color: "#10b981",
-                },
-                {
-                  device: "Tablet",
-                  visitors: 450,
-                  orders: 11,
-                  conversion: 2.4,
-                  color: "#f59e0b",
-                },
-              ],
-              performanceMetrics: {
-                pageViews: 15678,
-                uniqueVisitors: 3800,
-                bounceRate: 42.3,
-                avgSessionDuration: 4.2,
-                returnCustomerRate: 34.5,
-                customerLifetimeValue: 285.5,
-              },
-              recommendations: [
-                {
-                  type: "opportunity",
-                  title: "Optimize Mobile Experience",
-                  description:
-                    "Mobile conversion rate is 10% lower than desktop. Consider improving mobile checkout flow.",
-                  impact: "high",
-                  actionable: true,
-                },
-                {
-                  type: "warning",
-                  title: "Low Stock Alert",
-                  description:
-                    "iPhone 15 Pro Max has only 15 units left in stock but high demand.",
-                  impact: "medium",
-                  actionable: true,
-                },
-              ],
-            };
-            setData(defaultData);
-            return;
-          }
-          throw new Error("Failed to fetch insights data");
+          throw new Error(`Failed to fetch insights: ${response.status}`);
         }
 
         const result = await response.json();
@@ -564,11 +403,12 @@ export default function VendorInsightsDashboard() {
         }
       } catch (error) {
         console.error("Error loading insights:", error);
-        setError(
+        const errorMessage =
           error instanceof Error
             ? error.message
-            : "Failed to load insights data"
-        );
+            : "Failed to load insights data";
+        setError(errorMessage);
+        toast.error("Failed to load insights data");
       } finally {
         setLoading(false);
       }
@@ -581,8 +421,8 @@ export default function VendorInsightsDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-        <div className="p-6 space-y-6">
+      <div className="bg-gray-50 min-h-screen">
+        <div className="p-6 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -592,8 +432,8 @@ export default function VendorInsightsDashboard() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Skeleton className="h-8 w-28" />
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-7 w-20" />
+              <Skeleton className="h-7 w-16" />
             </div>
           </div>
 
@@ -607,13 +447,13 @@ export default function VendorInsightsDashboard() {
             <div>
               <Card className="border-0 shadow-sm bg-white">
                 <CardHeader className="pb-3">
-                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-4 w-32" />
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="space-y-4">
-                    <Skeleton className="h-[160px] w-full rounded-full mx-auto" />
-                    <div className="space-y-2">
-                      {Array.from({ length: 3 }).map((_, i) => (
+                  <div className="space-y-3">
+                    <Skeleton className="h-[120px] w-full rounded-full mx-auto" />
+                    <div className="space-y-1">
+                      {Array.from({ length: 2 }).map((_, i) => (
                         <div
                           key={i}
                           className="flex items-center justify-between"
@@ -622,10 +462,7 @@ export default function VendorInsightsDashboard() {
                             <Skeleton className="w-2 h-2 rounded-full" />
                             <Skeleton className="h-3 w-16" />
                           </div>
-                          <div className="space-y-1">
-                            <Skeleton className="h-3 w-8" />
-                            <Skeleton className="h-3 w-10" />
-                          </div>
+                          <Skeleton className="h-3 w-8" />
                         </div>
                       ))}
                     </div>
@@ -643,17 +480,17 @@ export default function VendorInsightsDashboard() {
             <div>
               <Card className="border-0 shadow-sm bg-white">
                 <CardHeader className="pb-3">
-                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-4 w-24" />
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <div
                         key={i}
                         className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                       >
                         <div className="flex items-center space-x-2">
-                          <Skeleton className="w-4 h-4" />
+                          <Skeleton className="w-3 h-3" />
                           <Skeleton className="h-3 w-16" />
                         </div>
                         <Skeleton className="h-3 w-12" />
@@ -671,17 +508,20 @@ export default function VendorInsightsDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <div className="bg-gray-50 min-h-screen">
         <div className="p-6">
-          <div className="text-center py-32">
-            <ExclamationTriangleIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="text-center py-20">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Unable to load insights
             </h3>
-            <p className="text-gray-500 mb-6">{error}</p>
+            <p className="text-gray-600 text-sm mb-4">{error}</p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+              size="sm"
+              className="cursor-pointer"
             >
               Try Again
             </Button>
@@ -696,7 +536,7 @@ export default function VendorInsightsDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
+    <div className="bg-gray-50 min-h-screen">
       <div className="p-6 space-y-6">
         {/* Header - matching dashboard style */}
         <div className="flex items-center justify-between">
@@ -708,7 +548,7 @@ export default function VendorInsightsDashboard() {
           </div>
           <div className="flex items-center space-x-2">
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-28 h-8 bg-white border-gray-200 text-xs cursor-pointer">
+              <SelectTrigger className="w-24 h-7 bg-white border-gray-200 text-xs cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -718,10 +558,7 @@ export default function VendorInsightsDashboard() {
                 <SelectItem value="1y">1 year</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              size="sm"
-              className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-3 text-xs cursor-pointer"
-            >
+            <Button size="sm" className="h-7 px-3 text-xs cursor-pointer">
               <ArrowDownTrayIcon className="w-3 h-3 mr-1.5" />
               Export
             </Button>
@@ -771,21 +608,21 @@ export default function VendorInsightsDashboard() {
           />
         </motion.div>
 
-        {/* Charts Section - compact layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* Professional Charts Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Revenue Trend Chart */}
           <div className="xl:col-span-2">
             <Card className="border-0 shadow-sm bg-white">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-semibold text-gray-900">
-                    Revenue Trend
+                    Performance Trend
                   </CardTitle>
                   <Select
                     value={selectedMetric}
                     onValueChange={setSelectedMetric}
                   >
-                    <SelectTrigger className="w-24 h-7 text-xs cursor-pointer">
+                    <SelectTrigger className="w-20 h-6 text-xs cursor-pointer">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -797,7 +634,7 @@ export default function VendorInsightsDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={data.timeSeriesData}>
                     <defs>
                       <linearGradient
@@ -809,24 +646,33 @@ export default function VendorInsightsDashboard() {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#0f172a"
+                          stopColor="#3b82f6"
                           stopOpacity={0.3}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#0f172a"
+                          stopColor="#3b82f6"
                           stopOpacity={0}
                         />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} />
-                    <YAxis stroke="#64748b" fontSize={10} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#64748b"
+                      fontSize={10}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={10}
+                      tick={{ fontSize: 10 }}
+                    />
                     <Tooltip content={<CustomTooltip />} />
                     <Area
                       type="monotone"
                       dataKey={selectedMetric}
-                      stroke="#0f172a"
+                      stroke="#3b82f6"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorRevenue)"
@@ -846,15 +692,15 @@ export default function VendorInsightsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex flex-col space-y-4">
-                  <ResponsiveContainer width="100%" height={160}>
+                <div className="flex flex-col space-y-3">
+                  <ResponsiveContainer width="100%" height={120}>
                     <PieChart>
                       <Pie
                         data={data.customerSegments}
                         cx="50%"
                         cy="50%"
-                        innerRadius={35}
-                        outerRadius={65}
+                        innerRadius={25}
+                        outerRadius={50}
                         paddingAngle={3}
                         dataKey="count"
                       >
@@ -862,11 +708,11 @@ export default function VendorInsightsDashboard() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {data.customerSegments.map((segment) => (
                       <div
                         key={segment.segment}
@@ -886,7 +732,7 @@ export default function VendorInsightsDashboard() {
                             {segment.count}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {segment.percentage}%
+                            {segment.percentage.toFixed(0)}%
                           </p>
                         </div>
                       </div>
@@ -899,7 +745,7 @@ export default function VendorInsightsDashboard() {
         </div>
 
         {/* Top Products and Performance */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Top Products */}
           <div className="xl:col-span-3">
             <Card className="border-0 shadow-sm bg-white">
@@ -910,17 +756,17 @@ export default function VendorInsightsDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 {data.topProducts.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {data.topProducts.map((product, index) => (
                       <motion.div
                         key={product.id}
                         whileHover={{ x: 2 }}
-                        className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                           <Badge
                             variant="secondary"
-                            className="text-xs font-bold w-6 h-5 rounded text-center p-0"
+                            className="text-xs font-bold w-5 h-4 rounded text-center p-0 flex items-center justify-center"
                           >
                             {index + 1}
                           </Badge>
@@ -928,13 +774,13 @@ export default function VendorInsightsDashboard() {
                             <Image
                               src={product.image}
                               alt={product.name}
-                              width={32}
-                              height={32}
+                              width={24}
+                              height={24}
                               className="rounded-md object-cover"
                             />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-48">
                               {product.name}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -967,7 +813,7 @@ export default function VendorInsightsDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6">
+                  <div className="text-center py-8">
                     <ChartBarIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-xs text-gray-500">
                       No product data available
@@ -987,7 +833,7 @@ export default function VendorInsightsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {[
                     {
                       label: "Page Views",
@@ -1021,7 +867,7 @@ export default function VendorInsightsDashboard() {
                       className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center space-x-2">
-                        <metric.icon className="w-4 h-4 text-gray-600" />
+                        <metric.icon className="w-3 h-3 text-gray-600" />
                         <span className="text-xs font-medium text-gray-700">
                           {metric.label}
                         </span>
@@ -1038,7 +884,7 @@ export default function VendorInsightsDashboard() {
         </div>
 
         {/* Geographic and Device Data */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Geographic Distribution */}
           <Card className="border-0 shadow-sm bg-white">
             <CardHeader className="pb-3">
@@ -1047,14 +893,14 @@ export default function VendorInsightsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {data.geographicData.map((country) => (
                   <div
                     key={country.country}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                   >
                     <div className="flex items-center space-x-2">
-                      <MapPinIcon className="w-4 h-4 text-gray-600" />
+                      <MapPinIcon className="w-3 h-3 text-gray-600" />
                       <span className="text-sm font-medium text-gray-900">
                         {country.country}
                       </span>
@@ -1081,21 +927,30 @@ export default function VendorInsightsDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={data.deviceData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="device" stroke="#64748b" fontSize={10} />
-                  <YAxis stroke="#64748b" fontSize={10} />
+                  <XAxis
+                    dataKey="device"
+                    stroke="#64748b"
+                    fontSize={10}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={10}
+                    tick={{ fontSize: 10 }}
+                  />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
                     dataKey="visitors"
-                    fill="#0f172a"
-                    radius={[4, 4, 0, 0]}
+                    fill="#3b82f6"
+                    radius={[3, 3, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
 
-              <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="grid grid-cols-3 gap-2 mt-3">
                 {data.deviceData.map((device) => {
                   const IconComponent =
                     device.device === "Desktop"
@@ -1109,12 +964,12 @@ export default function VendorInsightsDashboard() {
                       key={device.device}
                       className="text-center p-2 bg-gray-50 rounded-lg"
                     >
-                      <IconComponent className="w-5 h-5 text-gray-600 mx-auto mb-1" />
+                      <IconComponent className="w-4 h-4 text-gray-600 mx-auto mb-1" />
                       <p className="text-xs font-medium text-gray-900">
                         {device.device}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {device.conversion}% conv.
+                        {device.conversion.toFixed(1)}% conv.
                       </p>
                     </div>
                   );

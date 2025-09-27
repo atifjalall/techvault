@@ -17,11 +17,11 @@ import {
   XCircleIcon,
   ClockIcon,
   CheckCircleIcon,
-  InformationCircleIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,15 +31,25 @@ import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 
+// Updated OrderItem interface with variant support
 interface OrderItem {
   id: string;
   productId: string;
+  variantId?: string | null;
   name: string;
+  variantName?: string | null;
   brand?: string;
   image: string;
   slug: string;
   quantity: number;
   price: number;
+  variantAttributes?: {
+    color?: string;
+    storage?: string;
+    ram?: string;
+    size?: string;
+    material?: string;
+  } | null;
   vendor: {
     name: string;
   };
@@ -90,6 +100,7 @@ interface OrderDetails {
     createdAt: string;
   }>;
   itemCount: number;
+  vendorCount: number;
   deliveryEstimate: {
     status: string;
     message: string;
@@ -164,7 +175,7 @@ function StatusBadge({ status }: { status: string }) {
   if (!config) return null;
 
   return (
-    <Badge variant="outline" className={`text-sm ${config.color}`}>
+    <Badge variant="default" className={`text-xs ${config.color}`}>
       {config.label}
     </Badge>
   );
@@ -198,12 +209,12 @@ function DeliveryEstimate({ estimate }: { estimate: any }) {
   const getIcon = () => {
     switch (estimate.status) {
       case "delivered":
-        return <CheckCircleIcon className="w-5 h-5 text-green-600" />;
+        return <CheckCircleIcon className="w-4 h-4 text-green-600" />;
       case "today":
       case "tomorrow":
-        return <TruckIcon className="w-5 h-5 text-orange-600" />;
+        return <TruckIcon className="w-4 h-4 text-orange-600" />;
       default:
-        return <ClockIcon className="w-5 h-5 text-blue-600" />;
+        return <ClockIcon className="w-4 h-4 text-blue-600" />;
     }
   };
 
@@ -220,12 +231,12 @@ function DeliveryEstimate({ estimate }: { estimate: any }) {
   };
 
   return (
-    <div className={`flex items-center space-x-2 ${getTextColor()}`}>
+    <div className={`flex items-center space-x-1 ${getTextColor()}`}>
       {getIcon()}
       <div>
-        <p className="font-medium">{estimate.message}</p>
+        <p className="text-sm font-medium">{estimate.message}</p>
         {estimate.date && (
-          <p className="text-sm opacity-75">
+          <p className="text-xs opacity-75">
             {format(new Date(estimate.date), "MMM d, yyyy")}
           </p>
         )}
@@ -234,15 +245,89 @@ function DeliveryEstimate({ estimate }: { estimate: any }) {
   );
 }
 
-// Loading Skeleton
+// Enhanced Product Display Component with Variant Support
+function ProductDisplay({ item }: { item: OrderItem }) {
+  const displayName = item.variantName
+    ? `${item.name} - ${item.variantName}`
+    : item.name;
+
+  const variantDetails = [];
+  if (item.variantAttributes?.color) {
+    variantDetails.push(`Color: ${item.variantAttributes.color}`);
+  }
+  if (item.variantAttributes?.storage) {
+    variantDetails.push(`Storage: ${item.variantAttributes.storage}`);
+  }
+  if (item.variantAttributes?.ram) {
+    variantDetails.push(`RAM: ${item.variantAttributes.ram}`);
+  }
+  if (item.variantAttributes?.size) {
+    variantDetails.push(`Size: ${item.variantAttributes.size}`);
+  }
+  if (item.variantAttributes?.material) {
+    variantDetails.push(`Material: ${item.variantAttributes.material}`);
+  }
+
+  return (
+    <div className="flex items-center space-x-3 p-3 border border-gray-100 rounded-lg">
+      <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+        {item.image ? (
+          <Image
+            src={item.image}
+            alt={displayName}
+            width={48}
+            height={48}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <span className="text-xs font-medium text-gray-500">
+              {item.name.substring(0, 2).toUpperCase()}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <Link
+          href={`/products/${item.slug}`}
+          className="block hover:text-gray-700 transition-colors cursor-pointer"
+        >
+          <h3 className="text-sm font-medium text-gray-900 truncate">
+            {displayName}
+          </h3>
+          <div className="flex items-center space-x-2 text-xs text-gray-500">
+            {item.brand && <span>{item.brand}</span>}
+            {item.brand && <span>•</span>}
+            <span>Sold by {item.vendor.name}</span>
+          </div>
+          {variantDetails.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              {variantDetails.join(" • ")}
+            </div>
+          )}
+        </Link>
+        <p className="text-xs text-gray-500 mt-1">Quantity: {item.quantity}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-medium text-gray-900">
+          {formatPrice(item.price * item.quantity)}
+        </p>
+        <p className="text-xs text-gray-500">{formatPrice(item.price)} each</p>
+      </div>
+    </div>
+  );
+}
+
+// Loading Skeleton (exact same as orders page)
 function OrderDetailSkeleton() {
   return (
     <div className="space-y-6">
+      {/* Header Skeleton */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6">
           <div className="space-y-4">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96" />
           </div>
         </CardContent>
       </Card>
@@ -434,8 +519,8 @@ export default function OrderDetailPage({
               {error}
             </h3>
             <p className="text-gray-500 mb-6">
-              The order you&apos;re looking for doesn&apos;t exist or you
-              don&apos;t have access to it.
+              The order you&apos;re looking for doesn&apos;t exist or you don&apos;t have
+              access to it.
             </p>
             <Link href="/orders">
               <Button className="bg-gray-900 hover:bg-gray-800 text-white">
@@ -470,7 +555,7 @@ export default function OrderDetailPage({
               {/* Back Button */}
               <Link
                 href="/orders"
-                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
               >
                 <ArrowLeftIcon className="w-4 h-4 mr-1" />
                 Back to Orders
@@ -482,10 +567,10 @@ export default function OrderDetailPage({
                   <div className="flex items-center space-x-2">
                     <XCircleIcon className="w-5 h-5 text-red-600" />
                     <div>
-                      <p className="font-medium text-red-800">
+                      <p className="text-sm font-medium text-red-800">
                         Order Cancelled
                       </p>
-                      <p className="text-sm text-red-700">
+                      <p className="text-xs text-red-700">
                         This order was cancelled and any payment has been
                         refunded.
                       </p>
@@ -497,29 +582,34 @@ export default function OrderDetailPage({
               {/* Order Title */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-xl font-bold text-gray-900">
                     Order #
                     {orderData.orderNumber?.slice(-8).toUpperCase() ||
                       orderData.id.slice(-8).toUpperCase()}
                   </h1>
-                  <div className="flex items-center space-x-4 mt-2">
+                  <div className="flex items-center space-x-2 mt-2">
                     <StatusBadge status={orderData.status} />
                     <PaymentStatusBadge status={orderData.paymentStatus} />
                     {orderData.priority !== "NORMAL" && (
-                      <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-                        {orderData.priority} Priority
+                      <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+                        {orderData.priority}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center space-x-1 text-sm text-gray-500 mt-2">
-                    <CalendarDaysIcon className="w-4 h-4" />
-                    <span>
-                      Placed on{" "}
-                      {format(
-                        new Date(orderData.createdAt),
-                        "MMM d, yyyy 'at' h:mm a"
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mt-2">
+                    <div className="flex items-center space-x-1">
+                      <CalendarDaysIcon className="w-4 h-4" />
+                      <span>
+                        {format(new Date(orderData.createdAt), "MMM d, yyyy")}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <ShoppingBagIcon className="w-4 h-4" />
+                      <span>{orderData.itemCount} items</span>
+                      {orderData.vendorCount > 1 && (
+                        <span>from {orderData.vendorCount} vendors</span>
                       )}
-                    </span>
+                    </div>
                   </div>
                   {statusConfig && (
                     <p className="text-sm text-gray-600 mt-2">
@@ -532,16 +622,20 @@ export default function OrderDetailPage({
                   {canCancelOrder && (
                     <Button
                       onClick={() => setShowCancelModal(true)}
-                      variant="outline"
+                      variant="danger"
                       size="sm"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
                     >
-                      <XCircleIcon className="w-4 h-4 mr-2" />
+                      <XCircleIcon className="w-4 h-4 mr-1" />
                       Cancel Order
                     </Button>
                   )}
-                  <Button onClick={handlePrint} variant="outline" size="sm">
-                    <PrinterIcon className="w-4 h-4 mr-2" />
+                  <Button
+                    onClick={handlePrint}
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    <PrinterIcon className="w-4 h-4 mr-1" />
                     Print
                   </Button>
                 </div>
@@ -559,59 +653,9 @@ export default function OrderDetailPage({
                 <CardTitle className="text-lg">Order Items</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {orderData.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center space-x-4 p-4 border border-gray-100 rounded-lg"
-                    >
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {item.image ? (
-                          <Image
-                            src={item.image}
-                            alt={item.name}
-                            width={64}
-                            height={64}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-500">
-                              {item.name.substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/products/${item.slug}`}
-                          className="block hover:text-gray-700"
-                        >
-                          <h3 className="font-medium text-gray-900">
-                            {item.name}
-                          </h3>
-                          {item.brand && (
-                            <p className="text-sm text-gray-600">
-                              {item.brand}
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-500">
-                            Sold by {item.vendor.name}
-                          </p>
-                        </Link>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Quantity: {item.quantity}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
-                          {formatPrice(item.price * item.quantity)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatPrice(item.price)} each
-                        </p>
-                      </div>
-                    </div>
+                    <ProductDisplay key={item.id} item={item} />
                   ))}
                 </div>
               </CardContent>
@@ -779,7 +823,7 @@ export default function OrderDetailPage({
               <CardContent>
                 <div className="space-y-3">
                   {orderData.statusHistory?.length > 0 ? (
-                    orderData.statusHistory.map((history, index) => (
+                    orderData.statusHistory.map((history) => (
                       <div
                         key={history.id}
                         className="flex items-start space-x-3"
@@ -787,9 +831,6 @@ export default function OrderDetailPage({
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-900">
-                              {history.status.replace(/_/g, " ")}
-                            </p>
                             <p className="text-xs text-gray-500">
                               {format(
                                 new Date(history.createdAt),
@@ -862,14 +903,14 @@ export default function OrderDetailPage({
                   setCancelReason("");
                 }}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 cursor-pointer"
                 disabled={cancelling}
               >
                 Keep Order
               </Button>
               <Button
                 onClick={handleCancelOrder}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                variant="danger"
                 disabled={cancelling}
               >
                 {cancelling ? "Cancelling..." : "Cancel Order"}

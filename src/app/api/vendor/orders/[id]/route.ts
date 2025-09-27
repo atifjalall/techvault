@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// src/app/api/vendor/orders/[id]/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -66,18 +67,33 @@ export async function GET(
       );
     }
 
-    // Fetch order with all related data
+    // Fetch order with all related data - both regular and variant items
     const order = await db.order.findFirst({
       where: {
         id: resolvedParams.id,
-        // Only show orders that contain vendor's products
-        items: {
-          some: {
-            product: {
-              vendorId: user.id,
+        // Only show orders that contain vendor's products (either regular or variant)
+        OR: [
+          {
+            items: {
+              some: {
+                product: {
+                  vendorId: user.id,
+                },
+              },
             },
           },
-        },
+          {
+            variantItems: {
+              some: {
+                productVariant: {
+                  product: {
+                    vendorId: user.id,
+                  },
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
         user: {
@@ -88,8 +104,8 @@ export async function GET(
             phone: true,
           },
         },
+        // Regular order items (legacy support)
         items: {
-          // Only include items that belong to this vendor
           where: {
             product: {
               vendorId: user.id,
@@ -101,7 +117,29 @@ export async function GET(
                 id: true,
                 name: true,
                 images: true,
-                price: true,
+              },
+            },
+          },
+        },
+        // Variant order items (new system)
+        variantItems: {
+          where: {
+            productVariant: {
+              product: {
+                vendorId: user.id,
+              },
+            },
+          },
+          include: {
+            productVariant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                  },
+                },
               },
             },
           },
@@ -122,18 +160,78 @@ export async function GET(
     }
 
     // Calculate vendor-specific totals (only for their items)
-    const vendorSubtotal = order.items.reduce((sum, item) => {
+    const regularItemsSubtotal = order.items.reduce((sum, item) => {
       return sum + Number(item.price) * item.quantity;
     }, 0);
 
-    // Create modified order object with vendor-specific calculations
+    const variantItemsSubtotal = order.variantItems.reduce((sum, item) => {
+      return sum + Number(item.price) * item.quantity;
+    }, 0);
+
+    const vendorSubtotal = regularItemsSubtotal + variantItemsSubtotal;
+
+    // Combine regular and variant items for unified response
+    const allItems = [
+      // Regular items (legacy)
+      ...order.items.map((item) => ({
+        id: item.id,
+        type: "regular" as const,
+        productId: item.productId,
+        variantId: null,
+        productName: item.product.name,
+        variantName: null,
+        image: item.product.images[0] || "",
+        quantity: item.quantity,
+        price: Number(item.price),
+        total: Number(item.price) * item.quantity,
+        variantDetails: null,
+      })),
+      // Variant items (new system)
+      ...order.variantItems.map((item) => {
+        const snapshot = item.variantSnapshot as any;
+        const variant = item.productVariant;
+
+        // Get the best available image
+        const image =
+          variant.images?.[0] ||
+          variant.thumbnailImage ||
+          variant.product.images[0] ||
+          "";
+
+        return {
+          id: item.id,
+          type: "variant" as const,
+          productId: variant.product.id,
+          variantId: item.productVariantId,
+          productName: variant.product.name,
+          variantName:
+            snapshot?.variantName || variant.variantName || "Variant",
+          image: image,
+          quantity: item.quantity,
+          price: Number(item.price),
+          total: Number(item.price) * item.quantity,
+          variantDetails: {
+            color: snapshot?.color || variant.color,
+            storage: snapshot?.storage || variant.storage,
+            ram: snapshot?.ram || variant.ram,
+            size: snapshot?.size || variant.size,
+            material: snapshot?.material || variant.material,
+            attributes: snapshot?.attributes || variant.attributes,
+          },
+        };
+      }),
+    ];
+
+    // Create response with vendor-specific calculations
     const vendorOrder = {
       ...order,
+      items: allItems,
       subtotal: order.subtotal ? Number(order.subtotal) : vendorSubtotal,
       total: Number(order.total),
       taxAmount: Number(order.taxAmount || 0),
       shippingCost: Number(order.shippingCost || 0),
       discountAmount: Number(order.discountAmount || 0),
+      vendorSubtotal: vendorSubtotal,
     };
 
     return NextResponse.json({
@@ -185,13 +283,28 @@ export async function PATCH(
     const existingOrder = await db.order.findFirst({
       where: {
         id: resolvedParams.id,
-        items: {
-          some: {
-            product: {
-              vendorId: user.id,
+        OR: [
+          {
+            items: {
+              some: {
+                product: {
+                  vendorId: user.id,
+                },
+              },
             },
           },
-        },
+          {
+            variantItems: {
+              some: {
+                productVariant: {
+                  product: {
+                    vendorId: user.id,
+                  },
+                },
+              },
+            },
+          },
+        ],
       },
     });
 
@@ -265,7 +378,28 @@ export async function PATCH(
                   id: true,
                   name: true,
                   images: true,
-                  price: true,
+                },
+              },
+            },
+          },
+          variantItems: {
+            where: {
+              productVariant: {
+                product: {
+                  vendorId: user.id,
+                },
+              },
+            },
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      images: true,
+                    },
+                  },
                 },
               },
             },
@@ -380,13 +514,72 @@ export async function PATCH(
       return order;
     });
 
-    // Calculate vendor-specific totals
-    const vendorSubtotal = updatedOrder.items.reduce((sum, item) => {
+    // Calculate vendor-specific totals and combine items
+    const regularItemsSubtotal = updatedOrder.items.reduce((sum, item) => {
       return sum + Number(item.price) * item.quantity;
     }, 0);
 
+    const variantItemsSubtotal = updatedOrder.variantItems.reduce(
+      (sum, item) => {
+        return sum + Number(item.price) * item.quantity;
+      },
+      0
+    );
+
+    const vendorSubtotal = regularItemsSubtotal + variantItemsSubtotal;
+
+    // Combine regular and variant items for response
+    const allItems = [
+      ...updatedOrder.items.map((item) => ({
+        id: item.id,
+        type: "regular" as const,
+        productId: item.productId,
+        variantId: null,
+        productName: item.product.name,
+        variantName: null,
+        image: item.product.images[0] || "",
+        quantity: item.quantity,
+        price: Number(item.price),
+        total: Number(item.price) * item.quantity,
+        variantDetails: null,
+      })),
+      ...updatedOrder.variantItems.map((item) => {
+        const snapshot = item.variantSnapshot as any;
+        const variant = item.productVariant;
+
+        const image =
+          variant.images?.[0] ||
+          variant.thumbnailImage ||
+          variant.product.images[0] ||
+          "";
+
+        return {
+          id: item.id,
+          type: "variant" as const,
+          productId: variant.product.id,
+          variantId: item.productVariantId,
+          productName: variant.product.name,
+          variantName:
+            snapshot?.variantName || variant.variantName || "Variant",
+          image: image,
+          quantity: item.quantity,
+          price: Number(item.price),
+          total: Number(item.price) * item.quantity,
+          variantDetails: {
+            color: snapshot?.color || variant.color,
+            storage: snapshot?.storage || variant.storage,
+            ram: snapshot?.ram || variant.ram,
+            size: snapshot?.size || variant.size,
+            material: snapshot?.material || variant.material,
+            attributes: snapshot?.attributes || variant.attributes,
+          },
+        };
+      }),
+    ];
+
     const vendorOrder = {
       ...updatedOrder,
+      items: allItems,
       subtotal: updatedOrder.subtotal
         ? Number(updatedOrder.subtotal)
         : vendorSubtotal,
@@ -394,6 +587,7 @@ export async function PATCH(
       taxAmount: Number(updatedOrder.taxAmount || 0),
       shippingCost: Number(updatedOrder.shippingCost || 0),
       discountAmount: Number(updatedOrder.discountAmount || 0),
+      vendorSubtotal: vendorSubtotal,
     };
 
     return NextResponse.json({

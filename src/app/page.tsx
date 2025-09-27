@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import PromoBar from "@/components/layout/PromoBar";
 import Footer from "@/components/layout/Footer";
 import HeroCarousel from "@/components/home/HeroCarousel";
 import NewArrivals from "@/components/home/NewArrivals";
@@ -37,9 +36,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Promotional Banner */}
-      <PromoBar />
-
       {/* Main Content */}
       <main>
         {/* Hero Carousel Section */}
@@ -274,39 +270,6 @@ export default function HomePage() {
                 </motion.div>
               ))}
             </motion.div>
-          </div>
-        </section>
-
-        {/* Compact Stats Section */}
-        <section className="py-10 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              {[
-                { number: "10K+", label: "Products" },
-                { number: "50K+", label: "Customers" },
-                { number: "99.9%", label: "Uptime" },
-                { number: "24/7", label: "Support" },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  transition={{
-                    duration: 0.5,
-                    delay: index * 0.1,
-                    type: "spring",
-                    stiffness: 300,
-                  }}
-                  className="cursor-pointer"
-                >
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-                    {stat.number}
-                  </div>
-                  <div className="text-xs text-gray-600">{stat.label}</div>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </section>
       </main>

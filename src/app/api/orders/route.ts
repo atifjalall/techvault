@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
       db.order.findMany({
         where,
         include: {
+          // Include regular order items (legacy)
           items: {
             include: {
               product: {
@@ -106,6 +107,37 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          // Include variant-specific order items
+          variantItems: {
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      images: true,
+                      slug: true,
+                      brand: {
+                        select: { name: true },
+                      },
+                      vendor: {
+                        select: {
+                          id: true,
+                          name: true,
+                          vendorSettings: {
+                            select: {
+                              storeName: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
@@ -121,7 +153,68 @@ export async function GET(request: NextRequest) {
         : order.items.reduce(
             (sum, item) => sum + Number(item.price) * item.quantity,
             0
+          ) +
+          order.variantItems.reduce(
+            (sum, item) => sum + Number(item.price) * item.quantity,
+            0
           );
+
+      // Combine regular items and variant items
+      const allItems = [
+        // Legacy order items
+        ...order.items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          variantId: null,
+          name: item.product.name,
+          brand: item.product.brand?.name,
+          image: item.product.images[0] || "",
+          slug: item.product.slug,
+          quantity: item.quantity,
+          price: Number(item.price),
+          variantName: null,
+          variantAttributes: null,
+          vendor: {
+            name:
+              item.product.vendor?.vendorSettings?.storeName ||
+              item.product.vendor?.name ||
+              "TechVault",
+          },
+        })),
+        // Variant-specific items
+        ...order.variantItems.map((item) => {
+          const snapshot = item.variantSnapshot as any;
+          return {
+            id: item.id,
+            productId: item.productVariant.product.id,
+            variantId: item.productVariantId,
+            name: item.productVariant.product.name,
+            brand: item.productVariant.product.brand?.name,
+            image:
+              item.productVariant.images[0] ||
+              item.productVariant.product.images[0] ||
+              "",
+            slug: item.productVariant.product.slug,
+            quantity: item.quantity,
+            price: Number(item.price),
+            variantName:
+              snapshot?.variantName || item.productVariant.variantName,
+            variantAttributes: {
+              color: snapshot?.color,
+              storage: snapshot?.storage,
+              ram: snapshot?.ram,
+              size: snapshot?.size,
+              material: snapshot?.material,
+            },
+            vendor: {
+              name:
+                item.productVariant.product.vendor?.vendorSettings?.storeName ||
+                item.productVariant.product.vendor?.name ||
+                "TechVault",
+            },
+          };
+        }),
+      ];
 
       return {
         id: order.id,
@@ -150,28 +243,12 @@ export async function GET(request: NextRequest) {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
 
-        // Items with vendor info
-        items: order.items.map((item) => ({
-          id: item.id,
-          productId: item.productId,
-          name: item.product.name,
-          brand: item.product.brand?.name,
-          image: item.product.images[0] || "",
-          slug: item.product.slug,
-          quantity: item.quantity,
-          price: Number(item.price),
-          vendor: {
-            name:
-              item.product.vendor?.vendorSettings?.storeName ||
-              item.product.vendor?.name ||
-              "TechVault",
-          },
-        })),
+        // Combined items (both regular and variant items)
+        items: allItems,
 
         // Summary info
-        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-        vendorCount: new Set(order.items.map((item) => item.product.vendor?.id))
-          .size,
+        itemCount: allItems.reduce((sum, item) => sum + item.quantity, 0),
+        vendorCount: new Set(allItems.map((item) => item.vendor.name)).size,
 
         // Delivery estimate
         deliveryEstimate: getQuickDeliveryEstimate(order),
@@ -257,7 +334,7 @@ function getQuickDeliveryEstimate(order: any) {
   }
 }
 
-// POST /api/orders - Create new order with correct payment status
+// POST /api/orders - Create new order with variant support
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -314,35 +391,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get user's cart
-    const cartItems = await db.cartItem.findMany({
-      where: { userId: user.id },
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            stock: true,
-            isActive: true,
+    // Get user's cart - both regular cart items and variant cart items
+    const [regularCartItems, variantCartItems] = await Promise.all([
+      db.cartItem.findMany({
+        where: { userId: user.id },
+        include: {
+          product: {
+            include: {
+              variants: {
+                where: { isActive: true },
+                orderBy: { price: "asc" },
+                take: 1, // Get cheapest variant for fallback pricing
+              },
+            },
           },
         },
-      },
-    });
+      }),
+      db.variantCartItem.findMany({
+        where: { userId: user.id },
+        include: {
+          productVariant: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
 
-    if (cartItems.length === 0) {
+    if (regularCartItems.length === 0 && variantCartItems.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
     // Validate stock and calculate total
     let subtotal = 0;
-    const orderItems: {
+    const regularOrderItems: {
       productId: string;
       quantity: number;
       price: Decimal;
     }[] = [];
+    const variantOrderItems: {
+      productVariantId: string;
+      quantity: number;
+      price: Decimal;
+      variantSnapshot: any;
+    }[] = [];
 
-    for (const cartItem of cartItems) {
+    // Process regular cart items (legacy support)
+    for (const cartItem of regularCartItems) {
       const product = cartItem.product;
 
       if (!product.isActive) {
@@ -352,22 +454,71 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (product.stock < cartItem.quantity) {
+      // For regular items, use the cheapest variant's price and stock
+      const cheapestVariant = product.variants[0];
+      if (!cheapestVariant || cheapestVariant.stock < cartItem.quantity) {
         return NextResponse.json(
           {
-            error: `Insufficient stock for "${product.name}". Only ${product.stock} available.`,
+            error: `Insufficient stock for "${product.name}". Only ${cheapestVariant?.stock || 0} available.`,
           },
           { status: 400 }
         );
       }
 
-      const itemTotal = Number(product.price) * cartItem.quantity;
+      const itemTotal = Number(cheapestVariant.price) * cartItem.quantity;
       subtotal += itemTotal;
 
-      orderItems.push({
+      regularOrderItems.push({
         productId: product.id,
         quantity: cartItem.quantity,
-        price: product.price,
+        price: cheapestVariant.price,
+      });
+    }
+
+    // Process variant cart items
+    for (const cartItem of variantCartItems) {
+      const variant = cartItem.productVariant;
+      const product = variant.product;
+
+      if (!product.isActive || !variant.isActive) {
+        return NextResponse.json(
+          {
+            error: `Product variant "${variant.variantName}" is no longer available`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (variant.stock < cartItem.quantity) {
+        return NextResponse.json(
+          {
+            error: `Insufficient stock for "${variant.variantName}". Only ${variant.stock} available.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const itemTotal = Number(variant.price) * cartItem.quantity;
+      subtotal += itemTotal;
+
+      // Create snapshot of variant details for historical record
+      const variantSnapshot = {
+        variantName: variant.variantName,
+        color: variant.color,
+        colorHex: variant.colorHex,
+        storage: variant.storage,
+        ram: variant.ram,
+        size: variant.size,
+        length: variant.length,
+        material: variant.material,
+        attributes: variant.attributes,
+      };
+
+      variantOrderItems.push({
+        productVariantId: variant.id,
+        quantity: cartItem.quantity,
+        price: variant.price,
+        variantSnapshot,
       });
     }
 
@@ -438,7 +589,7 @@ export async function POST(request: NextRequest) {
             userEmail: user.email,
             orderTotal: total.toString(),
           },
-          description: `TechVault Order - ${cartItems.length} items`,
+          description: `TechVault Order - ${regularCartItems.length + variantCartItems.length} items`,
         });
 
         if (paymentIntent.status !== "succeeded") {
@@ -486,9 +637,18 @@ export async function POST(request: NextRequest) {
           paymentIntentId,
           paymentStatus: "COMPLETED", // Payment is completed since we only reach here if payment succeeded
           paymentMethod: paymentMethod.cardBrand || "Card",
-          items: {
-            create: orderItems,
-          },
+          items:
+            regularOrderItems.length > 0
+              ? {
+                  create: regularOrderItems,
+                }
+              : undefined,
+          variantItems:
+            variantOrderItems.length > 0
+              ? {
+                  create: variantOrderItems,
+                }
+              : undefined,
         },
         include: {
           items: {
@@ -497,6 +657,20 @@ export async function POST(request: NextRequest) {
                 include: {
                   brand: { select: { name: true } },
                   vendor: { select: { id: true, name: true, email: true } },
+                },
+              },
+            },
+          },
+          variantItems: {
+            include: {
+              productVariant: {
+                include: {
+                  product: {
+                    include: {
+                      brand: { select: { name: true } },
+                      vendor: { select: { id: true, name: true, email: true } },
+                    },
+                  },
                 },
               },
             },
@@ -514,14 +688,46 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Update product stock and sales
-      for (const cartItem of cartItems) {
+      // Update stock for regular items (legacy support)
+      for (const cartItem of regularCartItems) {
+        const cheapestVariant = cartItem.product.variants[0];
+        if (cheapestVariant) {
+          await tx.productVariant.update({
+            where: { id: cheapestVariant.id },
+            data: {
+              stock: {
+                decrement: cartItem.quantity,
+              },
+            },
+          });
+        }
+
+        // Update product-level sold count
         await tx.product.update({
           where: { id: cartItem.productId },
+          data: {
+            sold: {
+              increment: cartItem.quantity,
+            },
+          },
+        });
+      }
+
+      // Update stock for variant items
+      for (const cartItem of variantCartItems) {
+        await tx.productVariant.update({
+          where: { id: cartItem.productVariantId },
           data: {
             stock: {
               decrement: cartItem.quantity,
             },
+          },
+        });
+
+        // Update product-level sold count
+        await tx.product.update({
+          where: { id: cartItem.productVariant.product.id },
+          data: {
             sold: {
               increment: cartItem.quantity,
             },
@@ -541,7 +747,7 @@ export async function POST(request: NextRequest) {
         }
       >();
 
-      // Group items by vendor
+      // Group regular items by vendor
       newOrder.items.forEach((item) => {
         const vendor = item.product.vendor;
         if (vendor) {
@@ -559,6 +765,32 @@ export async function POST(request: NextRequest) {
           const vendorData = vendorNotifications.get(vendorId)!;
           vendorData.items.push({
             name: item.product.name,
+            quantity: item.quantity,
+            price: Number(item.price),
+          });
+          vendorData.totalAmount += Number(item.price) * item.quantity;
+        }
+      });
+
+      // Group variant items by vendor
+      newOrder.variantItems.forEach((item) => {
+        const vendor = item.productVariant.product.vendor;
+        if (vendor) {
+          const vendorId = vendor.id;
+          if (!vendorNotifications.has(vendorId)) {
+            vendorNotifications.set(vendorId, {
+              vendorId,
+              vendorName: vendor.name || "Vendor",
+              vendorEmail: vendor.email,
+              items: [],
+              totalAmount: 0,
+            });
+          }
+
+          const vendorData = vendorNotifications.get(vendorId)!;
+          const snapshot = item.variantSnapshot as any;
+          vendorData.items.push({
+            name: `${item.productVariant.product.name} - ${snapshot?.variantName || "Variant"}`,
             quantity: item.quantity,
             price: Number(item.price),
           });
@@ -594,10 +826,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Clear user's cart
-      await tx.cartItem.deleteMany({
-        where: { userId: user.id },
-      });
+      // Clear user's cart (both regular and variant items)
+      await Promise.all([
+        tx.cartItem.deleteMany({
+          where: { userId: user.id },
+        }),
+        tx.variantCartItem.deleteMany({
+          where: { userId: user.id },
+        }),
+      ]);
 
       return newOrder;
     });
@@ -623,6 +860,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform order response
+    const allItems = [
+      ...order.items.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        variantId: null,
+        name: item.product.name,
+        brand: item.product.brand?.name,
+        image: item.product.images[0] || "",
+        slug: item.product.slug,
+        quantity: item.quantity,
+        price: Number(item.price),
+        variantName: null,
+      })),
+      ...order.variantItems.map((item) => {
+        const snapshot = item.variantSnapshot as any;
+        return {
+          id: item.id,
+          productId: item.productVariant.product.id,
+          variantId: item.productVariantId,
+          name: item.productVariant.product.name,
+          brand: item.productVariant.product.brand?.name,
+          image:
+            item.productVariant.images[0] ||
+            item.productVariant.product.images[0] ||
+            "",
+          slug: item.productVariant.product.slug,
+          quantity: item.quantity,
+          price: Number(item.price),
+          variantName: snapshot?.variantName,
+        };
+      }),
+    ];
+
     const transformedOrder = {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -632,16 +902,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: order.paymentIntentId,
       paymentStatus: "COMPLETED", // Always completed if we reach here
       createdAt: order.createdAt,
-      items: order.items.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        name: item.product.name,
-        brand: item.product.brand?.name,
-        image: item.product.images[0] || "",
-        slug: item.product.slug,
-        quantity: item.quantity,
-        price: Number(item.price),
-      })),
+      items: allItems,
       totals: {
         subtotal,
         shipping,

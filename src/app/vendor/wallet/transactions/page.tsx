@@ -7,7 +7,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowDownTrayIcon,
-  ArrowUpIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CreditCardIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -20,7 +21,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button1";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -100,8 +101,10 @@ function StatusBadge({ status }: { status: string }) {
   const Icon = config.icon;
 
   return (
-    <Badge className={`text-xs px-2 py-0.5 ${config.className}`}>
-      <Icon className="w-3 h-3 mr-1" />
+    <Badge
+      className={`text-[10px] px-1 py-0.5 ${config.className}`}
+      icon={Icon}
+    >
       {config.label}
     </Badge>
   );
@@ -144,7 +147,12 @@ function TableSkeleton() {
 // Transaction Icon Component
 function TransactionIcon({ type }: { type: string }) {
   const iconConfig = {
-    sale: { icon: ArrowUpIcon, color: "text-green-600", bg: "bg-green-50", rotate: "" },
+    sale: {
+      icon: ArrowTrendingUpIcon,
+      color: "text-green-600",
+      bg: "bg-green-50",
+      rotate: "",
+    },
     payout: {
       icon: ArrowDownTrayIcon,
       color: "text-blue-600",
@@ -152,12 +160,17 @@ function TransactionIcon({ type }: { type: string }) {
       rotate: "",
     },
     refund: {
-      icon: ArrowUpIcon,
+      icon: ArrowTrendingUpIcon,
       color: "text-orange-600",
       bg: "bg-orange-50",
       rotate: "rotate-180",
     },
-    fee: { icon: CreditCardIcon, color: "text-gray-600", bg: "bg-gray-50", rotate: "" },
+    fee: {
+      icon: CreditCardIcon,
+      color: "text-gray-600",
+      bg: "bg-gray-50",
+      rotate: "",
+    },
   };
 
   const config = iconConfig[type as keyof typeof iconConfig] || iconConfig.fee;
@@ -202,12 +215,15 @@ function StatCard({
                   change >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {change >= 0 ? "+" : ""}{change}%
+                {change >= 0 ? "+" : ""}
+                {change}%
               </span>
               <span className="text-xs text-gray-500">vs last month</span>
             </div>
           </div>
-          <div className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}>
+          <div
+            className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+          >
             <Icon className={`h-5 w-5 ${iconColor}`} />
           </div>
         </div>
@@ -227,7 +243,7 @@ function StatsSkeleton() {
               <div className="space-y-2">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-32" />
               </div>
               <Skeleton className="w-10 h-10 rounded-lg" />
             </div>
@@ -237,8 +253,6 @@ function StatsSkeleton() {
     </div>
   );
 }
-
-
 
 export default function VendorTransactionsPage() {
   const { data: session } = useSession();
@@ -345,7 +359,6 @@ export default function VendorTransactionsPage() {
             </Button>
             <Button
               onClick={exportTransactions}
-              className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-3 text-xs cursor-pointer"
             >
               <ArrowDownTrayIcon className="w-3 h-3 mr-1.5" />
               Export
@@ -523,11 +536,8 @@ export default function VendorTransactionsPage() {
                     </Button>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 text-xs cursor-pointer"
-                >
-                  <FunnelIcon className="w-3 h-3 mr-1.5" />
+                <Button variant="active" className="text-blue-700">
+                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
