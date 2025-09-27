@@ -22,6 +22,14 @@ import {
 import { formatPrice } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -67,148 +75,161 @@ interface SavedPaymentMethod {
 // Skeleton loading components
 function CheckoutSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 space-y-4">
-        {/* Progress Card Skeleton */}
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-3 w-16" />
+    <div className="space-y-4">
+      {/* Breadcrumb Skeleton */}
+      <div className="w-full pt-5 pb-4">
+        <div className="flex items-center space-x-2 ml-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-1" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-1" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          {/* Progress Card Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton className="w-full h-1.5 rounded-full" />
               </div>
-              <Skeleton className="w-full h-1.5 rounded-full" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Main Form Card Skeleton */}
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4 space-y-4">
-            {/* Header */}
-            <div>
-              <Skeleton className="h-4 w-36 mb-1" />
-              <Skeleton className="h-3 w-48" />
-            </div>
-
-            {/* Email field */}
-            <div>
-              <Skeleton className="h-3 w-20 mb-1" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-
-            {/* Shipping Address header */}
-            <div>
-              <Skeleton className="h-4 w-28 mb-3" />
-
-              {/* First/Last name grid */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <Skeleton className="h-3 w-16 mb-1" />
-                  <Skeleton className="h-9 w-full" />
-                </div>
-                <div>
-                  <Skeleton className="h-3 w-16 mb-1" />
-                  <Skeleton className="h-9 w-full" />
-                </div>
+          {/* Main Form Card Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4 space-y-4">
+              {/* Header */}
+              <div>
+                <Skeleton className="h-4 w-36 mb-1" />
+                <Skeleton className="h-3 w-48" />
               </div>
 
-              {/* Address field */}
-              <div className="mb-3">
-                <Skeleton className="h-3 w-12 mb-1" />
+              {/* Email field */}
+              <div>
+                <Skeleton className="h-3 w-20 mb-1" />
                 <Skeleton className="h-9 w-full" />
               </div>
 
-              {/* City/Postal/Country grid */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Skeleton className="h-3 w-8 mb-1" />
-                  <Skeleton className="h-9 w-full" />
+              {/* Shipping Address header */}
+              <div>
+                <Skeleton className="h-4 w-28 mb-3" />
+
+                {/* First/Last name grid */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <Skeleton className="h-3 w-16 mb-1" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-3 w-16 mb-1" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
                 </div>
-                <div>
-                  <Skeleton className="h-3 w-16 mb-1" />
-                  <Skeleton className="h-9 w-full" />
-                </div>
-                <div>
+
+                {/* Address field */}
+                <div className="mb-3">
                   <Skeleton className="h-3 w-12 mb-1" />
                   <Skeleton className="h-9 w-full" />
                 </div>
+
+                {/* City/Postal/Country grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Skeleton className="h-3 w-8 mb-1" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-3 w-16 mb-1" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-3 w-12 mb-1" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Skeleton className="h-3 w-3 rounded" />
-              <Skeleton className="h-3 w-56" />
-            </div>
+              {/* Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-3 w-3 rounded" />
+                <Skeleton className="h-3 w-56" />
+              </div>
 
-            {/* Continue button */}
-            <Skeleton className="h-10 w-full rounded-lg" />
-          </CardContent>
-        </Card>
-      </div>
+              {/* Continue button */}
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Sidebar skeleton */}
-      <div className="lg:col-span-1">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-3">
-            <Skeleton className="h-4 w-24" />
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              {/* Product items */}
-              <div className="space-y-3 mb-4">
-                {[...Array(2)].map((_, index) => (
-                  <div key={index} className="flex items-center space-x-2.5">
-                    <div className="relative">
-                      <Skeleton className="w-10 h-10 rounded-lg" />
-                      <Skeleton className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full" />
+        {/* Sidebar skeleton */}
+        <div className="lg:col-span-1">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                {/* Product items */}
+                <div className="space-y-3 mb-4">
+                  {[...Array(2)].map((_, index) => (
+                    <div key={index} className="flex items-center space-x-2.5">
+                      <div className="relative">
+                        <Skeleton className="w-10 h-10 rounded-lg" />
+                        <Skeleton className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full" />
+                      </div>
+                      <div className="flex-1">
+                        <Skeleton className="h-3 w-full mb-1" />
+                        <Skeleton className="h-2 w-2/3" />
+                      </div>
+                      <Skeleton className="h-3 w-16" />
                     </div>
-                    <div className="flex-1">
-                      <Skeleton className="h-3 w-full mb-1" />
-                      <Skeleton className="h-2 w-2/3" />
-                    </div>
+                  ))}
+                </div>
+
+                {/* Pricing breakdown */}
+                <div className="border-t border-gray-200 pt-3 space-y-2">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-12" />
                     <Skeleton className="h-3 w-16" />
                   </div>
-                ))}
-              </div>
-
-              {/* Pricing breakdown */}
-              <div className="border-t border-gray-200 pt-3 space-y-2">
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-14" />
-                  <Skeleton className="h-3 w-8" />
-                </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-                <div className="border-t border-gray-200 pt-2">
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-4 w-8" />
-                    <Skeleton className="h-4 w-20" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-14" />
+                    <Skeleton className="h-3 w-8" />
                   </div>
-                </div>
-              </div>
-
-              {/* Security badges */}
-              <div className="mt-4 space-y-2">
-                {[...Array(3)].map((_, index) => (
-                  <div key={index} className="flex items-center text-xs">
-                    <Skeleton className="w-3 h-3 rounded-full mr-2" />
-                    <div className="flex-1">
-                      <Skeleton className="h-2 w-20 mb-1" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-4 w-20" />
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Security badges */}
+                <div className="mt-4 space-y-2">
+                  {[...Array(3)].map((_, index) => (
+                    <div key={index} className="flex items-center text-xs">
+                      <Skeleton className="w-3 h-3 rounded-full mr-2" />
+                      <div className="flex-1">
+                        <Skeleton className="h-2 w-20 mb-1" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -415,25 +436,6 @@ export default function CheckoutPage() {
           transition={{ duration: 0.6 }}
           className="container mx-auto px-4 py-4"
         >
-          <div className="mb-4">
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <Link
-                  href="/cart"
-                  className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors mb-2 cursor-pointer"
-                >
-                  <ArrowLeftIcon className="w-4 h-4 mr-1" />
-                  Back to Cart
-                </Link>
-                <h1 className="text-lg font-bold text-gray-900">
-                  Secure Checkout
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Complete your purchase safely
-                </p>
-              </CardContent>
-            </Card>
-          </div>
           <CheckoutSkeleton />
         </motion.div>
       </div>
@@ -771,6 +773,41 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/cart" className="cursor-pointer">
+                      Cart
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Checkout</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

@@ -145,7 +145,7 @@ function SearchBar() {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="block w-full pl-12 pr-4 py-3 text-sm bg-white border border-gray-300 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 shadow-sm"
-            placeholder="Search for products, brands, categories..."
+            placeholder="What are you looking for?"
           />
         </div>
       </form>

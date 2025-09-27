@@ -41,6 +41,14 @@ import {
 
 import Footer from "@/components/layout/Footer";
 import { getUserInitials } from "@/lib/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface ProfileData {
   id: string;
@@ -232,6 +240,15 @@ function ProfileSkeleton() {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
+      {/* Breadcrumb Skeleton */}
+      <div className="w-full pt-5 pb-4">
+        <div className="flex items-center space-x-2 ml-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-1" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -252,13 +269,42 @@ function ProfileSkeleton() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
+          className="space-y-6"
         >
+          {/* Profile Overview Skeleton */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="space-y-4">
                 <Skeleton className="h-20 w-20 rounded-full mx-auto" />
                 <Skeleton className="h-6 w-32 mx-auto" />
                 <Skeleton className="h-4 w-40 mx-auto" />
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <Skeleton className="w-4 h-4 mr-2" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-3 w-2" />
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -270,26 +316,109 @@ function ProfileSkeleton() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="lg:col-span-3 space-y-6"
         >
-          {[1, 2, 3].map((i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 * i }}
-            >
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <Skeleton className="h-6 w-32" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Skeleton className="h-10" />
-                      <Skeleton className="h-10" />
+          {/* Personal Information Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-48" /> {/* Personal Information */}
+                  <Skeleton className="h-8 w-16" /> {/* Edit button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-20 mb-2" /> {/* First Name */}
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-20 mb-2" /> {/* Last Name */}
+                      <Skeleton className="h-5 w-full" />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" /> {/* Email Address */}
+                    <Skeleton className="h-5 w-64" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-28 mb-2" /> {/* Phone Number */}
+                    <Skeleton className="h-5 w-40" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-12 mb-2" /> {/* Bio */}
+                    <Skeleton className="h-16 w-full" /> {/* Multi-line bio */}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Shipping Address Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Skeleton className="w-5 h-5 mr-2" /> {/* Map icon */}
+                    <Skeleton className="h-6 w-36" /> {/* Shipping Address */}
+                  </div>
+                  <Skeleton className="h-8 w-16" /> {/* Edit button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-48" /> {/* Street address */}
+                  <Skeleton className="h-4 w-36" /> {/* City, State ZIP */}
+                  <Skeleton className="h-4 w-24" /> {/* Country */}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Password & Security Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Skeleton className="w-5 h-5 mr-2" /> {/* Key icon */}
+                    <Skeleton className="h-6 w-44" />{" "}
+                    {/* Password & Security */}
+                  </div>
+                  <Skeleton className="h-8 w-32" />{" "}
+                  {/* Change Password button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-2" /> {/* Password */}
+                    <Skeleton className="h-4 w-24" /> {/* ••••••••••••• */}
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-28" /> {/* Last updated */}
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-56" />{" "}
+                    {/* Forgot password link */}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </motion.div>
@@ -642,6 +771,33 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Profile</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
