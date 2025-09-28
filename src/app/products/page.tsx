@@ -16,7 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/buttonSidebar";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,7 @@ import {
 import ProductCard, {
   Product as ProductCardType,
 } from "@/components/ui/ProductCard";
+import Link from "next/link";
 
 // Types
 interface Category {
@@ -112,51 +112,13 @@ function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
   };
 }
 
-// Skeleton Components
-function FiltersSkeleton() {
-  return (
-    <div className="space-y-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="shadow-sm bg-white border border-slate-200/50">
-          <CardHeader className="pb-3">
-            <Skeleton className="h-4 w-20" />
-          </CardHeader>
-          <CardContent className="pt-0">
-            <Skeleton className="h-9 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function ProductGridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {Array.from({ length: 9 }).map((_, i) => (
-        <Card
-          key={i}
-          className="overflow-hidden backdrop-blur-xl bg-white/70 border border-white/50"
-        >
-          <div className="aspect-square relative">
-            <Skeleton className="w-full h-full" />
-          </div>
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-6 w-6 rounded" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
+// Import skeleton components
+import {
+  BreadcrumbSkeleton,
+  TopFilterSkeleton,
+  FiltersSkeleton,
+  ProductGridSkeleton,
+} from "@/components/products/SkeletonLoaders";
 
 // Main Content Component
 function ProductsPageContent() {
@@ -534,23 +496,14 @@ function ProductsPageContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border-b border-white/50 rounded-none">
-          <CardContent className="p-4">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-4 w-1" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <BreadcrumbSkeleton />
         <div className="container mx-auto px-4 py-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1 space-y-4 hidden lg:block sticky top-4 self-start">
+            <div className="lg:col-span-1 space-y-4 hidden lg:block sticky top-18 self-start">
               <FiltersSkeleton />
             </div>
             <div className="lg:col-span-3 space-y-4">
+              <TopFilterSkeleton />
               <ProductGridSkeleton />
             </div>
           </div>
@@ -588,27 +541,31 @@ function ProductsPageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {/* Header with Breadcrumb */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border-b border-white/50 rounded-none">
-          <CardContent className="p-4">
-            <div className="container mx-auto px-4">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
                   <BreadcrumbPage>Products</BreadcrumbPage>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-4 space-y-4">
@@ -1214,12 +1171,14 @@ export default function ProductsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-          <div className="container mx-auto px-4 py-4">
+          <BreadcrumbSkeleton />
+          <div className="container mx-auto px-4 py-4 space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1 hidden lg:block">
+              <div className="lg:col-span-1 space-y-4 hidden lg:block sticky top-18 self-start">
                 <FiltersSkeleton />
               </div>
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 space-y-4">
+                <TopFilterSkeleton />
                 <ProductGridSkeleton />
               </div>
             </div>
