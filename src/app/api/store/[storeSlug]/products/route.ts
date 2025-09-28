@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/api/store/[storeId]/products/route.ts
+// src/app/api/store/[storeSlug]/products/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ storeId: string }> }
+  context: { params: Promise<{ storeSlug: string }> }
 ) {
   try {
     const params = await context.params;
-    const storeId = params.storeId;
+    const storeSlug = params.storeSlug;
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -21,23 +21,28 @@ export async function GET(
     const brand = searchParams.get("brand") || "";
     const sortBy = searchParams.get("sort") || "newest";
 
-    if (!storeId) {
+    if (!storeSlug) {
       return NextResponse.json(
-        { success: false, error: "Store ID is required" },
+        { success: false, error: "Store slug is required" },
         { status: 400 }
       );
     }
 
-    // Verify vendor exists and is active
+    // Verify vendor exists and is active by store slug
     const vendor = await db.user.findFirst({
       where: {
-        id: storeId,
         role: "VENDOR",
         deleteAt: null,
+        vendorSettings: {
+          storeSlug: storeSlug,
+        },
+      },
+      include: {
+        vendorSettings: true,
       },
     });
 
-    if (!vendor) {
+    if (!vendor || !vendor.vendorSettings) {
       return NextResponse.json(
         { success: false, error: "Store not found" },
         { status: 404 }
@@ -46,7 +51,7 @@ export async function GET(
 
     // Build where conditions
     const whereConditions: any = {
-      vendorId: storeId,
+      vendorId: vendor.id,
       isActive: true,
       deletedAt: null,
     };

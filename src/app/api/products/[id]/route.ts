@@ -52,6 +52,7 @@ export async function GET(
             vendorSettings: {
               select: {
                 storeName: true,
+                storeSlug: true, // Include store slug
                 businessName: true,
                 logo: true,
               },
@@ -242,7 +243,7 @@ export async function GET(
       ...new Set(activeVariants.filter((v) => v.size).map((v) => v.size)),
     ];
 
-    // Transform product response
+    // Transform product response with store slug
     const transformedProduct = {
       id: product.id,
       name: product.name,
@@ -259,6 +260,7 @@ export async function GET(
         name: product.vendor.name,
         storeName:
           product.vendor.vendorSettings?.storeName || product.vendor.name,
+        storeSlug: product.vendor.vendorSettings?.storeSlug, // Include store slug
         businessName: product.vendor.vendorSettings?.businessName,
         logo: product.vendor.vendorSettings?.logo,
       },

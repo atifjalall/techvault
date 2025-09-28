@@ -18,7 +18,7 @@ import {
   PhoneIcon,
   KeyIcon,
   ExclamationTriangleIcon,
-  ArrowLeftIcon,
+  ArrowLongRightIcon,
   ShoppingBagIcon,
   HeartIcon,
   CogIcon,
@@ -802,7 +802,7 @@ export default function ProfilePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-6 space-y-6"
+        className="container mx-auto px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6"
       >
         {/* Header */}
         <motion.div
@@ -822,7 +822,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
-                    className="text-xl font-bold text-gray-900"
+                    className="text-lg lg:text-xl font-bold text-gray-900"
                   >
                     My Profile
                   </motion.h1>
@@ -830,7 +830,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
-                    className="text-sm text-gray-600 mt-1"
+                    className="text-base lg:text-lg text-gray-600 mt-1"
                   >
                     Manage your account information and preferences
                   </motion.p>
@@ -907,7 +907,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="space-y-6"
+            className="space-y-4 lg:space-y-6"
           >
             {/* Profile Overview */}
             <motion.div
@@ -916,12 +916,12 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 lg:p-6 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                    className="w-20 h-20 mx-auto mb-4"
+                    className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4"
                   >
                     {session.user.image ? (
                       <Image
@@ -932,7 +932,7 @@ export default function ProfilePage() {
                         className="w-full h-full rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-xl font-bold">
+                      <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-lg lg:text-xl font-bold">
                         {getUserInitials(
                           profileData.firstName + " " + profileData.lastName
                         )}
@@ -943,7 +943,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 }}
-                    className="text-lg font-semibold text-gray-900 mb-1"
+                    className="text-base lg:text-lg font-semibold text-gray-900 mb-1"
                   >
                     {profileData.firstName} {profileData.lastName}
                   </motion.h3>
@@ -951,7 +951,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
-                    className="text-sm text-gray-600 mb-3"
+                    className="text-sm lg:text-base text-gray-600 mb-3"
                   >
                     {profileData.email}
                   </motion.p>
@@ -1016,9 +1016,9 @@ export default function ProfilePage() {
             >
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                  <CardTitle className="text-base lg:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
+                <CardContent className="p-3 lg:p-4 pt-0">
                   <div className="space-y-2">
                     {[
                       {
@@ -1052,7 +1052,7 @@ export default function ProfilePage() {
                             transition={{ type: "spring", stiffness: 300 }}
                             className="text-xs text-gray-400"
                           >
-                            →
+                            <ArrowLongRightIcon className="w-5 h-5 text-gray-600 mr-2" />
                           </motion.span>
                         </Link>
                       </motion.div>
@@ -1079,7 +1079,7 @@ export default function ProfilePage() {
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-base lg:text-lg">
                       Personal Information
                     </CardTitle>
                     {!isEditingPersonal && (
@@ -1115,7 +1115,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.1 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="firstName">First Name</Label>
@@ -1285,7 +1285,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.5 }}
-                          className="flex space-x-3"
+                          className="flex flex-col sm:flex-row gap-3 lg:gap-4"
                         >
                           <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -1294,7 +1294,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={handlePersonalUpdate}
                               disabled={saving}
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                               variant="dark"
                             >
                               {saving ? (
@@ -1312,7 +1312,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("personal")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -1332,7 +1332,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label className="text-gray-600">First Name</Label>
@@ -1420,7 +1420,7 @@ export default function ProfilePage() {
                       >
                         <MapPinIcon className="w-5 h-5 text-gray-600 mr-2" />
                       </motion.div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base lg:text-lg">
                         Shipping Address
                       </CardTitle>
                     </div>
@@ -1499,7 +1499,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.2 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="city">City</Label>
@@ -1582,7 +1582,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.3 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="zipCode">ZIP Code</Label>
@@ -1665,7 +1665,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.4 }}
-                          className="flex space-x-3"
+                          className="flex flex-col sm:flex-row gap-3 lg:gap-4"
                         >
                           <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -1674,7 +1674,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={handleAddressUpdate}
                               disabled={saving}
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                               variant="dark"
                             >
                               {saving ? (
@@ -1692,7 +1692,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("address")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -1764,7 +1764,7 @@ export default function ProfilePage() {
                       >
                         <KeyIcon className="w-5 h-5 text-gray-600 mr-2" />
                       </motion.div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base lg:text-lg">
                         Password & Security
                       </CardTitle>
                     </div>
@@ -2094,7 +2094,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("password")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -2170,7 +2170,7 @@ export default function ProfilePage() {
             >
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">Danger Zone</CardTitle>
+                  <CardTitle className="text-base lg:text-lg">Danger Zone</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <motion.div

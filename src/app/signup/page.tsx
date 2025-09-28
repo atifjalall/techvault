@@ -12,7 +12,7 @@ import {
   XMarkIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/userButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PasswordStrength {
@@ -839,11 +839,52 @@ export default function SignUpPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
+                  onCopy={(e) => {
+                    // Prevent copying password content for security
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onCut={(e) => {
+                    // Prevent cutting password content for security
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onPaste={() => {
+                    // Allow pasting for better UX with password managers
+                    // This is standard practice and improves usability
+                  }}
+                  onContextMenu={(e) => {
+                    // Disable right-click context menu on password field
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onDragStart={(e) => {
+                    // Prevent dragging password content
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent Ctrl+A (Select All) when password is hidden
+                    if (
+                      !showPassword &&
+                      (e.ctrlKey || e.metaKey) &&
+                      e.key === "a"
+                    ) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  }}
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  data-lpignore="true"
                   className={`w-full px-3 py-2 pr-10 border ${
                     errors.password
                       ? "border-red-400/70"
                       : "border-slate-300/70"
-                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
+                    showPassword ? "" : "select-none"
+                  }`}
                   placeholder="Create a strong password"
                 />
                 <motion.button
@@ -947,11 +988,52 @@ export default function SignUpPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
+                  onCopy={(e) => {
+                    // Prevent copying password content for security
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onCut={(e) => {
+                    // Prevent cutting password content for security
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onPaste={() => {
+                    // Allow pasting for better UX with password managers
+                    // This is standard practice and improves usability
+                  }}
+                  onContextMenu={(e) => {
+                    // Disable right-click context menu on password field
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onDragStart={(e) => {
+                    // Prevent dragging password content
+                    e.preventDefault();
+                    return false;
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent Ctrl+A (Select All) when password is hidden
+                    if (
+                      !showConfirmPassword &&
+                      (e.ctrlKey || e.metaKey) &&
+                      e.key === "a"
+                    ) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  }}
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  data-lpignore="true"
                   className={`w-full px-3 py-2 pr-10 border ${
                     errors.confirmPassword
                       ? "border-red-400/70"
                       : "border-slate-300/70"
-                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200`}
+                  } placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
+                    showConfirmPassword ? "" : "select-none"
+                  }`}
                   placeholder="Confirm your password"
                 />
                 <motion.button
@@ -1082,7 +1164,7 @@ export default function SignUpPage() {
                 fullWidth
                 isLoading={isLoading}
                 disabled={isLoading || emailAvailable === false}
-                className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
+                className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer rounded-xl"
               >
                 {isLoading ? "Creating account..." : "Create account"}
               </Button>

@@ -10,8 +10,6 @@ import {
   MagnifyingGlassIcon,
   HeartIcon,
   ShoppingBagIcon,
-  Bars3Icon,
-  XMarkIcon,
   ChevronDownIcon,
   UserIcon,
   ShoppingCartIcon,
@@ -25,6 +23,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
 import { getUserInitials } from "@/lib/utils";
+import MobileNavbar from "./MobileNavbar";
 
 // Search Bar Component with Dynamic Autocomplete
 function SearchBar() {
@@ -241,7 +240,7 @@ function SearchBar() {
   );
 }
 
-// Dynamic Categories Component
+// Dynamic Categories Component - Desktop Only
 function CategoriesNavigation() {
   const [categories, setCategories] = useState<
     Array<{
@@ -389,7 +388,7 @@ function CategoriesNavigation() {
   );
 }
 
-// Mobile Categories List Component
+// Enhanced Mobile Categories List Component with Expandable Subcategories
 function MobileCategoriesList({
   onCategoryClick,
 }: {
@@ -400,8 +399,14 @@ function MobileCategoriesList({
       id: string;
       name: string;
       href: string;
+      subcategories: Array<{
+        id: string;
+        name: string;
+        href: string;
+      }>;
     }>
   >([]);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -424,9 +429,13 @@ function MobileCategoriesList({
     loadCategories();
   }, []);
 
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
+  };
+
   if (loading) {
     return (
-      <div className="space-y-1">
+      <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="px-4 py-3 animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-24"></div>
@@ -437,16 +446,65 @@ function MobileCategoriesList({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
+      <div className="px-4 py-2">
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          Categories
+        </h3>
+      </div>
       {categories.map((category) => (
-        <Link
-          key={category.id}
-          href={category.href}
-          className="text-slate-700 hover:text-slate-900 hover:bg-white/50 block px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer"
-          onClick={onCategoryClick}
-        >
-          {category.name}
-        </Link>
+        <div key={category.id} className="space-y-1">
+          {/* Main Category */}
+          <div className="flex items-center justify-between">
+            <Link
+              href={category.href}
+              className="flex-1 text-slate-700 hover:text-slate-900 hover:bg-gray-50 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 cursor-pointer"
+              onClick={onCategoryClick}
+            >
+              {category.name}
+            </Link>
+            {category.subcategories && category.subcategories.length > 0 && (
+              <button
+                onClick={() => toggleCategory(category.id)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg transition-colors duration-200"
+                aria-label={`Toggle ${category.name} subcategories`}
+              >
+                <motion.div
+                  animate={{
+                    rotate: expandedCategory === category.id ? 180 : 0,
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDownIcon className="h-4 w-4" />
+                </motion.div>
+              </button>
+            )}
+          </div>
+
+          {/* Subcategories */}
+          <AnimatePresence>
+            {expandedCategory === category.id && category.subcategories && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="ml-4 space-y-1 border-l-2 border-gray-200 pl-4"
+              >
+                {category.subcategories.map((subcategory) => (
+                  <Link
+                    key={subcategory.id}
+                    href={subcategory.href}
+                    className="block text-slate-600 hover:text-slate-900 hover:bg-gray-50 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 cursor-pointer"
+                    onClick={onCategoryClick}
+                  >
+                    {subcategory.name}
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       ))}
     </div>
   );
@@ -1101,7 +1159,6 @@ function NavActionsSkeleton() {
 
 export default function Navbar() {
   const { data: session, status } = useSession();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Real cart and wishlist state management
   const [cartItemCount, setCartItemCount] = useState(0);
@@ -1200,71 +1257,74 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 backdrop-blur-xl bg-white/90 border-b border-gray-200/50 z-50">
-      <div className="w-full px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14 min-h-[3.5rem]">
-          {/* Left side - Logo and Categories */}
-          <div className="flex items-center space-x-8 w-80 flex-shrink-0">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="text-lg font-bold text-slate-900 flex-shrink-0"
-            >
-              TechVault
-            </Link>
+    <>
+      {/* Mobile Navbar */}
+      <MobileNavbar />
 
-            {/* Desktop Navigation - Categories */}
-            <CategoriesNavigation />
-          </div>
+      {/* Desktop Navbar */}
+      <nav className="hidden md:block sticky top-0 backdrop-blur-xl bg-white/90 border-b border-gray-200/50 z-50">
+        <div className="w-full px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14 min-h-[3.5rem]">
+            {/* Left side - Logo and Categories */}
+            <div className="flex items-center space-x-8 w-80 flex-shrink-0">
+              {/* Logo */}
+              <Link
+                href="/"
+                className="text-lg font-bold text-slate-900 flex-shrink-0"
+              >
+                TechVault
+              </Link>
 
-          {/* Center - Search Bar */}
-          <div className="hidden md:block flex-1 max-w-2xl mx-6">
-            <div className="w-full">
-              <SearchBar />
+              {/* Desktop Navigation - Categories */}
+              <CategoriesNavigation />
             </div>
-          </div>
-          {/* Right side - Actions and Profile */}
-          <div className="flex items-center justify-end space-x-2 w-80 flex-shrink-0">
-            {status === "loading" ? (
-              <NavActionsSkeleton />
-            ) : (
-              <div className="flex items-center space-x-2">
-                {/* Authenticated user actions */}
-                {session?.user && (
-                  <>
-                    {/* Notifications Button - Desktop only */}
-                    <div className="hidden md:block">
+
+            {/* Center - Search Bar */}
+            <div className="flex-1 max-w-2xl mx-6">
+              <div className="w-full">
+                <SearchBar />
+              </div>
+            </div>
+
+            {/* Right side - Actions and Profile */}
+            <div className="flex items-center justify-end space-x-2 w-80 flex-shrink-0">
+              {status === "loading" ? (
+                <NavActionsSkeleton />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  {/* Authenticated user actions */}
+                  {session?.user && (
+                    <>
+                      {/* Notifications Button */}
                       <NotificationButton />
-                    </div>
 
-                    {/* Wishlist Button - Desktop only */}
-                    <Link
-                      href="/wishlist"
-                      className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg hidden md:block cursor-pointer"
-                    >
-                      <HeartIcon className="h-5 w-5" />
-                      <SmartBadge
-                        count={wishlistItemCount}
-                        isLoading={countsLoading}
-                      />
-                    </Link>
+                      {/* Wishlist Button */}
+                      <Link
+                        href="/wishlist"
+                        className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg cursor-pointer"
+                      >
+                        <HeartIcon className="h-5 w-5" />
+                        <SmartBadge
+                          count={wishlistItemCount}
+                          isLoading={countsLoading}
+                        />
+                      </Link>
 
-                    {/* Cart Button - Desktop only */}
-                    <Link
-                      href="/cart"
-                      className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg hidden md:block cursor-pointer"
-                    >
-                      <ShoppingBagIcon className="h-5 w-5" />
-                      <SmartBadge
-                        count={cartItemCount}
-                        isLoading={countsLoading}
-                      />
-                    </Link>
-                  </>
-                )}
+                      {/* Cart Button */}
+                      <Link
+                        href="/cart"
+                        className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg cursor-pointer"
+                      >
+                        <ShoppingBagIcon className="h-5 w-5" />
+                        <SmartBadge
+                          count={cartItemCount}
+                          isLoading={countsLoading}
+                        />
+                      </Link>
+                    </>
+                  )}
 
-                {/* Auth/Profile Section - Desktop only */}
-                <div className="hidden md:block">
+                  {/* Auth/Profile Section */}
                   {session?.user ? (
                     <ProfileDropdown
                       user={{
@@ -1285,190 +1345,11 @@ export default function Navbar() {
                     </Link>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-slate-700 hover:text-slate-900 p-2.5 backdrop-blur-md bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 transition-all duration-200 cursor-pointer"
-              >
-                {isMobileMenuOpen ? (
-                  <XMarkIcon className="h-5 w-5" />
-                ) : (
-                  <Bars3Icon className="h-5 w-5" />
-                )}
-              </button>
+              )}
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden"
-          >
-            <div className="px-4 pt-4 pb-6 space-y-3 backdrop-blur-xl bg-white/80 border-t border-white/50">
-              {/* Mobile Search */}
-              <div className="mb-4">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full pl-12 pr-4 py-3 text-sm bg-white border border-gray-300 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm"
-                    placeholder="Search products..."
-                  />
-                </div>
-              </div>
-
-              {/* Mobile Categories */}
-              <MobileCategoriesList
-                onCategoryClick={() => setIsMobileMenuOpen(false)}
-              />
-
-              {/* Mobile Auth/Profile Actions */}
-              <div className="border-t border-white/40 pt-4">
-                {session?.user ? (
-                  <div className="space-y-4">
-                    {/* Mobile Profile Info */}
-                    <div className="flex items-center space-x-3 p-4 backdrop-blur-md bg-white/40 rounded-xl border border-white/40">
-                      <div className="relative w-10 h-10 rounded-full overflow-hidden bg-white/30 border border-white/40">
-                        {session.user.image ? (
-                          <Image
-                            src={session.user.image}
-                            alt={session.user.name || "Profile"}
-                            width={40}
-                            height={40}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-800/80 text-white text-sm font-semibold">
-                            {getUserInitials(session.user.name || "User")}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {session.user.name}
-                        </p>
-                        <p className="text-xs text-slate-600">
-                          {session.user.email}
-                        </p>
-                        {session.user.role === "VENDOR" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                            Vendor
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Mobile Profile Links */}
-                    <div className="space-y-1">
-                      {session.user.role === "VENDOR" && (
-                        <Link
-                          href="/vendor/dashboard"
-                          className="flex items-center px-4 py-3 text-sm text-blue-700 hover:bg-blue-100/50 rounded-xl font-medium transition-all duration-200 cursor-pointer"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <BuildingStorefrontIcon className="w-5 h-5 mr-3" />
-                          Vendor Dashboard
-                        </Link>
-                      )}
-                      <Link
-                        href="/profile"
-                        className="block px-4 py-3 text-sm text-slate-700 hover:bg-white/50 rounded-xl transition-all duration-200 cursor-pointer"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        My Profile
-                      </Link>
-                      <Link
-                        href="/orders"
-                        className="block px-4 py-3 text-sm text-slate-700 hover:bg-white/50 rounded-xl transition-all duration-200 cursor-pointer"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        My Orders
-                      </Link>
-                      <Link
-                        href="/notifications"
-                        className="block px-4 py-3 text-sm text-slate-700 hover:bg-white/50 rounded-xl transition-all duration-200 cursor-pointer"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Notifications
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          handleSignOut();
-                        }}
-                        className="block w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-100/50 rounded-xl transition-all duration-200 cursor-pointer"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <Link
-                      href="/signin"
-                      className="text-slate-700 hover:text-slate-900 px-6 py-3 text-sm font-medium backdrop-blur-md bg-white/40 hover:bg-white/50 rounded-xl border border-white/40 transition-all duration-200 cursor-pointer"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Sign In
-                    </Link>
-                  </div>
-                )}
-
-                {/* Mobile Actions (Wishlist, Cart, Notifications) */}
-                {session?.user && (
-                  <div className="flex items-center justify-center space-x-4 mt-6">
-                    <Link
-                      href="/notifications"
-                      className="text-slate-700 hover:text-slate-900 p-3 relative backdrop-blur-md bg-white/40 hover:bg-white/50 rounded-xl border border-white/40 transition-all duration-200 cursor-pointer"
-                      aria-label="View notifications"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <BellIcon className="h-5 w-5" />
-                    </Link>
-                    <Link
-                      href="/wishlist"
-                      className="text-slate-700 hover:text-slate-900 p-3 relative backdrop-blur-md bg-white/40 hover:bg-white/50 rounded-xl border border-white/40 transition-all duration-200 cursor-pointer"
-                      aria-label="View wishlist"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <HeartIcon className="h-5 w-5" />
-                      <SmartBadge
-                        count={wishlistItemCount}
-                        isLoading={countsLoading}
-                      />
-                    </Link>
-                    <Link
-                      href="/cart"
-                      className="text-slate-700 hover:text-slate-900 p-3 relative backdrop-blur-md bg-white/40 hover:bg-white/50 rounded-xl border border-white/40 transition-all duration-200 cursor-pointer"
-                      aria-label="View shopping cart"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <ShoppingBagIcon className="h-5 w-5" />
-                      <SmartBadge
-                        count={cartItemCount}
-                        isLoading={countsLoading}
-                      />
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+      </nav>
+    </>
   );
 }

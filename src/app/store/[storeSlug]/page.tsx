@@ -1,4 +1,3 @@
-// src/app/store/[storeId]/page.tsx - Customer-facing vendor store page
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
@@ -73,6 +72,8 @@ interface VendorStore {
   id: string;
   name: string;
   businessName: string;
+  storeName: string;
+  storeSlug: string;
   description: string;
   image: string;
   location: string;
@@ -125,35 +126,104 @@ interface ProductsResponse {
 function VendorHeaderSkeleton() {
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
+      {/* Breadcrumb Section */}
+      <div className="container mx-auto px-4 pt-8">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </motion.div>
+      </div>
+
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+          {/* Vendor Info */}
           <div className="flex items-start gap-4 flex-1">
-            <Skeleton className="w-20 h-20 rounded-full flex-shrink-0" />
-            <div className="flex-1 min-w-0 space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-5 w-20" />
-                </div>
-                <Skeleton className="h-4 w-32" />
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24" />
+            <div className="relative flex-shrink-0">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
+                <Skeleton className="w-full h-full" />
+              </div>
+              {/* Verified icon placeholder - always show for skeleton */}
+              <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center">
+                <Skeleton className="w-5 h-5 rounded-full" />
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Skeleton className="h-7 w-48" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+
+                  <div className="flex items-center gap-1 text-sm text-slate-600 mb-2">
+                    <Skeleton className="w-4 h-4 flex-shrink-0" />
+                    <Skeleton className="h-[14px] w-32" />
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm mb-2">
+                    <div className="flex items-center gap-1">
+                      <Skeleton className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <Skeleton className="h-[14px] w-6" />
+                      <Skeleton className="h-[14px] w-12" />
+                    </div>
+                    <Skeleton className="h-[14px] w-20" />
+                    <Skeleton className="h-[14px] w-24" />
+                  </div>
+
+                  <div className="mb-3">
+                    <Skeleton className="h-[14px] w-full max-w-md mb-1" />
+                    <Skeleton className="h-[14px] w-3/4 max-w-sm" />
+                  </div>
                 </div>
               </div>
-              <Skeleton className="h-4 w-full max-w-md" />
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-24" />
+
+              <div className="flex items-center gap-4 text-xs text-slate-500">
+                <div className="flex items-center gap-1">
+                  <Skeleton className="w-3 h-3" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Skeleton className="w-3 h-3" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Store Stats */}
           <div className="flex-shrink-0">
             <div className="grid grid-cols-3 gap-3">
-              <Skeleton className="h-16 w-20" />
-              <Skeleton className="h-16 w-20" />
-              <Skeleton className="h-16 w-20" />
+              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
+                <Skeleton className="w-4 h-4 text-slate-400" />
+                <div className="text-center">
+                  <Skeleton className="h-3 w-14 mb-1" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
+                <Skeleton className="w-4 h-4 text-slate-400" />
+                <div className="text-center">
+                  <Skeleton className="h-3 w-12 mb-1" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
+                <Skeleton className="w-4 h-4 text-slate-400" />
+                <div className="text-center">
+                  <Skeleton className="h-3 w-10 mb-1" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -213,30 +283,72 @@ function ProductGridSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {Array.from({ length: 9 }).map((_, i) => (
-        <Card
+        <div
           key={i}
-          className="overflow-hidden group backdrop-blur-xl bg-white/70 border border-white/50"
+          className="group relative bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 min-h-[320px]"
         >
-          <div className="aspect-square relative">
+          {/* Product Image */}
+          <div className="relative aspect-square bg-gray-50 overflow-hidden">
+            {/* Top left badges */}
+            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+              <Skeleton className="h-4 w-8 rounded-full" />
+            </div>
+
+            {/* Top right badges */}
+            <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+              <Skeleton className="h-4 w-10 rounded-full" />
+              <Skeleton className="h-7 w-7 rounded-full" />
+            </div>
+
+            {/* Main image */}
             <Skeleton className="w-full h-full" />
+
+            {/* Color variants at bottom */}
+            <div className="absolute bottom-3 left-3 flex gap-1">
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </div>
           </div>
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <div className="flex items-center gap-1">
-                <Skeleton className="h-3 w-3" />
-                <Skeleton className="h-3 w-8" />
-                <Skeleton className="h-3 w-12" />
+
+          {/* Product Info */}
+          <div className="p-4 min-h-[120px]">
+            <div className="space-y-1.5">
+              {/* Brand & Name with Featured badge */}
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex-1">
+                  {/* Brand */}
+                  <Skeleton className="h-[10px] w-12 mb-1 rounded-sm" />
+                  {/* Product name */}
+                  <Skeleton className="h-[14px] w-3/4 mb-0.5 rounded-sm" />
+                </div>
+                {/* Featured badge */}
+                <Skeleton className="h-4 w-16 rounded-full ml-2 flex-shrink-0" />
               </div>
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-6 w-6 rounded" />
+
+              {/* Variants */}
+              <Skeleton className="h-[10px] w-20 rounded-sm" />
+
+              {/* Rating */}
+              <div className="flex items-center space-x-1 py-0.5">
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, starIndex) => (
+                    <Skeleton
+                      key={starIndex}
+                      className="h-2.5 w-2.5 rounded-full"
+                    />
+                  ))}
+                </div>
+                <Skeleton className="h-[10px] w-8 rounded-sm" />
+              </div>
+
+              {/* Pricing */}
+              <div className="flex items-center space-x-1.5 pt-0.5">
+                <Skeleton className="h-[18px] w-16 rounded-sm" />
+                <Skeleton className="h-[12px] w-12 rounded-sm" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -353,6 +465,31 @@ function Pagination({
 function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
+      {/* Breadcrumb */}
+      <div className="container mx-auto px-4 pt-8">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/products">Products</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbPage>
+                {vendor.storeName || vendor.businessName}
+              </BreadcrumbPage>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </motion.div>
+      </div>
+
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           {/* Vendor Info */}
@@ -379,7 +516,7 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h1 className="text-lg font-semibold text-slate-900 truncate">
-                      {vendor.businessName || vendor.name}
+                      {vendor.storeName || vendor.businessName || vendor.name}
                     </h1>
                     <Badge
                       variant="secondary"
@@ -481,8 +618,8 @@ function VendorStoreContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Debug log
-  console.log("Component render - params:", params.storeId);
+  // Debug log - now using storeSlug instead of storeId
+  console.log("Component render - params:", params.storeSlug);
 
   const [vendor, setVendor] = useState<VendorStore | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -524,15 +661,15 @@ function VendorStoreContent() {
   );
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 
-  // Fetch vendor data
+  // Fetch vendor data using slug
   const loadVendorData = useCallback(async () => {
-    console.log("1. Starting loadVendorData for:", params.storeId);
+    console.log("1. Starting loadVendorData for:", params.storeSlug);
     setLoading(true);
     setError(null);
 
     try {
       console.log("2. About to fetch vendor data");
-      const response = await fetch(`/api/store/${params.storeId}`);
+      const response = await fetch(`/api/store/${params.storeSlug}`);
       const data: ApiResponse = await response.json();
 
       console.log("3. Vendor data received:", data.success);
@@ -557,7 +694,7 @@ function VendorStoreContent() {
       console.log("7. Setting loading to false");
       setLoading(false);
     }
-  }, [params.storeId]);
+  }, [params.storeSlug]);
 
   // Fetch products
   const loadProducts = useCallback(
@@ -579,7 +716,7 @@ function VendorStoreContent() {
 
         console.log("2. About to fetch products");
         const response = await fetch(
-          `/api/store/${params.storeId}/products?${queryParams}`
+          `/api/store/${params.storeSlug}/products?${queryParams}`
         );
         const data: ProductsResponse = await response.json();
 
@@ -618,7 +755,7 @@ function VendorStoreContent() {
       }
     },
     [
-      params.storeId,
+      params.storeSlug,
       searchTerm,
       selectedCategory,
       selectedSubcategory,
@@ -631,10 +768,10 @@ function VendorStoreContent() {
   // Load vendor data on mount
   useEffect(() => {
     console.log("useEffect: loadVendorData triggered");
-    if (params.storeId) {
+    if (params.storeSlug) {
       loadVendorData();
     }
-  }, [params.storeId, loadVendorData]);
+  }, [params.storeSlug, loadVendorData]);
 
   // Fetch subcategories when category changes
   const loadSubcategories = useCallback(
@@ -647,7 +784,7 @@ function VendorStoreContent() {
       try {
         console.log("Loading subcategories for category:", categoryName);
         const response = await fetch(
-          `/api/store/${params.storeId}/subcategories?category=${encodeURIComponent(categoryName)}`
+          `/api/store/${params.storeSlug}/subcategories?category=${encodeURIComponent(categoryName)}`
         );
         const data = await response.json();
 
@@ -660,7 +797,7 @@ function VendorStoreContent() {
         setSubcategories([]);
       }
     },
-    [params.storeId]
+    [params.storeSlug]
   );
 
   // Load subcategories when category changes
@@ -737,21 +874,6 @@ function VendorStoreContent() {
     console.log("Rendering loading state");
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        {/* Breadcrumb Skeleton */}
-        <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border-b border-white/50 rounded-none">
-          <CardContent className="p-4">
-            <div className="container mx-auto px-4">
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-4 w-1" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-1" />
-                <Skeleton className="h-4 w-40" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <VendorHeaderSkeleton />
 
         <div className="container mx-auto px-4 py-4 space-y-4">
@@ -834,40 +956,7 @@ function VendorStoreContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-      {/* Header with Breadcrumb */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border-b border-white/50 rounded-none">
-          <CardContent className="p-4">
-            <div className="container mx-auto px-4">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-              >
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href="/">Home</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href="/products">Products</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbPage>{vendor.businessName}</BreadcrumbPage>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </motion.div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Vendor Header */}
+      {/* Vendor Header with Breadcrumb */}
       <VendorStoreHeader vendor={vendor} />
 
       {/* Main Content */}

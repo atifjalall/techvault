@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   BellIcon,
   CheckIcon,
@@ -12,15 +13,35 @@ import {
   InformationCircleIcon,
   XCircleIcon,
   ShoppingCartIcon,
-  FunnelIcon,
-  ChevronDownIcon,
   EyeIcon,
   EyeSlashIcon,
+  EllipsisVerticalIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/Button1";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -76,82 +97,117 @@ interface NotificationsResponse {
   };
 }
 
-// Helper functions
-const getNotificationIcon = (type: string) => {
-  const iconMap: Record<string, any> = {
-    ORDER_CONFIRMED: CheckIcon,
-    ORDER_PROCESSING: InformationCircleIcon,
-    ORDER_PACKED: InformationCircleIcon,
-    ORDER_SHIPPED: ShoppingCartIcon,
-    ORDER_OUT_FOR_DELIVERY: ShoppingCartIcon,
-    ORDER_DELIVERED: CheckIcon,
-    ORDER_CANCELLED: ExclamationTriangleIcon,
-    ORDER_REFUNDED: ExclamationTriangleIcon,
-    ORDER_RETURNED: ExclamationTriangleIcon,
-    ORDER_UPDATED: InformationCircleIcon,
-    PAYMENT_PROCESSING: InformationCircleIcon,
-    PAYMENT_PROCESSED: CheckIcon,
-    PAYMENT_FAILED: ExclamationTriangleIcon,
-    PAYMENT_REFUNDED: InformationCircleIcon,
-    REFUND_PROCESSED: CheckIcon,
-    RETURN_APPROVED: CheckIcon,
-    RETURN_RECEIVED: InformationCircleIcon,
-    RETURN_PROCESSED: CheckIcon,
-    WISHLIST_ITEM_BACK_IN_STOCK: CheckIcon,
-    WISHLIST_ITEM_PRICE_DROP: InformationCircleIcon,
-    WISHLIST_ITEM_LOW_STOCK: ExclamationTriangleIcon,
-    PRICE_DROP_ALERT: InformationCircleIcon,
-    PROMOTIONAL_OFFER: InformationCircleIcon,
-    FLASH_SALE_ALERT: InformationCircleIcon,
-    DISCOUNT_EXPIRING: ExclamationTriangleIcon,
-    NEW_ARRIVAL_ALERT: InformationCircleIcon,
-    BIRTHDAY_OFFER: InformationCircleIcon,
-    LOYALTY_REWARD: CheckIcon,
-    ACCOUNT_SECURITY: ExclamationTriangleIcon,
-    PASSWORD_CHANGED: CheckIcon,
-    EMAIL_CHANGED: CheckIcon,
-    LOGIN_SUSPICIOUS: ExclamationTriangleIcon,
-    ACCOUNT_LOCKED: ExclamationTriangleIcon,
-    TWO_FACTOR_ENABLED: CheckIcon,
-    NEWSLETTER_WELCOME: InformationCircleIcon,
-    REVIEW_REMINDER: InformationCircleIcon,
-    ABANDONED_CART_REMINDER: ShoppingCartIcon,
-    RESTOCK_NOTIFICATION: CheckIcon,
-    SHIPPING_DELAY_ALERT: ExclamationTriangleIcon,
-    DELIVERY_ATTEMPT_FAILED: ExclamationTriangleIcon,
-    CUSTOMER_SERVICE_FOLLOW_UP: InformationCircleIcon,
+// Simplified Stats Card Component for customers
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  iconColor,
+  bgColor,
+}: {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  iconColor: string;
+  bgColor: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-0 shadow-sm bg-white">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">{title}</p>
+              <p className="text-xl font-bold text-gray-900">{value}</p>
+            </div>
+            <div
+              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+            >
+              <Icon className={`h-5 w-5 ${iconColor}`} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// Notification Icon Component (matching vendor style)
+function NotificationIcon({ type }: { type: string }) {
+  const iconConfig = {
+    ORDER_CONFIRMED: {
+      icon: ShoppingCartIcon,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+    },
+    ORDER_PROCESSING: {
+      icon: ShoppingCartIcon,
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    ORDER_SHIPPED: {
+      icon: ShoppingCartIcon,
+      color: "text-orange-600",
+      bg: "bg-orange-50",
+    },
+    PAYMENT_PROCESSED: {
+      icon: CheckIcon,
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
+    WISHLIST_ITEM_BACK_IN_STOCK: {
+      icon: CheckIcon,
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
   };
 
-  return iconMap[type] || InformationCircleIcon;
-};
+  const config = iconConfig[type as keyof typeof iconConfig] || {
+    icon: BellIcon,
+    color: "text-gray-600",
+    bg: "bg-gray-50",
+  };
+  const IconComponent = config.icon;
 
-const getNotificationColor = (type: string, severity: string) => {
-  // Override with severity colors for critical notifications
-  if (severity === "CRITICAL") {
-    return "text-red-600 bg-red-100 border-red-200";
-  }
-  if (severity === "WARNING") {
-    return "text-amber-600 bg-amber-100 border-amber-200";
-  }
+  return (
+    <div
+      className={`w-8 h-8 ${config.bg} rounded-lg flex items-center justify-center`}
+    >
+      <IconComponent className={`h-4 w-4 ${config.color}`} />
+    </div>
+  );
+}
 
-  const colorMap: Record<string, string> = {
-    ORDER_CONFIRMED: "text-green-600 bg-green-100 border-green-200",
-    ORDER_DELIVERED: "text-green-600 bg-green-100 border-green-200",
-    PAYMENT_PROCESSED: "text-green-600 bg-green-100 border-green-200",
-    PASSWORD_CHANGED: "text-green-600 bg-green-100 border-green-200",
-    EMAIL_CHANGED: "text-green-600 bg-green-100 border-green-200",
-    TWO_FACTOR_ENABLED: "text-green-600 bg-green-100 border-green-200",
-    REFUND_PROCESSED: "text-green-600 bg-green-100 border-green-200",
-    RETURN_APPROVED: "text-green-600 bg-green-100 border-green-200",
-    RETURN_PROCESSED: "text-green-600 bg-green-100 border-green-200",
-    WISHLIST_ITEM_BACK_IN_STOCK: "text-green-600 bg-green-100 border-green-200",
-    LOYALTY_REWARD: "text-green-600 bg-green-100 border-green-200",
-    RESTOCK_NOTIFICATION: "text-green-600 bg-green-100 border-green-200",
-    default: "text-blue-600 bg-blue-100 border-blue-200",
+// Priority Badge Component
+function SeverityBadge({ severity }: { severity: string }) {
+  const variants = {
+    CRITICAL: {
+      className: "bg-red-100 text-red-700 border-red-200",
+      label: "Critical",
+    },
+    WARNING: {
+      className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      label: "Warning",
+    },
+    INFO: {
+      className: "bg-gray-100 text-gray-700 border-gray-200",
+      label: "Info",
+    },
   };
 
-  return colorMap[type] || colorMap.default;
-};
+  const config = variants[severity as keyof typeof variants];
+  if (!config) return null;
+
+  return (
+    <Badge className={`text-xs px-2 py-0.5 ${config.className}`}>
+      {config.label}
+    </Badge>
+  );
+}
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -160,10 +216,10 @@ const formatDate = (dateString: string) => {
 
   if (diffInHours < 1) {
     const diffInMinutes = Math.floor(diffInHours * 60);
-    return `${diffInMinutes} minute${diffInMinutes !== 1 ? "s" : ""} ago`;
+    return `${diffInMinutes}m ago`;
   } else if (diffInHours < 24) {
     const hours = Math.floor(diffInHours);
-    return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    return `${hours}h ago`;
   } else if (diffInHours < 48) {
     return "Yesterday";
   } else {
@@ -176,151 +232,53 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Filter component
-interface FilterDropdownProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}
-
-function FilterDropdown({ value, onChange, options }: FilterDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+// Loading Skeletons (matching vendor style)
+function StatsSkeleton() {
   return (
-    <div className="relative">
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        variant="outline"
-        className="flex items-center space-x-2 text-sm bg-white border-gray-200 hover:bg-gray-50 transition-colors"
-      >
-        <FunnelIcon className="w-4 h-4 text-gray-500" />
-        <span className="text-gray-700">
-          {options.find((opt) => opt.value === value)?.label || "All Types"}
-        </span>
-        <ChevronDownIcon
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </Button>
-
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-            {options.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
-                  value === option.value
-                    ? "bg-blue-50 text-blue-700 font-medium"
-                    : "text-gray-700"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="w-10 h-10 rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
 
-// Skeleton loading component
-function NotificationSkeleton() {
+function NotificationsSkeleton() {
   return (
-    <Card className="p-6">
-      <div className="flex space-x-4">
-        <Skeleton className="w-12 h-12 rounded-full" />
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-          <Skeleton className="h-3 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
-          <div className="flex items-center justify-between pt-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-2 w-2 rounded-full" />
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// Enhanced skeleton for the full page
-function NotificationsPageSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      <div className="container mx-auto px-4">
-        {/* Breadcrumb Skeleton */}
-        <div className="pt-8 px-4 pb-4">
-          <div className="flex items-center space-x-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-
-        {/* Header Skeleton */}
-        <div className="mb-8 px-4">
-          <div className="flex items-center space-x-3 mb-2">
-            <Skeleton className="w-10 h-10 rounded-lg" />
-            <Skeleton className="h-8 w-40" />
-          </div>
-          <Skeleton className="h-5 w-96" />
-        </div>
-
-        {/* Stats Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 px-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-6 w-8" />
-                </div>
-                <Skeleton className="w-12 h-12 rounded-lg" />
+    <Card className="border-0 shadow-sm bg-white">
+      <CardContent className="p-0">
+        <div className="space-y-0">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0"
+            >
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <div className="flex-1 space-y-1">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-1/2" />
               </div>
-            </Card>
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </div>
           ))}
         </div>
-
-        {/* Filters Skeleton */}
-        <div className="px-4">
-          <Card className="p-6 mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-              <div className="flex items-center space-x-4">
-                <Skeleton className="h-9 w-32" />
-                <div className="flex items-center space-x-2">
-                  <Skeleton className="h-4 w-4 rounded" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              </div>
-              <Skeleton className="h-9 w-32" />
-            </div>
-          </Card>
-        </div>
-
-        {/* Notifications List Skeleton */}
-        <div className="px-4">
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <NotificationSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -328,35 +286,32 @@ export default function NotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // State
+  // State - similar to vendor page
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [stats, setStats] = useState({
     totalNotifications: 0,
     unreadCount: 0,
     todayCount: 0,
     criticalCount: 0,
   });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    totalCount: 0,
-    totalPages: 0,
-  });
-
-  // Filters
-  const [filterType, setFilterType] = useState("all");
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   // Filter options
   const filterOptions = [
-    { value: "all", label: "All Types" },
-    { value: "ORDER_CONFIRMED", label: "Order Updates" },
-    { value: "PAYMENT_PROCESSED", label: "Payments" },
-    { value: "WISHLIST_ITEM_BACK_IN_STOCK", label: "Wishlist" },
-    { value: "PROMOTIONAL_OFFER", label: "Promotions" },
-    { value: "ACCOUNT_SECURITY", label: "Security" },
+    { label: "All Types", value: "all" },
+    { label: "Order Updates", value: "ORDER_CONFIRMED" },
+    { label: "Payments", value: "PAYMENT_PROCESSED" },
+    { label: "Wishlist", value: "WISHLIST_ITEM_BACK_IN_STOCK" },
+    { label: "Promotions", value: "PROMOTIONAL_OFFER" },
+    { label: "Security", value: "ACCOUNT_SECURITY" },
   ];
 
   // Redirect if not authenticated
@@ -366,105 +321,140 @@ export default function NotificationsPage() {
     }
   }, [status, router]);
 
-  // Load notifications
-  const loadNotifications = useCallback(
-    async (page = 1) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.limit.toString(),
-          ...(showUnreadOnly && { unreadOnly: "true" }),
-          ...(filterType !== "all" && { type: filterType }),
-        });
-
-        const response = await fetch(`/api/notifications?${params}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to load notifications");
-        }
-
-        const data: NotificationsResponse = await response.json();
-
-        if (data.success) {
-          setNotifications(data.notifications);
-          setStats(data.stats);
-          setPagination(data.pagination);
-        } else {
-          throw new Error("Failed to load notifications");
-        }
-      } catch (error) {
-        console.error("Error loading notifications:", error);
-        setError("Failed to load notifications");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pagination.limit, showUnreadOnly, filterType]
-  );
-
-  // Initial load
+  // Load notifications (exact same pattern as vendor page)
   useEffect(() => {
-    if (session?.user) {
-      loadNotifications();
-    }
-  }, [session, filterType, showUnreadOnly, loadNotifications]);
+    loadNotifications();
+  }, [currentPage, searchTerm, typeFilter, statusFilter, severityFilter]);
 
-  // Mark notification as read
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "20", // Increased from 15 to show more notifications
+      });
+
+      if (searchTerm) params.append("search", searchTerm);
+      if (typeFilter) params.append("type", typeFilter);
+      if (statusFilter) params.append("status", statusFilter);
+      if (severityFilter) params.append("severity", severityFilter);
+
+      const response = await fetch(`/api/notifications?${params}`);
+      const data: NotificationsResponse = await response.json();
+
+      if (data.success) {
+        setNotifications(
+          Array.isArray(data.notifications) ? data.notifications : []
+        );
+        setTotalPages(Math.max(1, data.pagination?.totalPages || 1));
+        setTotalCount(Math.max(0, data.pagination?.totalCount || 0));
+        setStats({
+          totalNotifications: Math.max(0, data.stats?.totalNotifications || 0),
+          unreadCount: Math.max(0, data.stats?.unreadCount || 0),
+          todayCount: Math.max(0, data.stats?.todayCount || 0),
+          criticalCount: Math.max(0, data.stats?.criticalCount || 0),
+        });
+      }
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      setNotifications([]);
+      setTotalPages(1);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    loadNotifications();
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setTypeFilter("");
+    setStatusFilter("");
+    setSeverityFilter("");
+    setCurrentPage(1);
+  };
+
+  // Mark notification as read - SAME AS VENDOR (local state update only)
   const markAsRead = async (notificationId: string) => {
     try {
+      // Update local state immediately
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      );
+      setStats((prev) => ({
+        ...prev,
+        unreadCount: Math.max(0, prev.unreadCount - 1),
+      }));
+
+      // Make API call in background
       const response = await fetch("/api/notifications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          notificationId,
-          markAllRead: false,
-        }),
+        body: JSON.stringify({ notificationId }),
       });
 
-      if (response.ok) {
+      if (!response.ok) {
+        // Revert on error
         setNotifications((prev) =>
-          prev.map((notification) =>
-            notification.id === notificationId
-              ? { ...notification, isRead: true }
-              : notification
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, isRead: false } : notif
           )
         );
         setStats((prev) => ({
           ...prev,
-          unreadCount: Math.max(0, prev.unreadCount - 1),
+          unreadCount: prev.unreadCount + 1,
         }));
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
+      // Revert on error
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notificationId ? { ...notif, isRead: false } : notif
+        )
+      );
+      setStats((prev) => ({
+        ...prev,
+        unreadCount: prev.unreadCount + 1,
+      }));
     }
   };
 
-  // Mark all as read
+  // Mark all as read - SAME AS VENDOR (local state update only)
   const markAllAsRead = async () => {
     try {
+      // Update local state immediately
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, isRead: true }))
+      );
+      setStats((prev) => ({ ...prev, unreadCount: 0 }));
+
+      // Make API call in background
       const response = await fetch("/api/notifications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          markAllRead: true,
-        }),
+        body: JSON.stringify({ markAllRead: true }),
       });
 
-      if (response.ok) {
-        setNotifications((prev) =>
-          prev.map((notification) => ({ ...notification, isRead: true }))
-        );
-        setStats((prev) => ({ ...prev, unreadCount: 0 }));
+      if (!response.ok) {
+        // Revert on error (would need to track original unread count)
+        loadNotifications();
       }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
+      // Revert on error
+      loadNotifications();
     }
   };
 
@@ -479,14 +469,46 @@ export default function NotificationsPage() {
     }
   };
 
-  // Handle page change
-  const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
-    loadNotifications(newPage);
+  // Safe pagination calculation (same as vendor)
+  const generatePaginationNumbers = () => {
+    if (totalPages <= 1) return [];
+
+    const pages: number[] = [];
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else if (currentPage <= 4) {
+      for (let i = 1; i <= 7; i++) {
+        pages.push(i);
+      }
+    } else if (currentPage >= totalPages - 3) {
+      for (let i = Math.max(1, totalPages - 6); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      for (let i = currentPage - 3; i <= currentPage + 3; i++) {
+        if (i >= 1 && i <= totalPages) {
+          pages.push(i);
+        }
+      }
+    }
+
+    return pages;
   };
 
+  const paginationNumbers = generatePaginationNumbers();
+
   if (status === "loading") {
-    return <NotificationsPageSkeleton />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+        <div className="container mx-auto px-4 py-4 space-y-4">
+          <StatsSkeleton />
+          <NotificationsSkeleton />
+        </div>
+      </div>
+    );
   }
 
   if (!session?.user) {
@@ -494,360 +516,445 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      <div className="container mx-auto px-4">
-        {/* Breadcrumb */}
-        <div className="pt-8 px-4 pb-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Notifications</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Notifications</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-4 space-y-6">
         {/* Header */}
-        <div className="mb-8 px-4">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BellIconSolid className="w-6 h-6 text-blue-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
+            <p className="text-sm text-gray-600">
+              Stay updated on orders, payments, and account activity
+            </p>
           </div>
-          <p className="text-gray-600 text-lg">
-            Stay updated with your orders, payments, and account activity
-          </p>
+          <div className="flex items-center space-x-2">
+            {stats.unreadCount > 0 && (
+              <Button
+                onClick={markAllAsRead}
+                variant="outline"
+                className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
+              >
+                <CheckIcon className="w-3 h-3 mr-1.5" />
+                Mark All Read
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 px-4">
-          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalNotifications}
+        {/* Stats Grid */}
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <StatCard
+              title="Total Notifications"
+              value={stats.totalNotifications.toString()}
+              icon={BellIcon}
+              iconColor="text-blue-600"
+              bgColor="bg-blue-50"
+            />
+            <StatCard
+              title="Unread"
+              value={stats.unreadCount.toString()}
+              icon={EyeSlashIcon}
+              iconColor="text-orange-600"
+              bgColor="bg-orange-50"
+            />
+            <StatCard
+              title="Today"
+              value={stats.todayCount.toString()}
+              icon={BellIcon}
+              iconColor="text-green-600"
+              bgColor="bg-green-50"
+            />
+            <StatCard
+              title="Critical"
+              value={stats.criticalCount.toString()}
+              icon={ExclamationTriangleIcon}
+              iconColor="text-red-600"
+              bgColor="bg-red-50"
+            />
+          </motion.div>
+        )}
+
+        {/* Filters */}
+        <Card className="border-0 shadow-sm bg-white">
+          <CardContent className="p-4">
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Search */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="search"
+                    className="text-xs font-medium text-gray-700"
+                  >
+                    Search Notifications
+                  </Label>
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="search"
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9 text-sm"
+                      placeholder="Search notifications..."
+                    />
+                  </div>
+                </div>
+
+                {/* Type Filter */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Type
+                  </Label>
+                  <Select
+                    value={typeFilter || "all"}
+                    onValueChange={(value) =>
+                      setTypeFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="ORDER_CONFIRMED">
+                        Order Updates
+                      </SelectItem>
+                      <SelectItem value="PAYMENT_PROCESSED">
+                        Payments
+                      </SelectItem>
+                      <SelectItem value="WISHLIST_ITEM_BACK_IN_STOCK">
+                        Wishlist
+                      </SelectItem>
+                      <SelectItem value="PROMOTIONAL_OFFER">
+                        Promotions
+                      </SelectItem>
+                      <SelectItem value="ACCOUNT_SECURITY">Security</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Status
+                  </Label>
+                  <Select
+                    value={statusFilter || "all"}
+                    onValueChange={(value) =>
+                      setStatusFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="unread">Unread</SelectItem>
+                      <SelectItem value="read">Read</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Severity Filter */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Priority
+                  </Label>
+                  <Select
+                    value={severityFilter || "all"}
+                    onValueChange={(value) =>
+                      setSeverityFilter(value === "all" ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="All Priorities" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Priorities</SelectItem>
+                      <SelectItem value="CRITICAL">Critical</SelectItem>
+                      <SelectItem value="WARNING">Warning</SelectItem>
+                      <SelectItem value="INFO">Info</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Clear & Apply */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Actions
+                  </Label>
+                  <div className="flex space-x-2">
+                    {(searchTerm ||
+                      typeFilter ||
+                      statusFilter ||
+                      severityFilter) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={clearFilters}
+                        className="h-9 px-3 text-xs cursor-pointer"
+                      >
+                        <XMarkIcon className="w-3 h-3" />
+                      </Button>
+                    )}
+                    <Button
+                      type="submit"
+                      className="bg-slate-900 hover:bg-slate-800 text-white h-9 px-3 text-xs cursor-pointer"
+                    >
+                      <FunnelIcon className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-600">
+                  {totalCount} notifications found
                 </p>
               </div>
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <BellIcon className="w-6 h-6 text-gray-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Unread</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {stats.unreadCount}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <EyeSlashIcon className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Today</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.todayCount}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckIcon className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Critical
-                </p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.criticalCount}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-lg">
-                <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Filters and Actions */}
-        <div className="px-4">
-          <Card className="p-6 mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4">
-                <FilterDropdown
-                  value={filterType}
-                  onChange={setFilterType}
-                  options={filterOptions}
-                />
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showUnreadOnly}
-                    onChange={(e) => setShowUnreadOnly(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-700 select-none">
-                    Unread only
-                  </span>
-                </label>
-              </div>
-
-              {stats.unreadCount > 0 && (
-                <Button
-                  onClick={markAllAsRead}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <EyeIcon className="w-4 h-4" />
-                  <span>Mark all as read</span>
-                </Button>
-              )}
-            </div>
-          </Card>
-        </div>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Notifications List */}
-        <div className="px-4">
-          {loading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <NotificationSkeleton key={i} />
-              ))}
-            </div>
-          ) : error ? (
-            <Card className="p-8 text-center">
-              <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+        {loading ? (
+          <NotificationsSkeleton />
+        ) : error ? (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-12 text-center">
+              <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
                 Error Loading Notifications
               </h3>
-              <p className="text-gray-600 mb-4">{error}</p>
+              <p className="text-xs text-gray-500 mb-4">{error}</p>
               <Button
                 onClick={() => loadNotifications()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs cursor-pointer"
               >
                 Try Again
               </Button>
-            </Card>
-          ) : notifications.length === 0 ? (
-            <Card className="p-8 text-center">
-              <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Notifications
+            </CardContent>
+          </Card>
+        ) : !notifications || notifications.length === 0 ? (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-12 text-center">
+              <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                No notifications found
               </h3>
-              <p className="text-gray-600">
-                {showUnreadOnly
+              <p className="text-xs text-gray-500">
+                {statusFilter === "unread"
                   ? "No unread notifications found"
                   : "You don't have any notifications yet"}
               </p>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {notifications.map((notification) => {
-                const IconComponent = getNotificationIcon(notification.type);
-                const colorClasses = getNotificationColor(
-                  notification.type,
-                  notification.severity
-                );
-
-                return (
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-0">
+              <div className="space-y-0">
+                {notifications.map((notification) => (
                   <motion.div
                     key={notification.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="cursor-pointer"
+                    whileHover={{ x: 2 }}
+                    className={`flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer ${
+                      !notification.isRead
+                        ? "bg-blue-50/30"
+                        : "hover:bg-gray-50/50"
+                    }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <Card
-                      className={`p-6 transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
-                        notification.isRead
-                          ? "bg-white border-gray-200"
-                          : "bg-gradient-to-r from-blue-50 to-white border-blue-200 shadow-sm"
-                      }`}
-                    >
-                      <div className="flex space-x-4">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${colorClasses}`}
-                        >
-                          <IconComponent className="w-6 h-6" />
-                        </div>
+                    <NotificationIcon type={notification.type} />
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center space-x-2 flex-wrap">
-                              <h3
-                                className={`text-base font-semibold ${
-                                  notification.isRead
-                                    ? "text-gray-700"
-                                    : "text-gray-900"
-                                }`}
-                              >
-                                {notification.title}
-                              </h3>
-                              {notification.severity === "CRITICAL" && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                                  Critical
-                                </span>
-                              )}
-                              {notification.severity === "WARNING" && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
-                                  Warning
-                                </span>
-                              )}
-                            </div>
-                            {!notification.isRead && (
-                              <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
-                            )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {notification.title}
+                        </h3>
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                        {notification.message}
+                      </p>
+
+                      {/* Order/Product info if available */}
+                      {notification.order && (
+                        <div className="flex items-center space-x-2 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="p-1 bg-gray-200 rounded">
+                            <ShoppingCartIcon className="w-3 h-3 text-gray-600" />
                           </div>
-
-                          <p
-                            className={`text-sm leading-relaxed ${
-                              notification.isRead
-                                ? "text-gray-600"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {notification.message}
-                          </p>
-
-                          {/* Order/Product info if available */}
-                          {notification.order && (
-                            <div className="flex items-center space-x-2 mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                              <div className="p-1 bg-gray-200 rounded">
-                                <ShoppingCartIcon className="w-4 h-4 text-gray-600" />
-                              </div>
-                              <div className="text-sm">
-                                <span className="font-medium text-gray-700">
-                                  Order #
-                                  {notification.order.id
-                                    .slice(-8)
-                                    .toUpperCase()}
-                                </span>
-                                {notification.order.productName && (
-                                  <span className="text-gray-500 ml-2">
-                                    • {notification.order.productName}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-                            <span className="text-xs text-gray-500 font-medium">
-                              {formatDate(notification.createdAt)}
+                          <div className="text-xs">
+                            <span className="font-medium text-gray-700">
+                              Order #
+                              {notification.order.id.slice(-8).toUpperCase()}
                             </span>
-                            {notification.actionUrl && (
-                              <span className="text-xs text-blue-600 font-medium">
-                                Click to view →
+                            {notification.order.productName && (
+                              <span className="text-gray-500 ml-2">
+                                • {notification.order.productName}
                               </span>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="px-4">
-              <Card className="p-6 mt-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                  <div className="text-sm text-gray-600">
-                    Showing{" "}
-                    <span className="font-medium">
-                      {(pagination.page - 1) * pagination.limit + 1}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-medium">
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.totalCount
                       )}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-medium">{pagination.totalCount}</span>{" "}
-                    notifications
-                  </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                      variant="outline"
-                      size="sm"
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </Button>
+                      <div className="flex items-center space-x-2 text-xs text-gray-500 mt-2">
+                        <span>{formatDate(notification.createdAt)}</span>
+                        <span>•</span>
+                        <span className="capitalize">
+                          {notification.type.replace(/_/g, " ").toLowerCase()}
+                        </span>
+                        <SeverityBadge severity={notification.severity} />
+                      </div>
+                    </div>
 
-                    {Array.from(
-                      { length: pagination.totalPages },
-                      (_, i) => i + 1
-                    )
-                      .filter(
-                        (page) =>
-                          page === 1 ||
-                          page === pagination.totalPages ||
-                          (page >= pagination.page - 1 &&
-                            page <= pagination.page + 1)
-                      )
-                      .map((page, index, array) => (
-                        <div key={page} className="flex items-center">
-                          {index > 0 && array[index - 1] !== page - 1 && (
-                            <span className="px-2 text-gray-400">...</span>
-                          )}
-                          <Button
-                            onClick={() => handlePageChange(page)}
-                            variant={
-                              page === pagination.page ? "default" : "outline"
-                            }
-                            size="sm"
-                            className={
-                              page === pagination.page
-                                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                                : ""
-                            }
+                    <div className="flex items-center space-x-2">
+                      {notification.actionUrl && (
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link
+                            href={notification.actionUrl}
+                            className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              !notification.isRead &&
+                                markAsRead(notification.id);
+                            }}
                           >
-                            {page}
-                          </Button>
-                        </div>
-                      ))}
+                            View
+                          </Link>
+                        </Button>
+                      )}
 
-                    <Button
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.totalPages}
-                      variant="outline"
-                      size="sm"
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <EllipsisVerticalIcon className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!notification.isRead && (
+                            <DropdownMenuItem
+                              onClick={() => markAsRead(notification.id)}
+                              className="cursor-pointer"
+                            >
+                              <CheckIcon className="w-4 h-4 mr-2" />
+                              Mark as read
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              /* Add delete functionality if needed */
+                            }}
+                            className="text-red-600 cursor-pointer"
+                          >
+                            <TrashIcon className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-700">
+              Showing {Math.max(1, (currentPage - 1) * 20 + 1)} to{" "}
+              {Math.min(currentPage * 20, totalCount)} of {totalCount}{" "}
+              notifications
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Previous
+              </Button>
+
+              <div className="flex space-x-1">
+                {paginationNumbers.map((pageNumber) => (
+                  <Button
+                    key={pageNumber}
+                    variant={currentPage === pageNumber ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`w-8 h-8 text-xs cursor-pointer ${
+                      currentPage === pageNumber
+                        ? "bg-slate-900 hover:bg-slate-800 text-white"
+                        : ""
+                    }`}
+                  >
+                    {pageNumber}
+                  </Button>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3 text-xs cursor-pointer"
+              >
+                Next
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
       <Footer />
     </div>
   );

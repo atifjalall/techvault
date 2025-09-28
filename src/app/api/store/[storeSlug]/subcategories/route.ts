@@ -1,20 +1,20 @@
-// src/app/api/store/[storeId]/subcategories/route.ts
+// src/app/api/store/[storeSlug]/subcategories/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ storeId: string }> }
+  context: { params: Promise<{ storeSlug: string }> }
 ) {
   try {
     const params = await context.params;
-    const storeId = params.storeId;
+    const storeSlug = params.storeSlug;
     const { searchParams } = new URL(request.url);
     const categoryName = searchParams.get("category");
 
-    if (!storeId) {
+    if (!storeSlug) {
       return NextResponse.json(
-        { success: false, error: "Store ID is required" },
+        { success: false, error: "Store slug is required" },
         { status: 400 }
       );
     }
@@ -26,16 +26,21 @@ export async function GET(
       );
     }
 
-    // Verify vendor exists
+    // Verify vendor exists by store slug
     const vendor = await db.user.findFirst({
       where: {
-        id: storeId,
         role: "VENDOR",
         deleteAt: null,
+        vendorSettings: {
+          storeSlug: storeSlug,
+        },
+      },
+      include: {
+        vendorSettings: true,
       },
     });
 
-    if (!vendor) {
+    if (!vendor || !vendor.vendorSettings) {
       return NextResponse.json(
         { success: false, error: "Store not found" },
         { status: 404 }
@@ -50,7 +55,7 @@ export async function GET(
         },
         products: {
           some: {
-            vendorId: storeId,
+            vendorId: vendor.id,
             isActive: true,
             deletedAt: null,
           },
@@ -61,7 +66,7 @@ export async function GET(
           select: {
             products: {
               where: {
-                vendorId: storeId,
+                vendorId: vendor.id,
                 isActive: true,
                 deletedAt: null,
               },
