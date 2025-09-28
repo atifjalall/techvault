@@ -22,10 +22,12 @@ export async function GET() {
     const formattedCategories = categories.map((category) => ({
       id: category.id,
       name: category.name,
+      slug: category.slug, // Add missing slug property
       href: `/products?category=${category.slug}`,
       subcategories: category.subcategories.map((sub) => ({
         id: sub.id,
         name: sub.name,
+        slug: sub.slug, // Add missing slug property for subcategories too
         href: `/products?subcategory=${sub.slug}`,
       })),
     }));

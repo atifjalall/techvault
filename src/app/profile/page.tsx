@@ -818,18 +818,6 @@ export default function ProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
-                  <Link
-                    href="/"
-                    className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer mb-3"
-                  >
-                    <motion.div
-                      whileHover={{ x: -2 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <ArrowLeftIcon className="w-4 h-4 mr-1" />
-                    </motion.div>
-                    Back to Home
-                  </Link>
                   <motion.h1
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
