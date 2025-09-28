@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import HeroCarousel from "@/components/home/HeroCarousel";
 import NewArrivals from "@/components/home/NewArrivals";
 import FeaturedCategories from "@/components/home/FeaturedCategories";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -23,8 +24,181 @@ export default function HomePage() {
   // Show loading while checking auth
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-white">
+        {/* Main Content Skeleton */}
+        <main>
+          {/* Hero Carousel Skeleton */}
+          <section className="relative h-[60vh] min-h-[400px] bg-gray-50">
+            <div className="absolute inset-0">
+              <Skeleton className="w-full h-full" />
+            </div>
+            {/* Hero overlay content */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center space-y-4 px-4">
+                <Skeleton className="h-12 w-80 mx-auto" />
+                <Skeleton className="h-6 w-96 mx-auto" />
+                <Skeleton className="h-12 w-40 mx-auto rounded-lg" />
+              </div>
+            </div>
+            {/* Carousel indicators */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="w-3 h-3 rounded-full" />
+              ))}
+            </div>
+          </section>
+
+          {/* New Arrivals Skeleton */}
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Section Header */}
+              <div className="text-center mb-12">
+                <Skeleton className="h-8 w-48 mx-auto mb-4" />
+                <Skeleton className="h-5 w-80 mx-auto" />
+              </div>
+
+              {/* Products Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-4">
+                    <Skeleton className="aspect-square w-full rounded-lg" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-5 w-full" />
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((j) => (
+                          <Skeleton key={j} className="w-3 h-3 rounded-full" />
+                        ))}
+                        <Skeleton className="h-3 w-8 ml-2" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Skeleton className="h-6 w-16" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Featured Categories Skeleton */}
+          <section className="py-16 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Section Header */}
+              <div className="text-center mb-12">
+                <Skeleton className="h-8 w-56 mx-auto mb-4" />
+                <Skeleton className="h-5 w-72 mx-auto" />
+              </div>
+
+              {/* Categories Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="text-center space-y-3">
+                    <Skeleton className="w-16 h-16 rounded-full mx-auto" />
+                    <Skeleton className="h-4 w-20 mx-auto" />
+                    <Skeleton className="h-3 w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Trust Indicators Skeleton */}
+          <section className="py-10 bg-white border-t border-gray-100">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="w-10 h-10 rounded-full mx-auto" />
+                    <Skeleton className="h-4 w-24 mx-auto" />
+                    <Skeleton className="h-3 w-20 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Newsletter Skeleton */}
+          <section className="relative py-16 bg-gradient-to-br from-gray-900 via-black to-gray-800 overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `radial-gradient(circle at 25% 25%, white 1px, transparent 1px)`,
+                  backgroundSize: "40px 40px",
+                }}
+              ></div>
+            </div>
+
+            {/* Gradient Orbs */}
+            <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+            <div
+              className="absolute bottom-0 right-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"
+              style={{ animationDelay: "1s" }}
+            ></div>
+
+            <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              {/* Badge */}
+              <Skeleton className="h-6 w-48 mx-auto mb-4 rounded-full bg-white/10" />
+
+              {/* Main Heading */}
+              <div className="mb-4 space-y-2">
+                <Skeleton className="h-8 w-64 mx-auto bg-white/10" />
+                <Skeleton className="h-8 w-32 mx-auto bg-white/10" />
+              </div>
+
+              {/* Subheading */}
+              <div className="mb-8 space-y-2">
+                <Skeleton className="h-4 w-80 mx-auto bg-white/10" />
+                <Skeleton className="h-4 w-64 mx-auto bg-white/10" />
+              </div>
+
+              {/* Email Form */}
+              <div className="relative max-w-md mx-auto mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-20"></div>
+                <div className="relative bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/20">
+                  <div className="flex flex-col sm:flex-row gap-1.5">
+                    <Skeleton className="flex-1 h-12 rounded-lg bg-white/10" />
+                    <Skeleton className="h-12 w-24 rounded-lg bg-white/90" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center">
+                    <Skeleton className="w-3 h-3 mr-1.5 bg-white/10" />
+                    <Skeleton className="h-3 w-32 bg-white/10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
+
+        {/* Footer Skeleton */}
+        <footer className="bg-gray-900 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-5 w-24 bg-white/10" />
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4].map((j) => (
+                      <Skeleton key={j} className="h-4 w-20 bg-white/10" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-gray-800 mt-8 pt-8 text-center">
+              <Skeleton className="h-4 w-64 mx-auto bg-white/10" />
+            </div>
+          </div>
+        </footer>
       </div>
     );
   }

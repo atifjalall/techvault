@@ -467,6 +467,7 @@ model VendorSettings {
   id           String   @id @default(cuid())
   userId       String   @unique
   storeName    String?
+  storeSlug    String?  @unique  // New field for URL slug
   banner       String?
   logo         String?
   
@@ -479,6 +480,8 @@ model VendorSettings {
   updatedAt    DateTime @updatedAt
 
   vendor User @relation(fields: [userId], references: [id])
+  
+  @@index([storeSlug])  // Index for faster lookups
 }
 
 model Transaction {

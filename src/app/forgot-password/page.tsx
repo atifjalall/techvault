@@ -16,7 +16,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { signIn } from "next-auth/react";
-import Button from "@/components/ui/Button";
+import Button from "@/components/ui/userButton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Step = "email" | "verification" | "password";
 
@@ -31,15 +32,90 @@ interface PasswordStrength {
 // -----------------------------
 function LoadingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
       <motion.div
-        className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-8 text-center"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        className="max-w-md w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-xs text-slate-600">Loading...</p>
+        {/* Header Skeleton */}
+        <div className="text-center mb-8">
+          <Skeleton className="h-8 w-32 mx-auto mb-2" />
+          <motion.div
+            className="mx-auto mb-6"
+            initial={{ width: 0 }}
+            animate={{ width: 64 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
+            <Skeleton className="h-0.5 w-16" />
+          </motion.div>
+        </div>
+
+        {/* Main Form Container Skeleton */}
+        <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6">
+          {/* Back Button Skeleton */}
+          <div className="flex items-center mb-4">
+            <Skeleton className="w-3.5 h-3.5 mr-1.5" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+
+          {/* Progress Bar Skeleton */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <div className="w-full bg-slate-200/50 rounded-full h-2">
+              <motion.div
+                className="h-2 bg-gradient-to-r from-slate-900 to-slate-700 rounded-full transition-all duration-500 ease-in-out"
+                initial={{ width: 0 }}
+                animate={{ width: "33%" }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              />
+            </div>
+          </div>
+
+          {/* Step Content Skeleton - Email Step */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
+          >
+            {/* Title and Description */}
+            <Skeleton className="h-6 w-36 mb-1" />
+            <div className="mb-4">
+              <Skeleton className="h-4 w-full mb-1" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+
+            {/* Email Form */}
+            <div className="space-y-4">
+              <div>
+                <Skeleton className="h-4 w-24 mb-1.5" />
+                <div className="relative">
+                  <Skeleton className="w-full h-10 rounded-xl" />
+                  {/* Email icon placeholder */}
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Skeleton className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Skeleton className="w-full h-10 rounded-xl" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Help Text Skeleton */}
+        <div className="text-center mt-6">
+          <div className="flex items-center justify-center space-x-1">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
       </motion.div>
     </div>
   );
@@ -194,7 +270,7 @@ export default function ForgotPasswordPage() {
       }
 
       setCurrentStep("verification");
-      setTimer(600); // 10 minutes
+      setTimer(60);
       showToastNotification("Reset code sent to your email!");
 
       // Auto-focus first input
@@ -552,7 +628,7 @@ export default function ForgotPasswordPage() {
                       size="md"
                       fullWidth
                       isLoading={isLoading}
-                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer rounded-xl"
                     >
                       {isLoading ? "Sending..." : "Send Verification Code"}
                     </Button>
@@ -672,7 +748,48 @@ export default function ForgotPasswordPage() {
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
+                        onCopy={(e) => {
+                          // Prevent copying password content for security
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onCut={(e) => {
+                          // Prevent cutting password content for security
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onPaste={() => {
+                          // Allow pasting for better UX with password managers
+                          // This is standard practice and improves usability
+                        }}
+                        onContextMenu={(e) => {
+                          // Disable right-click context menu on password field
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onDragStart={(e) => {
+                          // Prevent dragging password content
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onKeyDown={(e) => {
+                          // Prevent Ctrl+A (Select All) when password is hidden
+                          if (
+                            !showPassword &&
+                            (e.ctrlKey || e.metaKey) &&
+                            e.key === "a"
+                          ) {
+                            e.preventDefault();
+                            return false;
+                          }
+                        }}
+                        spellCheck={false}
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        data-lpignore="true"
+                        className={`w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
+                          showPassword ? "" : "select-none"
+                        }`}
                         placeholder="Enter new password"
                       />
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -756,7 +873,48 @@ export default function ForgotPasswordPage() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
+                        onCopy={(e) => {
+                          // Prevent copying password content for security
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onCut={(e) => {
+                          // Prevent cutting password content for security
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onPaste={() => {
+                          // Allow pasting for better UX with password managers
+                          // This is standard practice and improves usability
+                        }}
+                        onContextMenu={(e) => {
+                          // Disable right-click context menu on password field
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onDragStart={(e) => {
+                          // Prevent dragging password content
+                          e.preventDefault();
+                          return false;
+                        }}
+                        onKeyDown={(e) => {
+                          // Prevent Ctrl+A (Select All) when password is hidden
+                          if (
+                            !showConfirmPassword &&
+                            (e.ctrlKey || e.metaKey) &&
+                            e.key === "a"
+                          ) {
+                            e.preventDefault();
+                            return false;
+                          }
+                        }}
+                        spellCheck={false}
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        data-lpignore="true"
+                        className={`w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
+                          showConfirmPassword ? "" : "select-none"
+                        }`}
                         placeholder="Confirm new password"
                       />
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -798,7 +956,7 @@ export default function ForgotPasswordPage() {
                       fullWidth
                       isLoading={isLoading}
                       disabled={isLoading || passwordStrength.score < 3}
-                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer"
+                      className="bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/20 text-sm font-medium py-2.5 cursor-pointer rounded-xl"
                     >
                       {isLoading ? "Resetting..." : "Reset Password"}
                     </Button>

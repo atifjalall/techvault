@@ -23,6 +23,14 @@ import { formatPrice } from "@/lib/utils";
 import { useWishlist } from "@/hooks/useWishlist";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 // Updated interface to match your cart API response
 interface CartItem {
@@ -52,119 +60,153 @@ interface CartData {
 // Loading Skeleton Component
 function CartSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 space-y-4">
-        {[...Array(3)].map((_, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex gap-3">
-                  {/* Product Image Skeleton */}
-                  <Skeleton className="w-16 h-16 rounded-lg flex-shrink-0" />
+    <div className="space-y-4">
+      {/* Breadcrumb Skeleton */}
+      <div className="w-full pt-5 pb-4">
+        <div className="flex items-center space-x-2 ml-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-1" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
 
-                  {/* Product Details */}
-                  <div className="flex-1 min-w-0">
-                    {/* Header row with title and action buttons */}
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-3/4 mb-1" />
-                        <Skeleton className="h-3 w-1/2 mb-1" />
-                        <Skeleton className="h-3 w-1/3" />
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <Skeleton className="w-6 h-6 rounded" />
-                        <Skeleton className="w-6 h-6 rounded" />
-                      </div>
-                    </div>
+      {/* Header Skeleton */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" /> {/* Shopping Cart */}
+            <Skeleton className="h-4 w-20" /> {/* 2 items */}
+          </div>
+        </CardContent>
+      </Card>
 
-                    {/* Bottom row with stock, quantity, and price */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {/* Stock status */}
-                        <Skeleton className="h-3 w-20" />
-                        {/* Quantity controls */}
-                        <div className="flex items-center border border-gray-300 rounded-lg bg-white">
-                          <Skeleton className="w-6 h-6 rounded-l-lg" />
-                          <Skeleton className="w-8 h-6" />
-                          <Skeleton className="w-6 h-6 rounded-r-lg" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          {[...Array(2)].map((_, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex gap-3">
+                    {/* Product Image Skeleton */}
+                    <Skeleton className="w-16 h-16 rounded-lg flex-shrink-0" />
+
+                    {/* Product Details */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header row with product info and action buttons */}
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          {/* Product name */}
+                          <Skeleton className="h-4 w-64 mb-1" />
+                          {/* Brand */}
+                          <Skeleton className="h-3 w-12 mb-1" />
+                          {/* Category */}
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+
+                        {/* Action buttons (heart & trash) */}
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="w-6 h-6 rounded-lg" />
+                          <Skeleton className="w-6 h-6 rounded-lg" />
                         </div>
                       </div>
-                      {/* Price */}
-                      <div className="text-right">
-                        <Skeleton className="h-4 w-16 mb-1" />
-                        <Skeleton className="h-3 w-12" />
+
+                      {/* Bottom row with stock, quantity controls, and price */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {/* Stock status */}
+                          <Skeleton className="h-3 w-28" />
+
+                          {/* Quantity controls - minus, number, plus */}
+                          <div className="flex items-center border border-gray-300 rounded-lg bg-white">
+                            <div className="p-1.5">
+                              <Skeleton className="w-3 h-3" />
+                            </div>
+                            <div className="px-2.5 py-1.5 min-w-[2rem] text-center">
+                              <Skeleton className="w-4 h-4 mx-auto" />
+                            </div>
+                            <div className="p-1.5">
+                              <Skeleton className="w-3 h-3" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Price section */}
+                        <div className="text-right">
+                          <Skeleton className="h-4 w-20 mb-1" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
                       </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Order Summary Skeleton */}
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  {/* Price breakdown */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-12" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-18" />
+                    </div>
+                    <div className="border-t border-gray-200 pt-2">
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-10" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Checkout button */}
+                  <Skeleton className="h-10 w-full rounded-lg" />
+
+                  {/* Trust indicators */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-3 h-3" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-3 h-3" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-3 h-3" />
+                      <Skeleton className="h-3 w-20" />
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        ))}
-      </div>
-
-      {/* Order Summary Skeleton */}
-      <div className="lg:col-span-1">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <Skeleton className="h-5 w-32" />
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3">
-                {/* Price breakdown */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                  <div className="flex justify-between">
-                    <Skeleton className="h-3 w-12" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                  <div className="flex justify-between">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-18" />
-                  </div>
-                  <div className="border-t border-gray-200 pt-2">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-4 w-10" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Checkout button */}
-                <Skeleton className="h-10 w-full rounded-lg" />
-
-                {/* Trust indicators */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-3 h-3" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-3 h-3" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-3 h-3" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -281,11 +323,6 @@ export default function CartPage() {
           transition={{ duration: 0.6 }}
           className="container mx-auto px-4 py-4"
         >
-          <div className="mb-4">
-            <Skeleton className="h-6 w-48 mb-3" />
-            <Skeleton className="h-5 w-32 mb-1" />
-            <Skeleton className="h-4 w-24" />
-          </div>
           <CartSkeleton />
         </motion.div>
         <Footer />
@@ -646,6 +683,33 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Shopping Cart</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -665,18 +729,6 @@ export default function CartPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
               >
-                <Link
-                  href="/products"
-                  className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors mb-2 cursor-pointer"
-                >
-                  <motion.div
-                    whileHover={{ x: -2 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <ArrowLeftIcon className="w-4 h-4 mr-1" />
-                  </motion.div>
-                  Continue Shopping
-                </Link>
                 <motion.h1
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

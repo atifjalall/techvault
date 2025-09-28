@@ -21,6 +21,14 @@ import {
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 function CheckoutSuccessPageSkeleton() {
   return (
@@ -31,6 +39,19 @@ function CheckoutSuccessPageSkeleton() {
         transition={{ duration: 0.6 }}
         className="container mx-auto px-4 py-4"
       >
+        {/* Breadcrumb Skeleton */}
+        <div className="w-full pt-5 pb-4">
+          <div className="flex items-center space-x-2 ml-2">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+
         {/* Header Skeleton */}
         <div className="mb-4">
           <Card className="border-0 shadow-sm">
@@ -353,6 +374,49 @@ function CheckoutSuccessPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/cart" className="cursor-pointer">
+                      Cart
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/checkout" className="cursor-pointer">
+                      Checkout
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Success</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

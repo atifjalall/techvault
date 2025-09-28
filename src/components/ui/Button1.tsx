@@ -26,7 +26,7 @@ const buttonVariants = cva(
         premium:
           "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white border border-blue-600 shadow-md hover:shadow-lg hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 active:scale-[0.98] active:from-blue-800 active:via-indigo-800 active:to-purple-800 before:absolute before:inset-0 before:bg-gradient-to-t before:from-white/12 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-200",
         dark: "bg-slate-900 text-white border border-slate-900 shadow-sm hover:bg-slate-800 hover:border-slate-800 hover:shadow-md active:scale-[0.98] active:bg-slate-700 before:absolute before:inset-0 before:bg-gradient-to-t before:from-white/8 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-200",
-        active: "bg-blue-50 text-blue-700 shadow-sm border border-blue-100",
+        active: "bg-blue-50 text-blue-700 shadow-sm border border-blue-100 hover:bg-blue-100 hover:border-blue-200",
         danger:
           "bg-red-50 text-red-700 shadow-sm border border-red-100 hover:bg-red-100 hover:border-red-200",
       },

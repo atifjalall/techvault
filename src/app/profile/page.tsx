@@ -18,7 +18,7 @@ import {
   PhoneIcon,
   KeyIcon,
   ExclamationTriangleIcon,
-  ArrowLeftIcon,
+  ArrowLongRightIcon,
   ShoppingBagIcon,
   HeartIcon,
   CogIcon,
@@ -41,6 +41,14 @@ import {
 
 import Footer from "@/components/layout/Footer";
 import { getUserInitials } from "@/lib/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface ProfileData {
   id: string;
@@ -232,6 +240,15 @@ function ProfileSkeleton() {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
+      {/* Breadcrumb Skeleton */}
+      <div className="w-full pt-5 pb-4">
+        <div className="flex items-center space-x-2 ml-2">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-1" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -252,13 +269,42 @@ function ProfileSkeleton() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
+          className="space-y-6"
         >
+          {/* Profile Overview Skeleton */}
           <Card className="border-0 shadow-sm">
             <CardContent className="p-6">
               <div className="space-y-4">
                 <Skeleton className="h-20 w-20 rounded-full mx-auto" />
                 <Skeleton className="h-6 w-32 mx-auto" />
                 <Skeleton className="h-4 w-40 mx-auto" />
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions Skeleton */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <Skeleton className="w-4 h-4 mr-2" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-3 w-2" />
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -270,26 +316,109 @@ function ProfileSkeleton() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="lg:col-span-3 space-y-6"
         >
-          {[1, 2, 3].map((i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 * i }}
-            >
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <Skeleton className="h-6 w-32" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Skeleton className="h-10" />
-                      <Skeleton className="h-10" />
+          {/* Personal Information Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-48" /> {/* Personal Information */}
+                  <Skeleton className="h-8 w-16" /> {/* Edit button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-20 mb-2" /> {/* First Name */}
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-20 mb-2" /> {/* Last Name */}
+                      <Skeleton className="h-5 w-full" />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  <div>
+                    <Skeleton className="h-4 w-24 mb-2" /> {/* Email Address */}
+                    <Skeleton className="h-5 w-64" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-28 mb-2" /> {/* Phone Number */}
+                    <Skeleton className="h-5 w-40" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-12 mb-2" /> {/* Bio */}
+                    <Skeleton className="h-16 w-full" /> {/* Multi-line bio */}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Shipping Address Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Skeleton className="w-5 h-5 mr-2" /> {/* Map icon */}
+                    <Skeleton className="h-6 w-36" /> {/* Shipping Address */}
+                  </div>
+                  <Skeleton className="h-8 w-16" /> {/* Edit button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-48" /> {/* Street address */}
+                  <Skeleton className="h-4 w-36" /> {/* City, State ZIP */}
+                  <Skeleton className="h-4 w-24" /> {/* Country */}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Password & Security Skeleton */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Skeleton className="w-5 h-5 mr-2" /> {/* Key icon */}
+                    <Skeleton className="h-6 w-44" />{" "}
+                    {/* Password & Security */}
+                  </div>
+                  <Skeleton className="h-8 w-32" />{" "}
+                  {/* Change Password button */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-2" /> {/* Password */}
+                    <Skeleton className="h-4 w-24" /> {/* ••••••••••••• */}
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-28" /> {/* Last updated */}
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-56" />{" "}
+                    {/* Forgot password link */}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </motion.div>
@@ -642,11 +771,38 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Profile</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-6 space-y-6"
+        className="container mx-auto px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6"
       >
         {/* Header */}
         <motion.div
@@ -662,23 +818,11 @@ export default function ProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
-                  <Link
-                    href="/"
-                    className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer mb-3"
-                  >
-                    <motion.div
-                      whileHover={{ x: -2 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <ArrowLeftIcon className="w-4 h-4 mr-1" />
-                    </motion.div>
-                    Back to Home
-                  </Link>
                   <motion.h1
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
-                    className="text-xl font-bold text-gray-900"
+                    className="text-lg lg:text-xl font-bold text-gray-900"
                   >
                     My Profile
                   </motion.h1>
@@ -686,7 +830,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
-                    className="text-sm text-gray-600 mt-1"
+                    className="text-base lg:text-lg text-gray-600 mt-1"
                   >
                     Manage your account information and preferences
                   </motion.p>
@@ -763,7 +907,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="space-y-6"
+            className="space-y-4 lg:space-y-6"
           >
             {/* Profile Overview */}
             <motion.div
@@ -772,12 +916,12 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-6 text-center">
+                <CardContent className="p-4 lg:p-6 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                    className="w-20 h-20 mx-auto mb-4"
+                    className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4"
                   >
                     {session.user.image ? (
                       <Image
@@ -788,7 +932,7 @@ export default function ProfilePage() {
                         className="w-full h-full rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-xl font-bold">
+                      <div className="w-full h-full rounded-full bg-gray-900 text-white flex items-center justify-center text-lg lg:text-xl font-bold">
                         {getUserInitials(
                           profileData.firstName + " " + profileData.lastName
                         )}
@@ -799,7 +943,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 }}
-                    className="text-lg font-semibold text-gray-900 mb-1"
+                    className="text-base lg:text-lg font-semibold text-gray-900 mb-1"
                   >
                     {profileData.firstName} {profileData.lastName}
                   </motion.h3>
@@ -807,7 +951,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
-                    className="text-sm text-gray-600 mb-3"
+                    className="text-sm lg:text-base text-gray-600 mb-3"
                   >
                     {profileData.email}
                   </motion.p>
@@ -872,9 +1016,9 @@ export default function ProfilePage() {
             >
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                  <CardTitle className="text-base lg:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
+                <CardContent className="p-3 lg:p-4 pt-0">
                   <div className="space-y-2">
                     {[
                       {
@@ -908,7 +1052,7 @@ export default function ProfilePage() {
                             transition={{ type: "spring", stiffness: 300 }}
                             className="text-xs text-gray-400"
                           >
-                            →
+                            <ArrowLongRightIcon className="w-5 h-5 text-gray-600 mr-2" />
                           </motion.span>
                         </Link>
                       </motion.div>
@@ -935,7 +1079,7 @@ export default function ProfilePage() {
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-base lg:text-lg">
                       Personal Information
                     </CardTitle>
                     {!isEditingPersonal && (
@@ -971,7 +1115,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.1 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="firstName">First Name</Label>
@@ -1141,7 +1285,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.5 }}
-                          className="flex space-x-3"
+                          className="flex flex-col sm:flex-row gap-3 lg:gap-4"
                         >
                           <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -1150,7 +1294,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={handlePersonalUpdate}
                               disabled={saving}
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                               variant="dark"
                             >
                               {saving ? (
@@ -1168,7 +1312,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("personal")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -1188,7 +1332,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label className="text-gray-600">First Name</Label>
@@ -1276,7 +1420,7 @@ export default function ProfilePage() {
                       >
                         <MapPinIcon className="w-5 h-5 text-gray-600 mr-2" />
                       </motion.div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base lg:text-lg">
                         Shipping Address
                       </CardTitle>
                     </div>
@@ -1355,7 +1499,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.2 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="city">City</Label>
@@ -1438,7 +1582,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.3 }}
-                          className="grid grid-cols-2 gap-4"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
                             <Label htmlFor="zipCode">ZIP Code</Label>
@@ -1521,7 +1665,7 @@ export default function ProfilePage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.4 }}
-                          className="flex space-x-3"
+                          className="flex flex-col sm:flex-row gap-3 lg:gap-4"
                         >
                           <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -1530,7 +1674,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={handleAddressUpdate}
                               disabled={saving}
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                               variant="dark"
                             >
                               {saving ? (
@@ -1548,7 +1692,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("address")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -1620,7 +1764,7 @@ export default function ProfilePage() {
                       >
                         <KeyIcon className="w-5 h-5 text-gray-600 mr-2" />
                       </motion.div>
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-base lg:text-lg">
                         Password & Security
                       </CardTitle>
                     </div>
@@ -1950,7 +2094,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => cancelEdit("password")}
                               variant="outline"
-                              className="cursor-pointer"
+                              className="cursor-pointer w-full sm:w-auto"
                             >
                               <XMarkIcon className="w-4 h-4 mr-1" />
                               Cancel
@@ -2026,7 +2170,7 @@ export default function ProfilePage() {
             >
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">Danger Zone</CardTitle>
+                  <CardTitle className="text-base lg:text-lg">Danger Zone</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <motion.div
