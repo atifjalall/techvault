@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -12,13 +12,24 @@ import {
   InformationCircleIcon,
   XCircleIcon,
   ShoppingCartIcon,
-  TrashIcon,
   FunnelIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/Button1";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import Footer from "@/components/layout/Footer";
 
 // Types
 interface Notification {
@@ -177,32 +188,47 @@ function FilterDropdown({ value, onChange, options }: FilterDropdownProps) {
 
   return (
     <div className="relative">
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+        variant="outline"
+        className="flex items-center space-x-2 text-sm bg-white border-gray-200 hover:bg-gray-50 transition-colors"
       >
         <FunnelIcon className="w-4 h-4 text-gray-500" />
         <span className="text-gray-700">
           {options.find((opt) => opt.value === value)?.label || "All Types"}
         </span>
-        <ChevronDownIcon className="w-4 h-4 text-gray-500" />
-      </button>
+        <ChevronDownIcon
+          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg cursor-pointer"
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`block w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors cursor-pointer ${
+                  value === option.value
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-gray-700"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -211,16 +237,87 @@ function FilterDropdown({ value, onChange, options }: FilterDropdownProps) {
 // Skeleton loading component
 function NotificationSkeleton() {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
+    <Card className="p-6">
       <div className="flex space-x-4">
-        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+        <Skeleton className="w-12 h-12 rounded-full" />
         <div className="flex-1 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-3 bg-gray-200 rounded w-16"></div>
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-16" />
           </div>
-          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+          <div className="flex items-center justify-between pt-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-2 w-2 rounded-full" />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// Enhanced skeleton for the full page
+function NotificationsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="container mx-auto px-4">
+        {/* Breadcrumb Skeleton */}
+        <div className="pt-8 px-4 pb-4">
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+
+        {/* Header Skeleton */}
+        <div className="mb-8 px-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <Skeleton className="w-10 h-10 rounded-lg" />
+            <Skeleton className="h-8 w-40" />
+          </div>
+          <Skeleton className="h-5 w-96" />
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 px-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-6 w-8" />
+                </div>
+                <Skeleton className="w-12 h-12 rounded-lg" />
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Filters Skeleton */}
+        <div className="px-4">
+          <Card className="p-6 mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-9 w-32" />
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+              <Skeleton className="h-9 w-32" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Notifications List Skeleton */}
+        <div className="px-4">
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <NotificationSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -270,47 +367,50 @@ export default function NotificationsPage() {
   }, [status, router]);
 
   // Load notifications
-  const loadNotifications = async (page = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loadNotifications = useCallback(
+    async (page = 1) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-        ...(showUnreadOnly && { unreadOnly: "true" }),
-        ...(filterType !== "all" && { type: filterType }),
-      });
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          ...(showUnreadOnly && { unreadOnly: "true" }),
+          ...(filterType !== "all" && { type: filterType }),
+        });
 
-      const response = await fetch(`/api/notifications?${params}`);
+        const response = await fetch(`/api/notifications?${params}`);
 
-      if (!response.ok) {
-        throw new Error("Failed to load notifications");
+        if (!response.ok) {
+          throw new Error("Failed to load notifications");
+        }
+
+        const data: NotificationsResponse = await response.json();
+
+        if (data.success) {
+          setNotifications(data.notifications);
+          setStats(data.stats);
+          setPagination(data.pagination);
+        } else {
+          throw new Error("Failed to load notifications");
+        }
+      } catch (error) {
+        console.error("Error loading notifications:", error);
+        setError("Failed to load notifications");
+      } finally {
+        setLoading(false);
       }
-
-      const data: NotificationsResponse = await response.json();
-
-      if (data.success) {
-        setNotifications(data.notifications);
-        setStats(data.stats);
-        setPagination(data.pagination);
-      } else {
-        throw new Error("Failed to load notifications");
-      }
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-      setError("Failed to load notifications");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [pagination.limit, showUnreadOnly, filterType]
+  );
 
   // Initial load
   useEffect(() => {
     if (session?.user) {
       loadNotifications();
     }
-  }, [session, filterType, showUnreadOnly]);
+  }, [session, filterType, showUnreadOnly, loadNotifications]);
 
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
@@ -386,17 +486,7 @@ export default function NotificationsPage() {
   };
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <NotificationSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <NotificationsPageSkeleton />;
   }
 
   if (!session?.user) {
@@ -404,193 +494,231 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="container mx-auto px-4">
+        {/* Breadcrumb */}
+        <div className="pt-8 px-4 pb-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Notifications</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 px-4">
           <div className="flex items-center space-x-3 mb-2">
-            <BellIconSolid className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <BellIconSolid className="w-6 h-6 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-lg">
             Stay updated with your orders, payments, and account activity
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 px-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.totalNotifications}
                 </p>
               </div>
-              <BellIcon className="w-8 h-8 text-gray-400" />
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <BellIcon className="w-6 h-6 text-gray-600" />
+              </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Unread</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Unread</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {stats.unreadCount}
                 </p>
               </div>
-              <EyeSlashIcon className="w-8 h-8 text-blue-400" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <EyeSlashIcon className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Today</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Today</p>
                 <p className="text-2xl font-bold text-green-600">
                   {stats.todayCount}
                 </p>
               </div>
-              <CheckIcon className="w-8 h-8 text-green-400" />
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckIcon className="w-6 h-6 text-green-600" />
+              </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Critical</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Critical
+                </p>
                 <p className="text-2xl font-bold text-red-600">
                   {stats.criticalCount}
                 </p>
               </div>
-              <ExclamationTriangleIcon className="w-8 h-8 text-red-400" />
+              <div className="p-3 bg-red-100 rounded-lg">
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Filters and Actions */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-            <div className="flex items-center space-x-4">
-              <FilterDropdown
-                value={filterType}
-                onChange={setFilterType}
-                options={filterOptions}
-              />
-
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showUnreadOnly}
-                  onChange={(e) => setShowUnreadOnly(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        <div className="px-4">
+          <Card className="p-6 mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-4">
+                <FilterDropdown
+                  value={filterType}
+                  onChange={setFilterType}
+                  options={filterOptions}
                 />
-                <span className="text-sm text-gray-700">Unread only</span>
-              </label>
-            </div>
 
-            {stats.unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="flex items-center space-x-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-              >
-                <EyeIcon className="w-4 h-4" />
-                <span>Mark all as read</span>
-              </button>
-            )}
-          </div>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showUnreadOnly}
+                    onChange={(e) => setShowUnreadOnly(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700 select-none">
+                    Unread only
+                  </span>
+                </label>
+              </div>
+
+              {stats.unreadCount > 0 && (
+                <Button
+                  onClick={markAllAsRead}
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <EyeIcon className="w-4 h-4" />
+                  <span>Mark all as read</span>
+                </Button>
+              )}
+            </div>
+          </Card>
         </div>
 
         {/* Notifications List */}
-        {loading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <NotificationSkeleton key={i} />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Error Loading Notifications
-            </h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <button
-              onClick={() => loadNotifications()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Notifications
-            </h3>
-            <p className="text-gray-600">
-              {showUnreadOnly
-                ? "No unread notifications found"
-                : "You don't have any notifications yet"}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {notifications.map((notification) => {
-              const IconComponent = getNotificationIcon(notification.type);
-              const colorClasses = getNotificationColor(
-                notification.type,
-                notification.severity
-              );
+        <div className="px-4">
+          {loading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <NotificationSkeleton key={i} />
+              ))}
+            </div>
+          ) : error ? (
+            <Card className="p-8 text-center">
+              <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Error Loading Notifications
+              </h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button
+                onClick={() => loadNotifications()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Try Again
+              </Button>
+            </Card>
+          ) : notifications.length === 0 ? (
+            <Card className="p-8 text-center">
+              <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Notifications
+              </h3>
+              <p className="text-gray-600">
+                {showUnreadOnly
+                  ? "No unread notifications found"
+                  : "You don't have any notifications yet"}
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {notifications.map((notification) => {
+                const IconComponent = getNotificationIcon(notification.type);
+                const colorClasses = getNotificationColor(
+                  notification.type,
+                  notification.severity
+                );
 
-              return (
-                <motion.div
-                  key={notification.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`bg-white border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    notification.isRead
-                      ? "border-gray-200"
-                      : "border-blue-200 bg-blue-50/30"
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex space-x-4">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border ${colorClasses}`}
+                return (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="cursor-pointer"
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <Card
+                      className={`p-6 transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                        notification.isRead
+                          ? "bg-white border-gray-200"
+                          : "bg-gradient-to-r from-blue-50 to-white border-blue-200 shadow-sm"
+                      }`}
                     >
-                      <IconComponent className="w-5 h-5" />
-                    </div>
+                      <div className="flex space-x-4">
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${colorClasses}`}
+                        >
+                          <IconComponent className="w-6 h-6" />
+                        </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h3
-                              className={`text-sm font-semibold ${
-                                notification.isRead
-                                  ? "text-gray-700"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {notification.title}
-                            </h3>
-                            {notification.severity === "CRITICAL" && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                Critical
-                              </span>
-                            )}
-                            {notification.severity === "WARNING" && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                Warning
-                              </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-2 flex-wrap">
+                              <h3
+                                className={`text-base font-semibold ${
+                                  notification.isRead
+                                    ? "text-gray-700"
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                {notification.title}
+                              </h3>
+                              {notification.severity === "CRITICAL" && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                  Critical
+                                </span>
+                              )}
+                              {notification.severity === "WARNING" && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                  Warning
+                                </span>
+                              )}
+                            </div>
+                            {!notification.isRead && (
+                              <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
                             )}
                           </div>
 
                           <p
-                            className={`text-sm mt-1 ${
+                            className={`text-sm leading-relaxed ${
                               notification.isRead
-                                ? "text-gray-500"
+                                ? "text-gray-600"
                                 : "text-gray-700"
                             }`}
                           >
@@ -599,96 +727,128 @@ export default function NotificationsPage() {
 
                           {/* Order/Product info if available */}
                           {notification.order && (
-                            <div className="flex items-center space-x-2 mt-2 p-2 bg-gray-50 rounded text-xs">
-                              <ShoppingCartIcon className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-600">
-                                Order #
-                                {notification.order.id.slice(-8).toUpperCase()}
-                              </span>
-                              {notification.order.productName && (
-                                <span className="text-gray-400">
-                                  • {notification.order.productName}
+                            <div className="flex items-center space-x-2 mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                              <div className="p-1 bg-gray-200 rounded">
+                                <ShoppingCartIcon className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div className="text-sm">
+                                <span className="font-medium text-gray-700">
+                                  Order #
+                                  {notification.order.id
+                                    .slice(-8)
+                                    .toUpperCase()}
                                 </span>
-                              )}
+                                {notification.order.productName && (
+                                  <span className="text-gray-500 ml-2">
+                                    • {notification.order.productName}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between mt-3">
-                            <span className="text-xs text-gray-400">
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                            <span className="text-xs text-gray-500 font-medium">
                               {formatDate(notification.createdAt)}
                             </span>
-
-                            {!notification.isRead && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            {notification.actionUrl && (
+                              <span className="text-xs text-blue-600 font-medium">
+                                Click to view →
+                              </span>
                             )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-              {Math.min(
-                pagination.page * pagination.limit,
-                pagination.totalCount
-              )}{" "}
-              of {pagination.totalCount} notifications
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
+          )}
 
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Previous
-              </button>
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="px-4">
+              <Card className="p-6 mt-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                  <div className="text-sm text-gray-600">
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(pagination.page - 1) * pagination.limit + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(
+                        pagination.page * pagination.limit,
+                        pagination.totalCount
+                      )}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-medium">{pagination.totalCount}</span>{" "}
+                    notifications
+                  </div>
 
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                .filter(
-                  (page) =>
-                    page === 1 ||
-                    page === pagination.totalPages ||
-                    (page >= pagination.page - 1 && page <= pagination.page + 1)
-                )
-                .map((page, index, array) => (
-                  <div key={page} className="flex items-center">
-                    {index > 0 && array[index - 1] !== page - 1 && (
-                      <span className="px-2 text-gray-400">...</span>
-                    )}
-                    <button
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 text-sm border rounded-lg cursor-pointer ${
-                        page === pagination.page
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "border-gray-300 hover:bg-gray-50"
-                      }`}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page === 1}
+                      variant="outline"
+                      size="sm"
+                      className="disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {page}
-                    </button>
-                  </div>
-                ))}
+                      Previous
+                    </Button>
 
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Next
-              </button>
+                    {Array.from(
+                      { length: pagination.totalPages },
+                      (_, i) => i + 1
+                    )
+                      .filter(
+                        (page) =>
+                          page === 1 ||
+                          page === pagination.totalPages ||
+                          (page >= pagination.page - 1 &&
+                            page <= pagination.page + 1)
+                      )
+                      .map((page, index, array) => (
+                        <div key={page} className="flex items-center">
+                          {index > 0 && array[index - 1] !== page - 1 && (
+                            <span className="px-2 text-gray-400">...</span>
+                          )}
+                          <Button
+                            onClick={() => handlePageChange(page)}
+                            variant={
+                              page === pagination.page ? "default" : "outline"
+                            }
+                            size="sm"
+                            className={
+                              page === pagination.page
+                                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                : ""
+                            }
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))}
+
+                    <Button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page === pagination.totalPages}
+                      variant="outline"
+                      size="sm"
+                      className="disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

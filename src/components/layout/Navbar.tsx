@@ -145,7 +145,7 @@ function SearchBar() {
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="block w-full pl-12 pr-4 py-3 text-sm bg-white border border-gray-300 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 shadow-sm"
-            placeholder="What are you looking for?"
+            placeholder="Search for products, brands, categories..."
           />
         </div>
       </form>
@@ -931,13 +931,26 @@ function ProfileDropdown({ user, onSignOut }: ProfileDropdownProps) {
 // Smart Badge Component
 interface SmartBadgeProps {
   count: number;
+  isLoading?: boolean;
 }
 
-function SmartBadge({ count }: SmartBadgeProps) {
+function SkeletonBadge() {
+  return (
+    <span className="absolute -top-0 -right-0 bg-gray-300 text-transparent text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium animate-pulse">
+      0
+    </span>
+  );
+}
+
+function SmartBadge({ count, isLoading = false }: SmartBadgeProps) {
+  if (isLoading) {
+    return <SkeletonBadge />;
+  }
+
   if (count === 0) return null;
 
   return (
-    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+    <span className="absolute -top-0 -right-0 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
       {count > 9 ? "9+" : count}
     </span>
   );
@@ -1008,15 +1021,18 @@ function NotificationButton() {
         {notificationData.loaded ? (
           <>
             {notificationData.count > 0 ? (
-              <BellIconSolid className="h-4 w-4 text-slate-700" />
+              <BellIconSolid className="h-5 w-5 text-slate-700" />
             ) : (
-              <BellIcon className="h-4 w-4" />
+              <BellIcon className="h-5 w-5" />
             )}
-            <SmartBadge count={notificationData.count} />
           </>
         ) : (
-          <BellIcon className="h-4 w-4" />
+          <BellIcon className="h-5 w-5" />
         )}
+        <SmartBadge
+          count={notificationData.count}
+          isLoading={!notificationData.loaded}
+        />
       </button>
 
       <AnimatePresence>
@@ -1226,10 +1242,11 @@ export default function Navbar() {
                       href="/wishlist"
                       className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg hidden md:block cursor-pointer"
                     >
-                      <HeartIcon className="h-4 w-4" />
-                      {!countsLoading && (
-                        <SmartBadge count={wishlistItemCount} />
-                      )}
+                      <HeartIcon className="h-5 w-5" />
+                      <SmartBadge
+                        count={wishlistItemCount}
+                        isLoading={countsLoading}
+                      />
                     </Link>
 
                     {/* Cart Button - Desktop only */}
@@ -1237,8 +1254,11 @@ export default function Navbar() {
                       href="/cart"
                       className="text-slate-700 hover:text-slate-900 p-2 relative transition-colors hover:bg-gray-100/50 rounded-lg hidden md:block cursor-pointer"
                     >
-                      <ShoppingBagIcon className="h-4 w-4" />
-                      {!countsLoading && <SmartBadge count={cartItemCount} />}
+                      <ShoppingBagIcon className="h-5 w-5" />
+                      <SmartBadge
+                        count={cartItemCount}
+                        isLoading={countsLoading}
+                      />
                     </Link>
                   </>
                 )}
@@ -1425,9 +1445,10 @@ export default function Navbar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <HeartIcon className="h-5 w-5" />
-                      {!countsLoading && (
-                        <SmartBadge count={wishlistItemCount} />
-                      )}
+                      <SmartBadge
+                        count={wishlistItemCount}
+                        isLoading={countsLoading}
+                      />
                     </Link>
                     <Link
                       href="/cart"
@@ -1436,7 +1457,10 @@ export default function Navbar() {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <ShoppingBagIcon className="h-5 w-5" />
-                      {!countsLoading && <SmartBadge count={cartItemCount} />}
+                      <SmartBadge
+                        count={cartItemCount}
+                        isLoading={countsLoading}
+                      />
                     </Link>
                   </div>
                 )}

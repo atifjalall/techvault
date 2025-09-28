@@ -1,6 +1,7 @@
+// src/app/store/[storeId]/page.tsx - Customer-facing vendor store page
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,7 +10,6 @@ import {
   MapPinIcon,
   StarIcon,
   MagnifyingGlassIcon,
-  CheckIcon,
   ClockIcon,
   TruckIcon,
   ShieldCheckIcon,
@@ -17,9 +17,8 @@ import {
   ChatBubbleBottomCenterTextIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronUpDownIcon,
-  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
+import { CheckBadgeIcon as CheckBadgeIconSolid } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 
 // UI Components
@@ -35,7 +34,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ProductCard, { Product } from "@/components/ui/ProductCard";
+import ProductCard from "@/components/ui/ProductCard";
+
+// Define Product interface locally to match ProductCard expectations
+interface Product {
+  id: string | number;
+  name: string;
+  brand?: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  images?: string[];
+  variants?: string | number;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  category?: string;
+  rating?: number;
+  reviewCount?: number;
+  slug: string;
+  description?: string;
+  stock?: number;
+  isActive?: boolean;
+}
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -47,16 +67,14 @@ import {
 
 // Animation configurations
 const smoothTransition = { duration: 0.4 };
-const fastTransition = { duration: 0.2 };
 
-// Types (keeping all existing types)
+// Types
 interface VendorStore {
   id: string;
   name: string;
   businessName: string;
   description: string;
   image: string;
-  coverImage?: string;
   location: string;
   rating: number;
   totalReviews: number;
@@ -88,9 +106,22 @@ interface Pagination {
   totalPages: number;
 }
 
-// Enhanced Dropdown Component with design system consistency - REMOVED since we're using UI Select component
+interface ApiResponse {
+  success: boolean;
+  vendor?: VendorStore;
+  categories?: Category[];
+  brands?: Brand[];
+  error?: string;
+}
 
-// Enhanced Skeleton Components matching cart page design
+interface ProductsResponse {
+  success: boolean;
+  products?: Product[];
+  pagination?: Pagination;
+  error?: string;
+}
+
+// Skeleton Components
 function VendorHeaderSkeleton() {
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
@@ -134,19 +165,15 @@ function VendorHeaderSkeleton() {
 function FiltersSkeleton() {
   return (
     <div className="space-y-4">
-      {/* Search Products Card */}
       <Card className="shadow-sm bg-white border border-slate-200/50">
         <CardHeader className="pb-3">
           <Skeleton className="h-4 w-24" />
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="relative">
-            <Skeleton className="h-9 w-full" />
-          </div>
+          <Skeleton className="h-9 w-full" />
         </CardContent>
       </Card>
 
-      {/* Categories Card */}
       <Card className="shadow-sm bg-white border border-slate-200/50">
         <CardHeader className="pb-3">
           <Skeleton className="h-4 w-20" />
@@ -163,32 +190,18 @@ function FiltersSkeleton() {
         </CardContent>
       </Card>
 
-      {/* Store Information Card */}
       <Card className="shadow-sm bg-white border border-slate-200/50">
         <CardHeader className="pb-3">
           <Skeleton className="h-4 w-32" />
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-3 w-8" />
-            </div>
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-20" />
-              <div className="flex items-center gap-1">
-                <Skeleton className="h-3 w-3" />
-                <Skeleton className="h-3 w-6" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex justify-between items-center">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-8" />
               </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-12" />
-            </div>
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-10" />
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -229,7 +242,7 @@ function ProductGridSkeleton() {
   );
 }
 
-// Pagination Component with design system styling
+// Pagination Component
 function Pagination({
   currentPage,
   totalPages,
@@ -336,14 +349,8 @@ function Pagination({
   );
 }
 
-// Vendor Store Header Component with design system styling
+// Vendor Store Header Component
 function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
-  const [isFollowing, setIsFollowing] = useState(false);
-
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-  };
-
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
       <div className="container mx-auto px-4 py-6">
@@ -361,8 +368,8 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
                 />
               </div>
               {vendor.verified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                  <CheckIcon className="w-3 h-3 text-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center">
+                  <CheckBadgeIconSolid className="w-5 h-5 text-blue-500" />
                 </div>
               )}
             </div>
@@ -474,12 +481,25 @@ function VendorStoreContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Debug log
+  console.log("Component render - params:", params.storeId);
+
   const [vendor, setVendor] = useState<VendorStore | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Debug log for state
+  console.log("Component state:", {
+    loading,
+    vendor: !!vendor,
+    error,
+    productsLoading,
+  });
 
   // Pagination
   const [pagination, setPagination] = useState<Pagination>({
@@ -504,159 +524,173 @@ function VendorStoreContent() {
   );
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 
-  const sortOptions = [
-    { label: "Featured", value: "featured" },
-    { label: "Newest First", value: "newest" },
-    { label: "Price: Low to High", value: "price-asc" },
-    { label: "Price: High to Low", value: "price-desc" },
-    { label: "Best Rating", value: "rating" },
-    { label: "Most Popular", value: "popular" },
-  ];
+  // Fetch vendor data
+  const loadVendorData = useCallback(async () => {
+    console.log("1. Starting loadVendorData for:", params.storeId);
+    setLoading(true);
+    setError(null);
 
-  // Mock data with pagination (keeping all existing logic)
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
+    try {
+      console.log("2. About to fetch vendor data");
+      const response = await fetch(`/api/store/${params.storeId}`);
+      const data: ApiResponse = await response.json();
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      console.log("3. Vendor data received:", data.success);
 
-      // Mock vendor data
-      const mockVendor: VendorStore = {
-        id: params.storeId as string,
-        name: "TechZone Electronics",
-        businessName: "TechZone Electronics GmbH",
-        description:
-          "Premium electronics retailer specializing in cutting-edge smartphones, high-performance laptops, and professional audio equipment. Serving customers across Germany with exceptional products and customer service since 2020.",
-        image: "/placeholder-store.jpg",
-        location: "Berlin, Germany",
-        rating: 4.8,
-        totalReviews: 2847,
-        totalProducts: 156,
-        joinedDate: "2020-03-15",
-        verified: true,
-        responseTime: "< 1 hour",
-        shippingTime: "1-2 days",
-        returnPolicy: "14 days",
-        categories: [
-          "Smartphones",
-          "Laptops",
-          "Audio",
-          "Tablets",
-          "Accessories",
-        ],
-        followers: 12847,
-      };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch vendor data");
+      }
 
-      // Mock categories
-      const mockCategories: Category[] = [
-        { id: "1", name: "Smartphones", count: 45 },
-        { id: "2", name: "Laptops", count: 32 },
-        { id: "3", name: "Audio", count: 28 },
-        { id: "4", name: "Tablets", count: 18 },
-        { id: "5", name: "Accessories", count: 33 },
-      ];
-
-      // Mock brands
-      const mockBrands: Brand[] = [
-        { id: "1", name: "Apple" },
-        { id: "2", name: "Samsung" },
-        { id: "3", name: "Dell" },
-        { id: "4", name: "Sony" },
-        { id: "5", name: "Lenovo" },
-        { id: "6", name: "Google" },
-      ];
-
-      setVendor(mockVendor);
-      setCategories(mockCategories);
-      setBrands(mockBrands);
+      if (data.success && data.vendor) {
+        console.log("4. Setting vendor data");
+        setVendor(data.vendor);
+        setCategories(data.categories || []);
+        setBrands(data.brands || []);
+        console.log("5. Vendor data set successfully");
+      } else {
+        throw new Error("Vendor not found");
+      }
+    } catch (err) {
+      console.log("6. Error occurred:", err);
+      setError(err instanceof Error ? err.message : "Failed to load vendor");
+    } finally {
+      console.log("7. Setting loading to false");
       setLoading(false);
-
-      // Load first page of products
-      loadProducts(1);
-    };
-
-    loadData();
+    }
   }, [params.storeId]);
 
-  const loadProducts = async (page: number) => {
-    setProductsLoading(true);
+  // Fetch products
+  const loadProducts = useCallback(
+    async (page: number) => {
+      console.log("1. Starting loadProducts for page:", page);
+      setProductsLoading(true);
+      setError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
+      try {
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          ...(searchTerm && { search: searchTerm }),
+          ...(selectedCategory && { category: selectedCategory }),
+          ...(selectedSubcategory && { subcategory: selectedSubcategory }),
+          ...(selectedBrand && { brand: selectedBrand }),
+          ...(sortBy && { sort: sortBy }),
+        });
 
-    // Mock products with pagination
-    const allMockProducts: Product[] = Array.from({ length: 156 }, (_, i) => ({
-      id: `product-${i + 1}`,
-      name: `Premium ${["iPhone 15 Pro Max", "MacBook Air M3", "AirPods Pro 2", "iPad Air 11", "Samsung Galaxy S24 Ultra", "Dell XPS 13", "Sony WH-1000XM5", "Google Pixel 8 Pro"][i % 8]}`,
-      brand: [
-        "Apple",
-        "Samsung",
-        "Dell",
-        "Sony",
-        "Lenovo",
-        "Google",
-        "Microsoft",
-        "HP",
-      ][i % 8],
-      price: Math.floor(Math.random() * 1000) + 200,
-      originalPrice:
-        Math.random() > 0.7
-          ? Math.floor(Math.random() * 1200) + 300
-          : undefined,
-      image: "/placeholder-product.jpg",
-      images: ["/placeholder-product.jpg"],
-      rating: Number((4 + Math.random()).toFixed(1)),
-      reviewCount: Math.floor(Math.random() * 500) + 50,
-      stock: Math.floor(Math.random() * 100) + 1,
-      category:
-        categories[Math.floor(Math.random() * categories.length)]?.name ||
-        "Electronics",
-      slug: `product-${i + 1}`,
-      isNew: Math.random() > 0.8,
-      isFeatured: Math.random() > 0.7,
-      isActive: Math.random() > 0.1,
-    }));
+        console.log("2. About to fetch products");
+        const response = await fetch(
+          `/api/store/${params.storeId}/products?${queryParams}`
+        );
+        const data: ProductsResponse = await response.json();
 
-    // Filter products
-    const filteredProducts = allMockProducts.filter((product) => {
-      const matchesSearch =
-        !searchTerm ||
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.brand &&
-          product.brand.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesCategory =
-        !selectedCategory || product.category === selectedCategory;
-      const matchesBrand = !selectedBrand || product.brand === selectedBrand;
-      return matchesSearch && matchesCategory && matchesBrand;
-    });
+        console.log(
+          "3. Products data received:",
+          data.success,
+          "products count:",
+          data.products?.length
+        );
 
-    // Paginate
-    const startIndex = (page - 1) * pagination.limit;
-    const endIndex = startIndex + pagination.limit;
-    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch products");
+        }
 
-    setProducts(paginatedProducts);
-    setPagination({
-      page,
-      limit: 12,
-      totalCount: filteredProducts.length,
-      totalPages: Math.ceil(filteredProducts.length / 12),
-    });
+        if (data.success) {
+          setProducts(data.products || []);
+          setPagination(
+            data.pagination || {
+              page: 1,
+              limit: 12,
+              totalCount: 0,
+              totalPages: 0,
+            }
+          );
+          console.log("4. Products set successfully");
+        }
+      } catch (err) {
+        console.log("5. Products error:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load products"
+        );
+        setProducts([]);
+      } finally {
+        console.log("6. Setting productsLoading to false");
+        setProductsLoading(false);
+      }
+    },
+    [
+      params.storeId,
+      searchTerm,
+      selectedCategory,
+      selectedSubcategory,
+      selectedBrand,
+      sortBy,
+      pagination.limit,
+    ]
+  );
 
-    setProductsLoading(false);
-  };
+  // Load vendor data on mount
+  useEffect(() => {
+    console.log("useEffect: loadVendorData triggered");
+    if (params.storeId) {
+      loadVendorData();
+    }
+  }, [params.storeId, loadVendorData]);
+
+  // Fetch subcategories when category changes
+  const loadSubcategories = useCallback(
+    async (categoryName: string) => {
+      if (!categoryName) {
+        setSubcategories([]);
+        return;
+      }
+
+      try {
+        console.log("Loading subcategories for category:", categoryName);
+        const response = await fetch(
+          `/api/store/${params.storeId}/subcategories?category=${encodeURIComponent(categoryName)}`
+        );
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setSubcategories(data.subcategories || []);
+          console.log("Subcategories loaded:", data.subcategories?.length);
+        }
+      } catch (err) {
+        console.error("Error loading subcategories:", err);
+        setSubcategories([]);
+      }
+    },
+    [params.storeId]
+  );
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      loadSubcategories(selectedCategory);
+    } else {
+      setSubcategories([]);
+      setSelectedSubcategory(""); // Clear subcategory when no category selected
+    }
+  }, [selectedCategory, loadSubcategories]);
+
+  // Load products when vendor is ready
+  useEffect(() => {
+    console.log("useEffect: loadProducts triggered - vendor exists:", !!vendor);
+    if (vendor) {
+      console.log("Loading products because vendor is ready");
+      loadProducts(1);
+    }
+  }, [vendor, loadProducts]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    loadProducts(1); // Reset to first page
   };
 
   const handleFilterChange = (filterType: string, value: string) => {
     switch (filterType) {
       case "category":
         setSelectedCategory(value);
-        setSelectedSubcategory(""); // Reset subcategory when category changes
+        setSelectedSubcategory("");
         break;
       case "subcategory":
         setSelectedSubcategory(value);
@@ -668,55 +702,39 @@ function VendorStoreContent() {
         setSortBy(value);
         break;
     }
-    loadProducts(1); // Reset to first page
   };
 
   const handlePageChange = (page: number) => {
     loadProducts(page);
-    // Scroll to top of products section
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Clear filters
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
     setSelectedSubcategory("");
     setSelectedBrand("");
     setSortBy("newest");
-    loadProducts(1);
   };
 
-  // Category options
-  const categoryOptions = [
-    { label: "All Categories", value: "" },
-    ...categories.map((cat) => ({ label: cat.name, value: cat.name })),
-  ];
-
-  // Subcategory options (mock for now)
+  // Dynamic subcategory options from database
   const subcategoryOptions = [
     { label: "All Subcategories", value: "" },
-    ...(selectedCategory === "Smartphones"
-      ? [
-          { label: "iPhone", value: "iPhone" },
-          { label: "Android", value: "Android" },
-        ]
-      : selectedCategory === "Laptops"
-        ? [
-            { label: "Gaming", value: "Gaming" },
-            { label: "Business", value: "Business" },
-            { label: "Ultrabooks", value: "Ultrabooks" },
-          ]
-        : []),
+    ...subcategories.map((sub) => ({ label: sub.name, value: sub.name })),
   ];
 
-  // Brand options
-  const brandOptions = [
-    { label: "All Brands", value: "" },
-    ...brands.map((brand) => ({ label: brand.name, value: brand.name })),
-  ];
+  // Debug final render state
+  console.log(
+    "About to render - loading:",
+    loading,
+    "vendor:",
+    !!vendor,
+    "error:",
+    error
+  );
 
   if (loading) {
+    console.log("Rendering loading state");
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
         {/* Breadcrumb Skeleton */}
@@ -725,29 +743,23 @@ function VendorStoreContent() {
             <div className="container mx-auto px-4">
               <div className="flex items-center space-x-2">
                 <Skeleton className="h-4 w-12" />
-                <span className="text-gray-400">/</span>
+                <Skeleton className="h-4 w-1" />
                 <Skeleton className="h-4 w-16" />
-                <span className="text-gray-400">/</span>
+                <Skeleton className="h-4 w-1" />
                 <Skeleton className="h-4 w-40" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Vendor Header Skeleton */}
         <VendorHeaderSkeleton />
 
-        {/* Main Content Skeleton */}
         <div className="container mx-auto px-4 py-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sidebar Skeleton */}
             <div className="lg:col-span-1 space-y-4 hidden lg:block sticky top-4 self-start">
               <FiltersSkeleton />
             </div>
-
-            {/* Main Content Area Skeleton */}
             <div className="lg:col-span-3 space-y-4">
-              {/* Top Filter Bar Skeleton */}
               <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
                 <CardContent className="px-4 py-3">
                   <div className="flex items-center justify-between">
@@ -759,8 +771,6 @@ function VendorStoreContent() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Products Grid Skeleton */}
               <ProductGridSkeleton />
             </div>
           </div>
@@ -769,7 +779,8 @@ function VendorStoreContent() {
     );
   }
 
-  if (!vendor) {
+  if (error || !vendor) {
+    console.log("Rendering error state");
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center">
         <motion.div
@@ -783,17 +794,27 @@ function VendorStoreContent() {
                 <BuildingStorefrontIcon className="w-6 h-6 text-slate-400" />
               </div>
               <h1 className="text-base font-semibold text-slate-900 mb-1">
-                Store Not Found
+                {error || "Store Not Found"}
               </h1>
               <p className="text-sm text-slate-600 mb-4">
-                The store you&apos;re looking for doesn&apos;t exist.
+                {error === "Store not found" || error === "Vendor not found"
+                  ? "The store you're looking for doesn't exist."
+                  : "There was an error loading the store. Please try again."}
               </p>
-              <Link
-                href="/products"
-                className="inline-flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                Browse All Products
-              </Link>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  Retry
+                </Button>
+                <Link
+                  href="/products"
+                  className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  Browse All Products
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -808,6 +829,8 @@ function VendorStoreContent() {
     selectedSubcategory,
     selectedBrand,
   ].filter(Boolean).length;
+
+  console.log("Rendering main content");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -854,9 +877,8 @@ function VendorStoreContent() {
         transition={{ duration: 0.6 }}
         className="container mx-auto px-4 py-4 space-y-4"
       >
-        {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Hidden on mobile, shown on desktop */}
+          {/* Desktop Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -883,7 +905,7 @@ function VendorStoreContent() {
               </CardContent>
             </Card>
 
-            {/* Categories, Subcategories & Brands - All in one component */}
+            {/* Categories & Brands */}
             <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-slate-900">
@@ -919,7 +941,7 @@ function VendorStoreContent() {
                   </Select>
                 </div>
 
-                {/* Subcategory Select - Only show when category is selected */}
+                {/* Subcategory Select */}
                 {selectedCategory && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -944,21 +966,11 @@ function VendorStoreContent() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Subcategories</SelectItem>
-                        {selectedCategory === "Smartphones" && (
-                          <>
-                            <SelectItem value="iPhone">iPhone</SelectItem>
-                            <SelectItem value="Android">Android</SelectItem>
-                          </>
-                        )}
-                        {selectedCategory === "Laptops" && (
-                          <>
-                            <SelectItem value="Gaming">Gaming</SelectItem>
-                            <SelectItem value="Business">Business</SelectItem>
-                            <SelectItem value="Ultrabooks">
-                              Ultrabooks
-                            </SelectItem>
-                          </>
-                        )}
+                        {subcategoryOptions.slice(1).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </motion.div>
@@ -1032,7 +1044,7 @@ function VendorStoreContent() {
             </Card>
           </motion.div>
 
-          {/* Mobile Filters - Shown only on mobile */}
+          {/* Mobile Filters */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1058,7 +1070,6 @@ function VendorStoreContent() {
             <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Category Select */}
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-2">
                       Category
@@ -1086,7 +1097,6 @@ function VendorStoreContent() {
                     </Select>
                   </div>
 
-                  {/* Subcategory Select - Only show when category is selected */}
                   {selectedCategory && (
                     <motion.div
                       initial={{ opacity: 0, width: 0 }}
@@ -1111,27 +1121,16 @@ function VendorStoreContent() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Subcategories</SelectItem>
-                          {selectedCategory === "Smartphones" && (
-                            <>
-                              <SelectItem value="iPhone">iPhone</SelectItem>
-                              <SelectItem value="Android">Android</SelectItem>
-                            </>
-                          )}
-                          {selectedCategory === "Laptops" && (
-                            <>
-                              <SelectItem value="Gaming">Gaming</SelectItem>
-                              <SelectItem value="Business">Business</SelectItem>
-                              <SelectItem value="Ultrabooks">
-                                Ultrabooks
-                              </SelectItem>
-                            </>
-                          )}
+                          {subcategoryOptions.slice(1).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </motion.div>
                   )}
 
-                  {/* Brand Select */}
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-2">
                       Brand
@@ -1170,16 +1169,14 @@ function VendorStoreContent() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="lg:col-span-3 space-y-4"
           >
-            {/* Top Filter Bar - Clean horizontal layout */}
+            {/* Top Filter Bar */}
             <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
-              <CardContent className="px-4 py-0.5">
+              <CardContent className="px-4 py-3">
                 <div className="flex items-center justify-between">
-                  {/* Results Count */}
                   <div className="text-sm text-slate-600">
                     {pagination.totalCount} products found
                   </div>
 
-                  {/* Sort Filter */}
                   <div className="flex items-center gap-2">
                     {activeFiltersCount > 0 && (
                       <Button
@@ -1220,77 +1217,60 @@ function VendorStoreContent() {
 
             {/* Products Grid */}
             {productsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <Card
-                    key={i}
-                    className="overflow-hidden group backdrop-blur-xl bg-white/70 border border-white/50"
-                  >
-                    <div className="aspect-square relative">
-                      <Skeleton className="w-full h-full" />
-                    </div>
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-2 w-16" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                        <div className="flex items-center gap-1">
-                          <Skeleton className="h-3 w-3" />
-                          <Skeleton className="h-3 w-8" />
-                          <Skeleton className="h-3 w-8" />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Skeleton className="h-5 w-16" />
-                          <Skeleton className="h-6 w-6" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <ProductGridSkeleton />
             ) : products.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   <AnimatePresence mode="wait">
-                    {products.map((product, index) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                        transition={{
-                          ...smoothTransition,
-                          delay: index * 0.03,
-                        }}
-                        whileHover={{ y: -1, scale: 1.01 }}
-                        className="flex h-full"
-                      >
-                        <ProductCard
-                          product={product}
-                          variant="default"
-                          showQuickActions={true}
-                          showAddToCart={true}
-                          className="h-full w-full flex flex-col"
-                        />
-                      </motion.div>
-                    ))}
+                    {products.map((product, index) => {
+                      // Validate product data before rendering
+                      if (!product.id || typeof product.name !== "string") {
+                        console.warn("Invalid product data:", product);
+                        return null;
+                      }
+
+                      return (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                          transition={{
+                            ...smoothTransition,
+                            delay: index * 0.03,
+                          }}
+                          whileHover={{ y: -1, scale: 1.01 }}
+                          className="flex h-full"
+                        >
+                          <ProductCard
+                            product={product}
+                            variant="default"
+                            showQuickActions={true}
+                            showAddToCart={true}
+                            className="h-full w-full flex flex-col"
+                          />
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
                 </div>
 
                 {/* Pagination */}
-                <div className="mt-6">
-                  <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
-                    <CardContent className="p-4">
-                      <Pagination
-                        currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalCount={pagination.totalCount}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={handlePageChange}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
+                {pagination.totalPages > 1 && (
+                  <div className="mt-6">
+                    <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
+                      <CardContent className="p-4">
+                        <Pagination
+                          currentPage={pagination.page}
+                          totalPages={pagination.totalPages}
+                          totalCount={pagination.totalCount}
+                          itemsPerPage={pagination.limit}
+                          onPageChange={handlePageChange}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </>
             ) : (
               <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
