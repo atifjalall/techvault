@@ -25,7 +25,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/Button1";
+import Button from "@/components/ui/userButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -802,7 +802,7 @@ export default function ProfilePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6"
+        className="container mx-auto px-2 lg:px-6 py-2 lg:py-6 space-y-2 lg:space-y-6"
       >
         {/* Header */}
         <motion.div
@@ -811,7 +811,7 @@ export default function ProfilePage() {
           transition={{ duration: 0.6 }}
         >
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
+            <CardContent className="p-3 lg:p-6">
               <div className="flex items-center justify-between">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -822,7 +822,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
-                    className="text-lg lg:text-xl font-bold text-gray-900"
+                    className="text-sm lg:text-xl font-bold text-gray-900"
                   >
                     My Profile
                   </motion.h1>
@@ -830,7 +830,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
-                    className="text-base lg:text-lg text-gray-600 mt-1"
+                    className="text-xs lg:text-lg text-gray-600 mt-0.5 lg:mt-1"
                   >
                     Manage your account information and preferences
                   </motion.p>
@@ -850,7 +850,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.3 }}
             >
               <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-4">
+                <CardContent className="p-2 lg:p-4">
                   <div className="flex items-center">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -861,9 +861,9 @@ export default function ProfilePage() {
                         stiffness: 200,
                       }}
                     >
-                      <CheckIcon className="w-4 h-4 text-green-600 mr-2" />
+                      <CheckIcon className="w-3 lg:w-4 h-3 lg:h-4 text-green-600 mr-1 lg:mr-2" />
                     </motion.div>
-                    <p className="text-sm text-green-700 font-medium">
+                    <p className="text-xs lg:text-sm text-green-700 font-medium">
                       {successMessage}
                     </p>
                   </div>
@@ -880,7 +880,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.3 }}
             >
               <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
+                <CardContent className="p-2 lg:p-4">
                   <div className="flex items-center">
                     <motion.div
                       initial={{ scale: 0 }}
@@ -891,9 +891,11 @@ export default function ProfilePage() {
                         stiffness: 200,
                       }}
                     >
-                      <ExclamationTriangleIcon className="w-4 h-4 text-red-600 mr-2" />
+                      <ExclamationTriangleIcon className="w-3 lg:w-4 h-3 lg:h-4 text-red-600 mr-1 lg:mr-2" />
                     </motion.div>
-                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                    <p className="text-xs lg:text-sm text-red-700 font-medium">
+                      {error}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -907,7 +909,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="space-y-4 lg:space-y-6"
+            className="space-y-2 lg:space-y-6"
           >
             {/* Profile Overview */}
             <motion.div
@@ -916,12 +918,12 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-4 lg:p-6 text-center">
+                <CardContent className="p-3 lg:p-6 text-center">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                    className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4"
+                    className="w-12 h-12 lg:w-20 lg:h-20 mx-auto mb-2 lg:mb-4"
                   >
                     {session.user.image ? (
                       <Image
@@ -943,7 +945,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 }}
-                    className="text-base lg:text-lg font-semibold text-gray-900 mb-1"
+                    className="text-sm lg:text-lg font-semibold text-gray-900 mb-0.5 lg:mb-1"
                   >
                     {profileData.firstName} {profileData.lastName}
                   </motion.h3>
@@ -951,7 +953,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6 }}
-                    className="text-sm lg:text-base text-gray-600 mb-3"
+                    className="text-xs lg:text-base text-gray-600 mb-2 lg:mb-3"
                   >
                     {profileData.email}
                   </motion.p>
@@ -959,9 +961,9 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.7 }}
-                    className="flex items-center justify-center space-x-2 text-xs text-gray-500"
+                    className="flex items-center justify-center space-x-1 lg:space-x-2 text-[10px] lg:text-xs text-gray-500"
                   >
-                    <UserIcon className="w-3 h-3" />
+                    <UserIcon className="w-2 lg:w-3 h-2 lg:h-3" />
                     <span>
                       Member since{" "}
                       {new Date(profileData.joinedAt).getFullYear()}
@@ -971,7 +973,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.8 }}
-                    className="flex items-center justify-center space-x-2 mt-2"
+                    className="flex items-center justify-center space-x-1 lg:space-x-2 mt-1 lg:mt-2"
                   >
                     {profileData.emailVerified && (
                       <motion.div
@@ -983,7 +985,10 @@ export default function ProfilePage() {
                           stiffness: 200,
                         }}
                       >
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="text-[8px] lg:text-xs h-4 lg:h-5 px-1 lg:px-2"
+                        >
                           Email Verified
                         </Badge>
                       </motion.div>
@@ -998,7 +1003,10 @@ export default function ProfilePage() {
                           stiffness: 200,
                         }}
                       >
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="text-[8px] lg:text-xs h-4 lg:h-5 px-1 lg:px-2"
+                        >
                           Phone Verified
                         </Badge>
                       </motion.div>
@@ -1015,11 +1023,13 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base lg:text-lg">Quick Actions</CardTitle>
+                <CardHeader className="pb-2 lg:pb-6 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-sm lg:text-lg">
+                    Quick Actions
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-3 lg:p-4 pt-0">
-                  <div className="space-y-2">
+                <CardContent className="p-2 lg:p-4 pt-0">
+                  <div className="space-y-1 lg:space-y-2">
                     {[
                       {
                         href: "/orders",
@@ -1027,7 +1037,6 @@ export default function ProfilePage() {
                         label: "Order History",
                       },
                       { href: "/wishlist", icon: HeartIcon, label: "Wishlist" },
-                      { href: "/settings", icon: CogIcon, label: "Settings" },
                     ].map((link, index) => (
                       <motion.div
                         key={link.href}
@@ -1037,22 +1046,22 @@ export default function ProfilePage() {
                       >
                         <Link
                           href={link.href}
-                          className="flex items-center justify-between p-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                          className="flex items-center justify-between p-1.5 lg:p-2 text-xs lg:text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                         >
                           <motion.div
                             whileHover={{ x: 2 }}
                             transition={{ type: "spring", stiffness: 300 }}
                             className="flex items-center"
                           >
-                            <link.icon className="w-4 h-4 mr-2" />
+                            <link.icon className="w-3 lg:w-4 h-3 lg:h-4 mr-1 lg:mr-2" />
                             <span>{link.label}</span>
                           </motion.div>
                           <motion.span
                             whileHover={{ x: 2 }}
                             transition={{ type: "spring", stiffness: 300 }}
-                            className="text-xs text-gray-400"
+                            className="text-[10px] lg:text-xs text-gray-400"
                           >
-                            <ArrowLongRightIcon className="w-5 h-5 text-gray-600 mr-2" />
+                            <ArrowLongRightIcon className="w-3 lg:w-5 h-3 lg:h-5 text-gray-600 mr-1 lg:mr-2" />
                           </motion.span>
                         </Link>
                       </motion.div>
@@ -1068,7 +1077,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="lg:col-span-3 space-y-6"
+            className="lg:col-span-3 space-y-3 lg:space-y-6"
           >
             {/* Personal Information */}
             <motion.div
@@ -1077,9 +1086,9 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader>
+                <CardHeader className="pb-2 lg:pb-6 px-3 lg:px-6 pt-3 lg:pt-6">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base lg:text-lg">
+                    <CardTitle className="text-sm lg:text-lg">
                       Personal Information
                     </CardTitle>
                     {!isEditingPersonal && (
@@ -1089,18 +1098,18 @@ export default function ProfilePage() {
                       >
                         <Button
                           onClick={() => setIsEditingPersonal(true)}
-                          variant="outline"
+                          variant="default"
                           size="sm"
-                          className="cursor-pointer"
+                          className="cursor-pointer h-6 lg:h-8 text-xs lg:text-sm px-2 lg:px-4"
                         >
-                          <PencilIcon className="w-4 h-4 mr-1" />
+                          <PencilIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                           Edit
                         </Button>
                       </motion.div>
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 lg:px-6 pb-3 lg:pb-6">
                   <AnimatePresence mode="wait">
                     {isEditingPersonal ? (
                       <motion.div
@@ -1118,7 +1127,12 @@ export default function ProfilePage() {
                           className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
-                            <Label htmlFor="firstName">First Name</Label>
+                            <Label
+                              htmlFor="firstName"
+                              className="text-xs lg:text-sm"
+                            >
+                              First Name
+                            </Label>
                             <motion.div whileFocus={{ scale: 1.01 }}>
                               <SecureInput
                                 id="firstName"
@@ -1134,7 +1148,7 @@ export default function ProfilePage() {
                                     e.target.value
                                   );
                                 }}
-                                className={`mt-1 ${validationErrors.firstName ? "border-red-500" : ""}`}
+                                className={`mt-0.5 lg:mt-1 h-7 lg:h-10 text-xs lg:text-sm ${validationErrors.firstName ? "border-red-500" : ""}`}
                                 maxLength={50}
                                 placeholder="Enter first name"
                               />
@@ -1145,7 +1159,7 @@ export default function ProfilePage() {
                                   initial={{ opacity: 0, y: -10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  className="mt-1 text-xs text-red-600"
+                                  className="mt-0.5 lg:mt-1 text-[10px] lg:text-xs text-red-600"
                                 >
                                   {validationErrors.firstName}
                                 </motion.p>
@@ -1153,7 +1167,12 @@ export default function ProfilePage() {
                             </AnimatePresence>
                           </div>
                           <div>
-                            <Label htmlFor="lastName">Last Name</Label>
+                            <Label
+                              htmlFor="lastName"
+                              className="text-xs lg:text-sm"
+                            >
+                              Last Name
+                            </Label>
                             <motion.div whileFocus={{ scale: 1.01 }}>
                               <SecureInput
                                 id="lastName"
@@ -1166,7 +1185,7 @@ export default function ProfilePage() {
                                   );
                                   handleInputChange("lastName", e.target.value);
                                 }}
-                                className={`mt-1 ${validationErrors.lastName ? "border-red-500" : ""}`}
+                                className={`mt-0.5 lg:mt-1 h-7 lg:h-10 text-xs lg:text-sm ${validationErrors.lastName ? "border-red-500" : ""}`}
                                 maxLength={50}
                                 placeholder="Enter last name"
                               />
@@ -1177,7 +1196,7 @@ export default function ProfilePage() {
                                   initial={{ opacity: 0, y: -10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  className="mt-1 text-xs text-red-600"
+                                  className="mt-0.5 lg:mt-1 text-[10px] lg:text-xs text-red-600"
                                 >
                                   {validationErrors.lastName}
                                 </motion.p>
@@ -1190,15 +1209,17 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.2 }}
                         >
-                          <Label htmlFor="email">Email Address</Label>
+                          <Label htmlFor="email" className="text-xs lg:text-sm">
+                            Email Address
+                          </Label>
                           <Input
                             id="email"
                             type="email"
                             value={profileData.email}
                             readOnly
-                            className="mt-1 bg-gray-50 text-gray-500"
+                            className="mt-0.5 lg:mt-1 h-7 lg:h-10 text-xs lg:text-sm bg-gray-50 text-gray-500"
                           />
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-[10px] lg:text-xs text-gray-500 mt-0.5 lg:mt-1">
                             Email address cannot be changed
                           </p>
                         </motion.div>
@@ -1207,7 +1228,9 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.3 }}
                         >
-                          <Label htmlFor="phone">Phone Number</Label>
+                          <Label htmlFor="phone" className="text-xs lg:text-sm">
+                            Phone Number
+                          </Label>
                           <motion.div whileFocus={{ scale: 1.01 }}>
                             <SecureInput
                               id="phone"
@@ -1222,7 +1245,7 @@ export default function ProfilePage() {
                                 handleInputChange("phone", e.target.value);
                               }}
                               placeholder="+49 123 456 7890"
-                              className={`mt-1 ${validationErrors.phone ? "border-red-500" : ""}`}
+                              className={`mt-0.5 lg:mt-1 h-7 lg:h-10 text-xs lg:text-sm ${validationErrors.phone ? "border-red-500" : ""}`}
                               maxLength={20}
                             />
                           </motion.div>
@@ -1232,7 +1255,7 @@ export default function ProfilePage() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="mt-1 text-xs text-red-600"
+                                className="mt-0.5 lg:mt-1 text-[10px] lg:text-xs text-red-600"
                               >
                                 {validationErrors.phone}
                               </motion.p>
@@ -1244,7 +1267,9 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.4 }}
                         >
-                          <Label htmlFor="bio">Bio</Label>
+                          <Label htmlFor="bio" className="text-xs lg:text-sm">
+                            Bio
+                          </Label>
                           <motion.textarea
                             whileFocus={{ scale: 1.01 }}
                             id="bio"
@@ -1259,7 +1284,7 @@ export default function ProfilePage() {
                               }
                             }}
                             placeholder="Tell us about yourself..."
-                            className={`mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none ${validationErrors.bio ? "border-red-500" : "border-gray-300"}`}
+                            className={`mt-0.5 lg:mt-1 w-full px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none ${validationErrors.bio ? "border-red-500" : "border-gray-300"}`}
                             rows={3}
                             maxLength={500}
                           />
@@ -1270,13 +1295,13 @@ export default function ProfilePage() {
                                   initial={{ opacity: 0, y: -10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: -10 }}
-                                  className="text-xs text-red-600"
+                                  className="text-[10px] lg:text-xs text-red-600"
                                 >
                                   {validationErrors.bio}
                                 </motion.p>
                               )}
                             </AnimatePresence>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-[10px] lg:text-xs text-gray-500">
                               {profileData.bio.length}/500
                             </span>
                           </div>
@@ -1295,12 +1320,12 @@ export default function ProfilePage() {
                               onClick={handlePersonalUpdate}
                               disabled={saving}
                               className="cursor-pointer w-full sm:w-auto"
-                              variant="dark"
+                              variant="default"
                             >
                               {saving ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                <div className="w-3 lg:w-4 h-3 lg:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1 lg:mr-2" />
                               ) : (
-                                <CheckIcon className="w-4 h-4 mr-1" />
+                                <CheckIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                               )}
                               Save Changes
                             </Button>
@@ -1314,7 +1339,7 @@ export default function ProfilePage() {
                               variant="outline"
                               className="cursor-pointer w-full sm:w-auto"
                             >
-                              <XMarkIcon className="w-4 h-4 mr-1" />
+                              <XMarkIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                               Cancel
                             </Button>
                           </motion.div>
@@ -1335,14 +1360,18 @@ export default function ProfilePage() {
                           className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4"
                         >
                           <div>
-                            <Label className="text-gray-600">First Name</Label>
-                            <p className="text-gray-900 mt-1">
+                            <Label className="text-xs lg:text-sm text-gray-600">
+                              First Name
+                            </Label>
+                            <p className="text-xs lg:text-sm text-gray-900 mt-0.5 lg:mt-1">
                               {profileData.firstName || "Not set"}
                             </p>
                           </div>
                           <div>
-                            <Label className="text-gray-600">Last Name</Label>
-                            <p className="text-gray-900 mt-1">
+                            <Label className="text-xs lg:text-sm text-gray-600">
+                              Last Name
+                            </Label>
+                            <p className="text-xs lg:text-sm text-gray-900 mt-0.5 lg:mt-1">
                               {profileData.lastName || "Not set"}
                             </p>
                           </div>
@@ -1352,8 +1381,10 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.1 }}
                         >
-                          <Label className="text-gray-600">Email Address</Label>
-                          <p className="text-gray-900 mt-1">
+                          <Label className="text-xs lg:text-sm text-gray-600">
+                            Email Address
+                          </Label>
+                          <p className="text-xs lg:text-sm text-gray-900 mt-0.5 lg:mt-1">
                             {profileData.email}
                           </p>
                         </motion.div>
@@ -1362,23 +1393,27 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.2 }}
                         >
-                          <Label className="text-gray-600">Phone Number</Label>
-                          <div className="flex items-center mt-1">
+                          <Label className="text-xs lg:text-sm text-gray-600">
+                            Phone Number
+                          </Label>
+                          <div className="flex items-center mt-0.5 lg:mt-1">
                             {profileData.phone ? (
                               <>
                                 <Image
                                   src={`https://flagcdn.com/16x12/de.png`}
                                   alt="Country flag"
-                                  width={16}
-                                  height={12}
-                                  className="mr-2"
+                                  width={12}
+                                  height={9}
+                                  className="mr-1 lg:mr-2"
                                 />
-                                <p className="text-gray-900">
+                                <p className="text-xs lg:text-sm text-gray-900">
                                   {profileData.phone}
                                 </p>
                               </>
                             ) : (
-                              <p className="text-gray-500">Not set</p>
+                              <p className="text-xs lg:text-sm text-gray-500">
+                                Not set
+                              </p>
                             )}
                           </div>
                         </motion.div>
@@ -1387,8 +1422,10 @@ export default function ProfilePage() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.4, delay: 0.3 }}
                         >
-                          <Label className="text-gray-600">Bio</Label>
-                          <p className="text-gray-900 mt-1">
+                          <Label className="text-xs lg:text-sm text-gray-600">
+                            Bio
+                          </Label>
+                          <p className="text-xs lg:text-sm text-gray-900 mt-0.5 lg:mt-1">
                             {profileData.bio || "No bio added"}
                           </p>
                         </motion.div>
@@ -1418,9 +1455,9 @@ export default function ProfilePage() {
                           stiffness: 200,
                         }}
                       >
-                        <MapPinIcon className="w-5 h-5 text-gray-600 mr-2" />
+                        <MapPinIcon className="w-3 lg:w-5 h-3 lg:h-5 text-gray-600 mr-1 lg:mr-2" />
                       </motion.div>
-                      <CardTitle className="text-base lg:text-lg">
+                      <CardTitle className="text-sm lg:text-lg">
                         Shipping Address
                       </CardTitle>
                     </div>
@@ -1431,18 +1468,18 @@ export default function ProfilePage() {
                       >
                         <Button
                           onClick={() => setIsEditingAddress(true)}
-                          variant="outline"
+                          variant="default"
                           size="sm"
-                          className="cursor-pointer"
+                          className="cursor-pointer h-6 lg:h-8 text-xs lg:text-sm px-2 lg:px-4"
                         >
-                          <PencilIcon className="w-4 h-4 mr-1" />
+                          <PencilIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                           Edit
                         </Button>
                       </motion.div>
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 lg:px-6 pb-3 lg:pb-6">
                   <AnimatePresence mode="wait">
                     {isEditingAddress ? (
                       <motion.div
@@ -1675,12 +1712,12 @@ export default function ProfilePage() {
                               onClick={handleAddressUpdate}
                               disabled={saving}
                               className="cursor-pointer w-full sm:w-auto"
-                              variant="dark"
+                              variant="default"
                             >
                               {saving ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                <div className="w-3 lg:w-4 h-3 lg:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1 lg:mr-2" />
                               ) : (
-                                <CheckIcon className="w-4 h-4 mr-1" />
+                                <CheckIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                               )}
                               Save Changes
                             </Button>
@@ -1694,7 +1731,7 @@ export default function ProfilePage() {
                               variant="outline"
                               className="cursor-pointer w-full sm:w-auto"
                             >
-                              <XMarkIcon className="w-4 h-4 mr-1" />
+                              <XMarkIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                               Cancel
                             </Button>
                           </motion.div>
@@ -1750,7 +1787,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader>
+                <CardHeader className="pb-2 lg:pb-6 px-3 lg:px-6 pt-3 lg:pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <motion.div
@@ -1762,9 +1799,9 @@ export default function ProfilePage() {
                           stiffness: 200,
                         }}
                       >
-                        <KeyIcon className="w-5 h-5 text-gray-600 mr-2" />
+                        <KeyIcon className="w-3 lg:w-5 h-3 lg:h-5 text-gray-600 mr-1 lg:mr-2" />
                       </motion.div>
-                      <CardTitle className="text-base lg:text-lg">
+                      <CardTitle className="text-sm lg:text-lg">
                         Password & Security
                       </CardTitle>
                     </div>
@@ -1775,18 +1812,18 @@ export default function ProfilePage() {
                       >
                         <Button
                           onClick={() => setIsEditingPassword(true)}
-                          variant="outline"
+                          variant="default"
                           size="sm"
-                          className="cursor-pointer"
+                          className="cursor-pointer h-6 lg:h-8 text-xs lg:text-sm px-2 lg:px-4"
                         >
-                          <PencilIcon className="w-4 h-4 mr-1" />
+                          <PencilIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                           Change Password
                         </Button>
                       </motion.div>
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 lg:px-6 pb-3 lg:pb-6">
                   <AnimatePresence mode="wait">
                     {isEditingPassword ? (
                       <motion.div
@@ -1845,9 +1882,9 @@ export default function ProfilePage() {
                               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                             >
                               {showPasswords.current ? (
-                                <EyeSlashIcon className="w-4 h-4" />
+                                <EyeSlashIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               ) : (
-                                <EyeIcon className="w-4 h-4" />
+                                <EyeIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               )}
                             </motion.button>
                           </div>
@@ -1908,9 +1945,9 @@ export default function ProfilePage() {
                               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                             >
                               {showPasswords.new ? (
-                                <EyeSlashIcon className="w-4 h-4" />
+                                <EyeSlashIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               ) : (
-                                <EyeIcon className="w-4 h-4" />
+                                <EyeIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               )}
                             </motion.button>
                           </div>
@@ -1975,9 +2012,9 @@ export default function ProfilePage() {
                               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                             >
                               {showPasswords.confirm ? (
-                                <EyeSlashIcon className="w-4 h-4" />
+                                <EyeSlashIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               ) : (
-                                <EyeIcon className="w-4 h-4" />
+                                <EyeIcon className="w-3 lg:w-4 h-3 lg:h-4" />
                               )}
                             </motion.button>
                           </div>
@@ -2077,7 +2114,7 @@ export default function ProfilePage() {
                                 )
                               }
                               className="cursor-pointer"
-                              variant="dark"
+                              variant="default"
                             >
                               {saving ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -2169,22 +2206,24 @@ export default function ProfilePage() {
               transition={{ duration: 0.5, delay: 0.7 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base lg:text-lg">Danger Zone</CardTitle>
+                <CardHeader className="pb-2 lg:pb-6 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-sm lg:text-lg">
+                    Danger Zone
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 lg:px-6 pb-3 lg:pb-6">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4, delay: 0.8 }}
-                    className="p-4 border border-red-200 rounded-lg bg-red-50"
+                    className="p-3 lg:p-4 border border-red-200 rounded-lg bg-red-50"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-red-900 text-sm">
+                        <p className="font-medium text-red-900 text-xs lg:text-sm">
                           Delete Account
                         </p>
-                        <p className="text-sm text-red-700">
+                        <p className="text-xs lg:text-sm text-red-700">
                           Permanently delete your account and all data
                         </p>
                       </div>
@@ -2193,10 +2232,11 @@ export default function ProfilePage() {
                         whileTap={{ scale: 0.98 }}
                       >
                         <Button
-                          variant="danger"
+                          variant="destructive"
                           size="sm"
-                          className="text-red-700 border-red-300 hover:bg-red-100 cursor-pointer"
+                          className="text-red-700 border-red-300 hover:bg-red-100 cursor-pointer h-6 lg:h-8 text-xs lg:text-sm px-2 lg:px-4"
                         >
+                          <ExclamationTriangleIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
                           Delete
                         </Button>
                       </motion.div>

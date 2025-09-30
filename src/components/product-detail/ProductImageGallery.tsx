@@ -35,7 +35,7 @@ export default function ProductImageGallery({
   const currentImage = images[selectedImage] || images[0] || "";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 lg:space-y-3">
       {/* Main Image */}
       <motion.div
         className="aspect-square bg-slate-50 rounded-xl overflow-hidden relative group"
@@ -55,7 +55,7 @@ export default function ProductImageGallery({
         {/* Badges */}
         {newArrival && (
           <motion.div
-            className="absolute top-3 left-3 bg-slate-900 text-white px-2 py-1 rounded-md text-xs font-medium"
+            className="absolute top-2 lg:top-3 left-2 lg:left-3 bg-slate-900 text-white px-1.5 lg:px-2 py-0.5 lg:py-1 rounded text-[10px] lg:text-xs font-medium"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
@@ -65,7 +65,7 @@ export default function ProductImageGallery({
         )}
         {discountPercentage > 0 && (
           <motion.div
-            className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium"
+            className="absolute top-2 lg:top-3 right-2 lg:right-3 bg-red-500 text-white px-1.5 lg:px-2 py-0.5 lg:py-1 rounded text-[10px] lg:text-xs font-medium"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
@@ -79,19 +79,19 @@ export default function ProductImageGallery({
           <>
             <motion.button
               onClick={handlePrevImage}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
+              className="absolute left-2 lg:left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <ChevronLeftIcon className="w-4 h-4 text-slate-700" />
+              <ChevronLeftIcon className="w-3 h-3 lg:w-4 lg:h-4 text-slate-700" />
             </motion.button>
             <motion.button
               onClick={handleNextImage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
+              className="absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-lg p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <ChevronRightIcon className="w-4 h-4 text-slate-700" />
+              <ChevronRightIcon className="w-3 h-3 lg:w-4 lg:h-4 text-slate-700" />
             </motion.button>
           </>
         )}
@@ -99,12 +99,12 @@ export default function ProductImageGallery({
 
       {/* Thumbnail Images */}
       {images.length > 1 && (
-        <div className="flex space-x-2 overflow-x-auto pb-1">
+        <div className="flex space-x-1 lg:space-x-2 overflow-x-auto pb-1">
           {images.map((image, index) => (
             <motion.button
               key={index}
               onClick={() => onImageSelect(index)}
-              className={`flex-shrink-0 aspect-square w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
+              className={`flex-shrink-0 aspect-square w-12 h-12 lg:w-16 lg:h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
                 selectedImage === index
                   ? "border-slate-900"
                   : "border-slate-200 hover:border-slate-300"

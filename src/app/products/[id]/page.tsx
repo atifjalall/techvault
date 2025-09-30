@@ -353,33 +353,41 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {/* Header with Breadcrumb */}
-      <div className="pt-8 px-4 pb-4">
-        <div className="container mx-auto px-4">
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
             <Breadcrumb>
-              <BreadcrumbList>
+              <BreadcrumbList className="text-[10px] lg:text-sm">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="/" className="cursor-pointer">
+                    <Link
+                      href="/"
+                      className="cursor-pointer text-[10px] lg:text-sm hover:text-slate-900"
+                    >
                       Home
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="/products" className="cursor-pointer">
+                    <Link
+                      href="/products"
+                      className="cursor-pointer text-[10px] lg:text-sm hover:text-slate-900"
+                    >
                       Products
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{product.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-[10px] lg:text-sm font-medium">
+                    {product.name}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -392,10 +400,11 @@ export default function ProductPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-4 space-y-8"
+        className="container mx-auto px-2 lg:px-4 py-2 lg:py-4 space-y-4 lg:space-y-8"
       >
         {/* Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Product Gallery and Info */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
           {/* Image Gallery */}
           <ProductImageGallery
             images={currentImages}
@@ -423,7 +432,8 @@ export default function ProductPage() {
         </div>
 
         {/* Product Tabs */}
-        <div className="space-y-6">
+        {/* Product Details and Reviews */}
+        <div className="space-y-3 lg:space-y-6">
           <ProductTabsSection
             product={{
               id: product.id,

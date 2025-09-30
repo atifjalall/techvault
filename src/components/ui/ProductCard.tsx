@@ -80,13 +80,32 @@ export default function ProductCard({
     (product.stock !== undefined && product.stock <= 0) ||
     product.isActive === false;
 
+  // Check if this is a multi-variant product without a selected variant
+  const isMultiVariantProduct = useMemo(() => {
+    return (
+      ((typeof product.variants === "number" && product.variants > 1) ||
+        (product.colorOptions && product.colorOptions.length > 1)) &&
+      !product.selectedVariantId
+    );
+  }, [product.variants, product.colorOptions, product.selectedVariantId]);
+
+  // Disable wishlist for multi-variant products without selected variant
+  const canAddToWishlist = !isMultiVariantProduct;
+
+  // Price to display
+  const displayPrice = useMemo(() => {
+    if (product.price && product.price > 0) {
+      return product.price;
+    }
+    return null;
+  }, [product.price]);
+
   // Use discountPercentage from API if available, otherwise calculate
   const discountPercentage =
     product.discountPercentage ||
-    (product.originalPrice
+    (product.originalPrice && displayPrice
       ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100
+          ((product.originalPrice - displayPrice) / product.originalPrice) * 100
         )
       : 0);
 
@@ -105,7 +124,7 @@ export default function ProductCard({
   // Check if product is in wishlist on component mount
   useEffect(() => {
     const checkWishlistStatus = async () => {
-      if (!session?.user) {
+      if (!session?.user || !canAddToWishlist) {
         setCheckingWishlist(false);
         return;
       }
@@ -139,14 +158,14 @@ export default function ProductCard({
     };
 
     checkWishlistStatus();
-  }, [session, product.id, product.selectedVariantId]);
+  }, [session, product.id, product.selectedVariantId, canAddToWishlist]);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Prevent adding out of stock items
-    if (isOutOfStock) {
+    // Prevent adding out of stock items or multi-variant products
+    if (isOutOfStock || isMultiVariantProduct) {
       return;
     }
 
@@ -189,7 +208,7 @@ export default function ProductCard({
               },
               body: JSON.stringify({
                 productId: product.id,
-                productVariantId: product.selectedVariantId || null, // Include variant ID for proper removal
+                productVariantId: product.selectedVariantId || null,
               }),
             });
 
@@ -223,6 +242,10 @@ export default function ProductCard({
 
     if (!session?.user) {
       window.location.href = "/signin";
+      return;
+    }
+
+    if (!canAddToWishlist) {
       return;
     }
 
@@ -290,34 +313,34 @@ export default function ProductCard({
         {/* Product Image */}
         <div className={imageClasses[variant]}>
           {/* Left side badges */}
-          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+          <div className="absolute top-2 lg:top-3 left-2 lg:left-3 z-10 flex flex-col gap-1">
             {isOutOfStock && (
-              <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+              <span className="bg-red-600 text-white text-[8px] lg:text-[10px] px-1.5 lg:px-2 py-0.5 rounded-full font-medium">
                 OUT OF STOCK
               </span>
             )}
             {product.isNew && !isOutOfStock && (
-              <span className="bg-black text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+              <span className="bg-black text-white text-[8px] lg:text-[10px] px-1.5 lg:px-2 py-0.5 rounded-full font-medium">
                 NEW
               </span>
             )}
           </div>
 
           {/* Top right elements */}
-          <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+          <div className="absolute top-2 lg:top-3 right-2 lg:right-3 z-10 flex flex-col items-end gap-1">
             {/* Discount badge */}
-            {discountPercentage > 0 && !isOutOfStock && (
-              <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+            {discountPercentage > 0 && !isOutOfStock && displayPrice && (
+              <span className="bg-red-500 text-white text-[8px] lg:text-[10px] px-1.5 lg:px-2 py-0.5 rounded-full font-medium">
                 -{discountPercentage}%
               </span>
             )}
 
-            {/* Heart icon */}
-            {showQuickActions && session?.user && (
+            {/* Heart icon - only show if can add to wishlist */}
+            {showQuickActions && session?.user && canAddToWishlist && (
               <button
                 onClick={handleWishlistToggle}
                 disabled={checkingWishlist}
-                className="p-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl border border-white/30 transition-all duration-300 hover:scale-110 hover:bg-white/95 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 cursor-pointer disabled:opacity-50"
+                className="p-1.5 lg:p-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl border border-white/30 transition-all duration-300 hover:scale-110 hover:bg-white/95 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 cursor-pointer disabled:opacity-50"
                 title={
                   isWishlisted
                     ? "Remove from wishlist"
@@ -327,11 +350,11 @@ export default function ProductCard({
                 }
               >
                 {checkingWishlist ? (
-                  <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 lg:w-3.5 lg:h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                 ) : isWishlisted ? (
-                  <HeartIconSolid className="h-3.5 w-3.5 text-red-500" />
+                  <HeartIconSolid className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-red-500" />
                 ) : (
-                  <HeartIcon className="h-3.5 w-3.5 text-gray-600 hover:text-red-500" />
+                  <HeartIcon className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-gray-600 hover:text-red-500" />
                 )}
               </button>
             )}
@@ -366,15 +389,15 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Color variants display - Show color options at bottom of image */}
+          {/* Color variants display */}
           {product.colorOptions &&
             product.colorOptions.length > 0 &&
             !isOutOfStock && (
-              <div className="absolute bottom-3 left-3 flex gap-1">
+              <div className="absolute bottom-2 lg:bottom-3 left-2 lg:left-3 flex gap-0.5 lg:gap-1">
                 {product.colorOptions.slice(0, 4).map((colorOption, index) => (
                   <div
                     key={index}
-                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                    className="w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-white shadow-sm"
                     style={{
                       backgroundColor: colorOption.colorHex || "#6B7280",
                     }}
@@ -382,70 +405,95 @@ export default function ProductCard({
                   />
                 ))}
                 {product.colorOptions.length > 4 && (
-                  <span className="text-xs text-white bg-black/50 px-1 rounded">
+                  <span className="text-[8px] lg:text-xs text-white bg-black/50 px-1 rounded">
                     +{product.colorOptions.length - 4}
                   </span>
                 )}
               </div>
             )}
 
-          {/* Quick Add to Cart - only show if in stock */}
-          {showAddToCart && session?.user && !isOutOfStock && (
-            <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
-              <button
-                onClick={handleAddToCart}
-                disabled={isLoading}
-                className="w-full bg-black/90 backdrop-blur-md text-white py-2.5 px-3 rounded-lg text-xs font-semibold hover:bg-black/95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-white/20 cursor-pointer"
-              >
-                {isLoading ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <ShoppingBagIcon className="h-3.5 w-3.5 mr-1.5" />
-                    Quick Add
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {/* Quick Add to Cart - only show if in stock and not multi-variant without selection */}
+          {showAddToCart &&
+            session?.user &&
+            !isOutOfStock &&
+            !isMultiVariantProduct && (
+              <div className="absolute inset-x-0 bottom-0 p-2 lg:p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isLoading}
+                  className="w-full bg-black/90 backdrop-blur-md text-white py-2 lg:py-2.5 px-2 lg:px-3 rounded-lg text-[10px] lg:text-xs font-semibold hover:bg-black/95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-white/20 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <div className="w-3 h-3 lg:w-3.5 lg:h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <ShoppingBagIcon className="h-3 w-3 lg:h-3.5 lg:w-3.5 mr-1 lg:mr-1.5" />
+                      <span className="hidden sm:inline">Quick Add</span>
+                      <span className="sm:hidden">Add</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+          {/* For multi-variant products, show "More Options" button */}
+          {showAddToCart &&
+            session?.user &&
+            !isOutOfStock &&
+            isMultiVariantProduct && (
+              <div className="absolute inset-x-0 bottom-0 p-2 lg:p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+                <div className="w-full bg-black backdrop-blur-md text-white py-2 lg:py-2.5 px-2 lg:px-3 rounded-lg text-[10px] lg:text-xs font-semibold hover:bg-slate-900 transition-all duration-300 flex items-center justify-center border border-white/20 cursor-pointer">
+                  <span className="hidden sm:inline">More Options</span>
+                  <span className="sm:hidden">Options</span>
+                </div>
+              </div>
+            )}
 
           {/* Login prompt for non-authenticated users - only if in stock */}
           {showAddToCart && !session?.user && !isOutOfStock && (
-            <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+            <div className="absolute inset-x-0 bottom-0 p-2 lg:p-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-full group-hover:translate-y-0 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
               <button
                 onClick={() => (window.location.href = "/signin")}
-                className="w-full bg-black/90 backdrop-blur-md text-white py-2.5 px-3 rounded-lg text-xs font-semibold hover:bg-black/95 transition-all duration-300 flex items-center justify-center border border-white/20 cursor-pointer"
+                className="w-full bg-black/90 backdrop-blur-md text-white py-2 lg:py-2.5 px-2 lg:px-3 rounded-lg text-[10px] lg:text-xs font-semibold hover:bg-black/95 transition-all duration-300 flex items-center justify-center border border-white/20 cursor-pointer"
               >
-                Sign in to buy
+                <span className="hidden sm:inline">Sign in to buy</span>
+                <span className="sm:hidden">Sign in</span>
               </button>
             </div>
           )}
         </div>
 
         {/* Product Info */}
-        <div className={variant === "compact" ? "p-3" : "p-4"}>
-          <div className="space-y-1.5">
+        <div className={variant === "compact" ? "p-2 lg:p-3" : "p-3 lg:p-4"}>
+          <div className="space-y-1 lg:space-y-1.5">
             {/* Brand & Name */}
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {product.brand && (
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
+                  <p className="text-[8px] lg:text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-0.5">
                     {product.brand}
                   </p>
                 )}
                 <h3
-                  className={`${variant === "compact" ? "text-xs" : "text-sm"} font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight ${
+                  className={`${variant === "compact" ? "text-[10px] lg:text-xs" : "text-xs lg:text-sm"} font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors leading-tight ${
                     isOutOfStock ? "text-gray-500" : ""
                   }`}
                 >
-                  {/* Show variant details if available */}
-                  {product.variantDetails
-                    ? `${product.name} - ${product.variantDetails.name}`
-                    : product.name}
+                  {product.name}
                 </h3>
+
+                {/* Variant count badge - show below product name */}
+                {isMultiVariantProduct && (
+                  <p className="text-[8px] lg:text-[10px] text-gray-600 font-medium mt-0.5">
+                    {typeof product.variants === "number"
+                      ? `${product.variants} Variants`
+                      : "Multiple Variants"}
+                  </p>
+                )}
+
                 {/* Show variant details as subtitle if available */}
                 {product.variantDetails && (
-                  <p className="text-[10px] text-gray-500 mt-0.5">
+                  <p className="text-[8px] lg:text-[10px] text-gray-500 mt-0.5">
                     {[
                       product.variantDetails.color,
                       product.variantDetails.storage,
@@ -461,20 +509,20 @@ export default function ProductCard({
               </div>
               {/* Featured badge next to product name */}
               {product.isFeatured && !isOutOfStock && (
-                <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0">
+                <span className="bg-blue-100 text-blue-700 text-[8px] lg:text-[10px] px-1.5 lg:px-2 py-0.5 rounded-full font-medium ml-1 lg:ml-2 flex-shrink-0">
                   Featured
                 </span>
               )}
             </div>
 
             {/* Rating */}
-            {product.rating && (
-              <div className="flex items-center space-x-1">
+            {product.rating && product.rating > 0 && (
+              <div className="flex items-center space-x-0.5 lg:space-x-1">
                 <div className="flex items-center">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`h-2.5 w-2.5 ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"}`}
+                      className={`h-2 w-2 lg:h-2.5 lg:w-2.5 ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -483,20 +531,11 @@ export default function ProductCard({
                   ))}
                 </div>
                 {product.reviewCount && (
-                  <span className="text-[10px] text-gray-500 ml-0.5">
+                  <span className="text-[8px] lg:text-[10px] text-gray-500 ml-0.5">
                     ({product.reviewCount})
                   </span>
                 )}
               </div>
-            )}
-
-            {/* Variants */}
-            {product.variants && !product.variantDetails && (
-              <p className="text-[10px] text-gray-500 font-medium">
-                {typeof product.variants === "number"
-                  ? `${product.variants} variants`
-                  : product.variants}
-              </p>
             )}
 
             {/* Stock status for low stock */}
@@ -504,36 +543,45 @@ export default function ProductCard({
               product.stock !== undefined &&
               product.stock <= 5 &&
               product.stock > 0 && (
-                <p className="text-[10px] text-amber-600 font-medium">
+                <p className="text-[8px] lg:text-[10px] text-amber-600 font-medium">
                   Only {product.stock} left in stock
                 </p>
               )}
 
             {/* Pricing */}
-            <div className="flex items-center space-x-1.5 pt-0.5">
-              <span
-                className={`${variant === "compact" ? "text-base" : "text-lg"} font-bold ${
-                  isOutOfStock ? "text-gray-500" : "text-gray-900"
-                }`}
-              >
-                {formatPrice(product.price)}
-              </span>
-              {product.originalPrice &&
-                product.originalPrice > product.price && (
+            <div className="flex items-center space-x-1 lg:space-x-1.5 pt-0.5">
+              {displayPrice && displayPrice > 0 ? (
+                <>
                   <span
-                    className={`text-xs line-through ${
-                      isOutOfStock ? "text-gray-400" : "text-gray-500"
+                    className={`${variant === "compact" ? "text-xs lg:text-sm" : "text-sm lg:text-base"} font-bold ${
+                      isOutOfStock ? "text-gray-500" : "text-gray-900"
                     }`}
                   >
-                    {formatPrice(product.originalPrice)}
+                    {isMultiVariantProduct && "From "}
+                    {formatPrice(displayPrice)}
                   </span>
-                )}
+                  {product.originalPrice &&
+                    product.originalPrice > displayPrice && (
+                      <span
+                        className={`text-[8px] lg:text-[10px] line-through ${
+                          isOutOfStock ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        {formatPrice(product.originalPrice)}
+                      </span>
+                    )}
+                </>
+              ) : (
+                <span className="text-[10px] lg:text-sm font-medium text-slate-800">
+                  Multiple options available
+                </span>
+              )}
             </div>
 
             {/* Conditional price range display */}
             {showPriceRange && (
               <p
-                className={`text-[10px] font-medium ${
+                className={`text-[8px] lg:text-[10px] font-medium ${
                   isOutOfStock ? "text-gray-300" : "text-gray-400"
                 }`}
               >
@@ -546,7 +594,7 @@ export default function ProductCard({
             {/* Description for featured variant */}
             {variant === "featured" && product.description && (
               <p
-                className={`text-xs line-clamp-2 mt-2 leading-relaxed ${
+                className={`text-[10px] lg:text-xs line-clamp-2 mt-1 lg:mt-2 leading-relaxed ${
                   isOutOfStock ? "text-gray-400" : "text-gray-600"
                 }`}
               >

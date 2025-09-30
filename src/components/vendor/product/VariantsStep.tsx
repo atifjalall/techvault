@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -249,43 +249,49 @@ export default function VariantsStep({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-900 flex items-center">
-              <CubeIcon className="w-4 h-4 mr-2 text-blue-600" />
+          <CardHeader className="pb-1 lg:pb-2 px-2 lg:px-6 pt-2 lg:pt-6">
+            <CardTitle className="text-[11px] lg:text-sm font-semibold text-gray-900 flex items-center">
+              <CubeIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-1 lg:mr-2 text-blue-600" />
               Product Variants
             </CardTitle>
-            <p className="text-xs text-gray-600">
+            <p className="text-[9px] lg:text-xs text-gray-600">
               Create different variants with colors, storage, pricing, and
               images
             </p>
           </CardHeader>
         </motion.div>
 
-        <CardContent className="space-y-4 pt-2">
+        <CardContent className="space-y-1 lg:space-y-4 pt-1 lg:pt-2 px-2 lg:px-6 pb-2 lg:pb-6">
           {/* Quick Stats */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="grid grid-cols-3 gap-3"
+            className="grid grid-cols-3 gap-1 lg:gap-3"
           >
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-2 text-center">
-              <p className="text-xs text-blue-600 font-medium">Variants</p>
-              <p className="text-sm font-bold text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-1 lg:p-2 text-center">
+              <p className="text-[8px] lg:text-xs text-blue-600 font-medium">
+                Variants
+              </p>
+              <p className="text-[10px] lg:text-sm font-bold text-blue-800">
                 {formData.variants.length}
               </p>
             </div>
-            <div className="bg-green-50 border border-green-200 rounded-md p-2 text-center">
-              <p className="text-xs text-green-600 font-medium">Stock</p>
-              <p className="text-sm font-bold text-green-800">
+            <div className="bg-green-50 border border-green-200 rounded-md p-1 lg:p-2 text-center">
+              <p className="text-[8px] lg:text-xs text-green-600 font-medium">
+                Stock
+              </p>
+              <p className="text-[10px] lg:text-sm font-bold text-green-800">
                 {formData.variants
                   .filter((v) => v.stock && v.isActive)
                   .reduce((sum, v) => sum + parseInt(v.stock), 0)}
               </p>
             </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-md p-2 text-center">
-              <p className="text-xs text-purple-600 font-medium">Range</p>
-              <p className="text-sm font-bold text-purple-800">
+            <div className="bg-purple-50 border border-purple-200 rounded-md p-1 lg:p-2 text-center">
+              <p className="text-[8px] lg:text-xs text-purple-600 font-medium">
+                Range
+              </p>
+              <p className="text-[10px] lg:text-sm font-bold text-purple-800">
                 {(() => {
                   const prices = formData.variants
                     .filter((v) => v.price && v.isActive)
@@ -300,7 +306,7 @@ export default function VariantsStep({
           </motion.div>
 
           {/* Variants List */}
-          <div className="space-y-3">
+          <div className="space-y-1 lg:space-y-3">
             <AnimatePresence>
               {formData.variants.map((variant, index) => (
                 <motion.div
@@ -311,23 +317,24 @@ export default function VariantsStep({
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                   <Card className="bg-gray-50/30 border border-gray-200">
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-1 lg:pb-2 px-2 lg:px-6 pt-2 lg:pt-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center text-white text-xs font-bold">
+                        <div className="flex items-center space-x-1 lg:space-x-2">
+                          <div className="w-4 lg:w-6 h-4 lg:h-6 bg-blue-600 rounded-md flex items-center justify-center text-white text-[8px] lg:text-xs font-bold">
                             {index + 1}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-[10px] lg:text-sm font-semibold text-gray-900">
                               {variant.variantName || `Variant ${index + 1}`}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 lg:space-x-2">
                           <Badge
                             variant={variant.isActive ? "active" : "inactive"}
                             size="sm"
                             icon="auto"
+                            className="text-[8px] lg:text-xs h-4 lg:h-5 px-1 lg:px-2"
                           >
                             {variant.isActive ? "Active" : "Inactive"}
                           </Badge>
@@ -336,9 +343,9 @@ export default function VariantsStep({
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() => removeVariant(index)}
-                              className="w-6 h-6 bg-red-100 hover:bg-red-200 rounded-md flex items-center justify-center text-red-600 cursor-pointer"
+                              className="w-4 lg:w-6 h-4 lg:h-6 bg-red-100 hover:bg-red-200 rounded-md flex items-center justify-center text-red-600 cursor-pointer"
                             >
-                              <XMarkIcon className="w-3 h-3" />
+                              <XMarkIcon className="w-2 lg:w-3 h-2 lg:h-3" />
                             </motion.button>
                           )}
                         </div>
@@ -349,7 +356,7 @@ export default function VariantsStep({
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="text-red-500 text-xs"
+                            className="text-red-500 text-[9px] lg:text-xs"
                           >
                             {errors[`variant_${index}_name`]}
                           </motion.p>
@@ -357,7 +364,7 @@ export default function VariantsStep({
                       </AnimatePresence>
                     </CardHeader>
 
-                    <CardContent className="space-y-3 pt-0">
+                    <CardContent className="space-y-1 lg:space-y-3 pt-0 px-2 lg:px-6 pb-2 lg:pb-6">
                       {/* Name and SKU */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1">
@@ -716,16 +723,16 @@ export default function VariantsStep({
           </div>
 
           {/* Add Variant Button */}
-          <div className="text-center pt-2">
+          <div className="text-center pt-1 lg:pt-2">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="button"
                 onClick={addVariant}
                 variant="default"
                 size="sm"
-                className="cursor-pointer"
+                className="cursor-pointer h-6 lg:h-8 text-[9px] lg:text-sm px-2 lg:px-4"
               >
-                <PlusIcon className="w-3 h-3 mr-1" />
+                <PlusIcon className="w-2 lg:w-3 h-2 lg:h-3 mr-0.5 lg:mr-1" />
                 Add Variant
               </Button>
             </motion.div>
@@ -738,9 +745,9 @@ export default function VariantsStep({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-red-50 border border-red-200 rounded-md p-2"
+                className="bg-red-50 border border-red-200 rounded-md p-1 lg:p-2"
               >
-                <p className="text-red-600 text-xs font-medium">
+                <p className="text-red-600 text-[9px] lg:text-xs font-medium">
                   {errors.variants}
                 </p>
               </motion.div>

@@ -160,13 +160,27 @@ export default function BasicInfoStep({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="border-0 shadow-sm bg-white">
+      <div className="lg:border-0 lg:shadow-sm lg:bg-white lg:rounded-lg">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <CardHeader className="pb-2">
+          {/* Mobile Header */}
+          <div className="pb-2 lg:hidden px-2">
+            <div className="flex items-center">
+              <TagIcon className="w-3 h-3 mr-1.5 text-blue-600" />
+              <h3 className="text-[12px] font-semibold text-gray-900">
+                Basic Information
+              </h3>
+            </div>
+            <p className="text-[9px] text-gray-600 mt-0.5">
+              Essential details about your product
+            </p>
+          </div>
+
+          {/* Desktop Header */}
+          <CardHeader className="hidden lg:block pb-2">
             <CardTitle className="text-sm font-semibold text-gray-900 flex items-center">
               <TagIcon className="w-4 h-4 mr-2 text-blue-600" />
               Basic Information
@@ -177,15 +191,18 @@ export default function BasicInfoStep({
           </CardHeader>
         </motion.div>
 
-        <CardContent className="space-y-3 pt-2">
+        <div className="space-y-2 lg:space-y-3 pt-2 px-2 lg:px-6 pb-2 lg:pb-6">
           {/* Product Name */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-1"
+            className="space-y-0.5 lg:space-y-1"
           >
-            <Label htmlFor="name" className="text-xs font-medium text-gray-700">
+            <Label
+              htmlFor="name"
+              className="text-[10px] lg:text-xs font-medium text-gray-700"
+            >
               Product Name <span className="text-red-500">*</span>
             </Label>
             <motion.div whileFocus={{ scale: 1.01 }}>
@@ -194,7 +211,7 @@ export default function BasicInfoStep({
                 value={formData.name}
                 onChange={(e) => updateFormData("name", e.target.value)}
                 placeholder="e.g., iPhone 16 Pro Max"
-                className={`h-8 text-sm transition-all duration-200 ${
+                className={`h-6 lg:h-8 text-[10px] lg:text-sm transition-all duration-200 ${
                   errors.name
                     ? "border-red-300 focus:border-red-400"
                     : "border-gray-200"
@@ -221,11 +238,11 @@ export default function BasicInfoStep({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="space-y-1"
+            className="space-y-0.5 lg:space-y-1"
           >
             <Label
               htmlFor="description"
-              className="text-xs font-medium text-gray-700"
+              className="text-[10px] lg:text-xs font-medium text-gray-700"
             >
               Description <span className="text-red-500">*</span>
             </Label>
@@ -236,7 +253,7 @@ export default function BasicInfoStep({
                 onChange={(e) => updateFormData("description", e.target.value)}
                 rows={2}
                 placeholder="Describe your product features and benefits..."
-                className={`text-sm resize-none transition-all duration-200 ${
+                className={`text-[10px] lg:text-sm resize-none transition-all duration-200 min-h-[48px] lg:min-h-[64px] ${
                   errors.description
                     ? "border-red-300 focus:border-red-400"
                     : "border-gray-200"
@@ -250,7 +267,7 @@ export default function BasicInfoStep({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="text-red-500 text-xs mt-1"
+                  className="text-red-500 text-[9px] lg:text-xs mt-0.5 lg:mt-1"
                 >
                   {errors.description}
                 </motion.p>
@@ -260,7 +277,7 @@ export default function BasicInfoStep({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.5 }}
-              className="text-xs text-gray-500"
+              className="text-[9px] lg:text-xs text-gray-500"
             >
               {formData.description.length}/20 characters minimum
             </motion.p>
@@ -278,13 +295,13 @@ export default function BasicInfoStep({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.5 }}
-              className="space-y-1"
+              className="space-y-0.5 lg:space-y-1"
             >
               <Label
                 htmlFor="brand"
-                className="text-xs font-medium text-gray-700 flex items-center"
+                className="text-[10px] lg:text-xs font-medium text-gray-700 flex items-center"
               >
-                <BuildingStorefrontIcon className="w-3 h-3 mr-1 text-blue-600" />
+                <BuildingStorefrontIcon className="w-2 lg:w-3 h-2 lg:h-3 mr-0.5 lg:mr-1 text-blue-600" />
                 Brand <span className="text-red-500">*</span>
               </Label>
               <motion.div whileHover={{ scale: 1.01 }}>
@@ -293,7 +310,7 @@ export default function BasicInfoStep({
                   onValueChange={(value) => updateFormData("brandId", value)}
                 >
                   <SelectTrigger
-                    className={`h-8 text-sm border transition-all duration-200 ${
+                    className={`h-7 lg:h-8 text-[10px] lg:text-sm border transition-all duration-200 ${
                       errors.brandId ? "border-red-300" : "border-gray-200"
                     } bg-white cursor-pointer`}
                   >
@@ -325,7 +342,7 @@ export default function BasicInfoStep({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
-                    className="text-red-500 text-xs mt-1"
+                    className="text-red-500 text-[9px] lg:text-xs mt-0.5 lg:mt-1"
                   >
                     {errors.brandId}
                   </motion.p>
@@ -338,13 +355,13 @@ export default function BasicInfoStep({
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.6 }}
-              className="space-y-1"
+              className="space-y-0.5 lg:space-y-1"
             >
               <Label
                 htmlFor="category"
-                className="text-xs font-medium text-gray-700 flex items-center"
+                className="text-[10px] lg:text-xs font-medium text-gray-700 flex items-center"
               >
-                <Square3Stack3DIcon className="w-3 h-3 mr-1 text-blue-600" />
+                <Square3Stack3DIcon className="w-2 lg:w-3 h-2 lg:h-3 mr-0.5 lg:mr-1 text-blue-600" />
                 Category <span className="text-red-500">*</span>
               </Label>
               <motion.div whileHover={{ scale: 1.01 }}>
@@ -353,7 +370,7 @@ export default function BasicInfoStep({
                   onValueChange={(value) => updateFormData("categoryId", value)}
                 >
                   <SelectTrigger
-                    className={`h-8 text-sm border transition-all duration-200 ${
+                    className={`h-7 lg:h-8 text-[10px] lg:text-sm border transition-all duration-200 ${
                       errors.categoryId ? "border-red-300" : "border-gray-200"
                     } bg-white cursor-pointer`}
                   >
@@ -392,7 +409,7 @@ export default function BasicInfoStep({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3 }}
-                    className="text-red-500 text-xs mt-1"
+                    className="text-red-500 text-[9px] lg:text-xs mt-0.5 lg:mt-1"
                   >
                     {errors.categoryId}
                   </motion.p>
@@ -413,11 +430,11 @@ export default function BasicInfoStep({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.8 }}
-              className="space-y-1"
+              className="space-y-0.5 lg:space-y-1"
             >
               <Label
                 htmlFor="subcategory"
-                className="text-xs font-medium text-gray-700"
+                className="text-[10px] lg:text-xs font-medium text-gray-700"
               >
                 Subcategory <span className="text-gray-400">(Optional)</span>
               </Label>
@@ -441,7 +458,7 @@ export default function BasicInfoStep({
                   }
                 >
                   <SelectTrigger
-                    className={`h-8 text-sm border transition-all duration-200 ${
+                    className={`h-7 lg:h-8 text-[10px] lg:text-sm border transition-all duration-200 ${
                       !selectedCategory ||
                       selectedCategory.subcategories.length === 0
                         ? "bg-gray-50 cursor-not-allowed border-gray-200 text-gray-400"
@@ -486,11 +503,11 @@ export default function BasicInfoStep({
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.9 }}
-              className="space-y-1"
+              className="space-y-0.5 lg:space-y-1"
             >
               <Label
                 htmlFor="modelNumber"
-                className="text-xs font-medium text-gray-700"
+                className="text-[10px] lg:text-xs font-medium text-gray-700"
               >
                 Model Number <span className="text-gray-400">(Optional)</span>
               </Label>
@@ -502,14 +519,14 @@ export default function BasicInfoStep({
                     updateFormData("modelNumber", e.target.value)
                   }
                   placeholder="e.g. A3108, WH-1000XM5"
-                  className="h-8 text-sm border-gray-200 transition-all duration-200"
+                  className="h-7 lg:h-8 text-[10px] lg:text-sm border-gray-200 transition-all duration-200"
                 />
               </motion.div>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 1.0 }}
-                className="text-xs text-gray-500"
+                className="text-[9px] lg:text-xs text-gray-500"
               >
                 Product model or unique identifier
               </motion.p>
@@ -524,10 +541,10 @@ export default function BasicInfoStep({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -20, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                className="bg-blue-50 border border-blue-200 rounded-md p-2"
+                className="bg-blue-50 border border-blue-200 rounded-md p-1.5 lg:p-2"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 lg:space-x-2">
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
@@ -537,14 +554,14 @@ export default function BasicInfoStep({
                         stiffness: 200,
                       }}
                     >
-                      <CheckCircleIcon className="w-4 h-4 text-blue-600" />
+                      <CheckCircleIcon className="w-3 lg:w-4 h-3 lg:h-4 text-blue-600" />
                     </motion.div>
                     <div>
                       <motion.p
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-xs font-semibold text-blue-900"
+                        className="text-[10px] lg:text-xs font-semibold text-blue-900"
                       >
                         {selectedCategory.name}
                       </motion.p>
@@ -552,7 +569,7 @@ export default function BasicInfoStep({
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="text-xs text-blue-600"
+                        className="text-[9px] lg:text-xs text-blue-600"
                       >
                         Category selected
                       </motion.p>
@@ -568,7 +585,7 @@ export default function BasicInfoStep({
                         variant="default"
                         size="sm"
                         icon="auto"
-                        className="bg-blue-100 text-blue-700 border-blue-300"
+                        className="bg-blue-100 text-blue-700 border-blue-300 text-[8px] lg:text-xs h-4 lg:h-5"
                       >
                         {selectedCategory.subcategories.length} subs
                       </Badge>
@@ -578,8 +595,8 @@ export default function BasicInfoStep({
               </motion.div>
             )}
           </AnimatePresence>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 }

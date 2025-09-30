@@ -40,82 +40,82 @@ function CheckoutSuccessPageSkeleton() {
         className="container mx-auto px-4 py-4"
       >
         {/* Breadcrumb Skeleton */}
-        <div className="w-full pt-5 pb-4">
-          <div className="flex items-center space-x-2 ml-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-16" />
+        <div className="w-full pt-3 lg:pt-5 pb-2 lg:pb-4">
+          <div className="flex items-center space-x-1.5 lg:space-x-2 ml-1 lg:ml-2">
+            <Skeleton className="h-3 lg:h-4 w-10 lg:w-12" />
+            <Skeleton className="h-3 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-3 lg:h-4 w-12 lg:w-16" />
+            <Skeleton className="h-3 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-3 lg:h-4 w-16 lg:w-20" />
+            <Skeleton className="h-3 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-3 lg:h-4 w-12 lg:w-16" />
           </div>
         </div>
 
         {/* Header Skeleton */}
-        <div className="mb-4">
+        <div className="mb-3 lg:mb-4">
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <Skeleton className="w-12 h-12 rounded-full mx-auto mb-3" />
-              <Skeleton className="h-5 w-48 mx-auto mb-2" />
-              <Skeleton className="h-4 w-64 mx-auto mb-1" />
-              <Skeleton className="h-3 w-32 mx-auto" />
+            <CardContent className="p-3 lg:p-4 text-center">
+              <Skeleton className="w-10 lg:w-12 h-10 lg:h-12 rounded-full mx-auto mb-2 lg:mb-3" />
+              <Skeleton className="h-4 lg:h-5 w-40 lg:w-48 mx-auto mb-1.5 lg:mb-2" />
+              <Skeleton className="h-3 lg:h-4 w-48 lg:w-64 mx-auto mb-1" />
+              <Skeleton className="h-2.5 lg:h-3 w-24 lg:w-32 mx-auto" />
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Main content skeleton */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3 lg:space-y-4">
             <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <Skeleton className="h-4 w-24" />
+              <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                <Skeleton className="h-3.5 lg:h-4 w-20 lg:w-24" />
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
+              <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                <div className="space-y-2 lg:space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
-                      className="flex items-center space-x-3 pb-3 border-b border-gray-200 last:border-b-0"
+                      className="flex items-center space-x-2 lg:space-x-3 pb-2 lg:pb-3 border-b border-gray-200 last:border-b-0"
                     >
-                      <Skeleton className="w-10 h-10 rounded-lg" />
+                      <Skeleton className="w-8 lg:w-10 h-8 lg:h-10 rounded-lg" />
                       <div className="flex-1">
-                        <Skeleton className="h-3 w-3/4 mb-1" />
-                        <Skeleton className="h-2 w-1/2 mb-1" />
-                        <Skeleton className="h-2 w-1/4" />
+                        <Skeleton className="h-2.5 lg:h-3 w-3/4 mb-1" />
+                        <Skeleton className="h-2 lg:h-2 w-1/2 mb-0.5 lg:mb-1" />
+                        <Skeleton className="h-1.5 lg:h-2 w-1/4" />
                       </div>
-                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-2.5 lg:h-3 w-14 lg:w-16" />
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-3">
-                    <Skeleton className="w-4 h-4 mr-2" />
-                    <Skeleton className="h-4 w-24" />
+                <CardContent className="p-3 lg:p-4">
+                  <div className="flex items-center mb-2 lg:mb-3">
+                    <Skeleton className="w-3 lg:w-4 h-3 lg:h-4 mr-1.5 lg:mr-2" />
+                    <Skeleton className="h-3 lg:h-4 w-20 lg:w-24" />
                   </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-3/4" />
-                    <Skeleton className="h-3 w-2/3" />
+                  <div className="space-y-1.5 lg:space-y-2">
+                    <Skeleton className="h-2.5 lg:h-3 w-full" />
+                    <Skeleton className="h-2.5 lg:h-3 w-3/4" />
+                    <Skeleton className="h-2.5 lg:h-3 w-2/3" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-3">
-                    <Skeleton className="w-4 h-4 mr-2" />
-                    <Skeleton className="h-4 w-24" />
+                <CardContent className="p-3 lg:p-4">
+                  <div className="flex items-center mb-2 lg:mb-3">
+                    <Skeleton className="w-3 lg:w-4 h-3 lg:h-4 mr-1.5 lg:mr-2" />
+                    <Skeleton className="h-3 lg:h-4 w-20 lg:w-24" />
                   </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-3/4" />
-                    <Skeleton className="h-3 w-2/3" />
+                  <div className="space-y-1.5 lg:space-y-2">
+                    <Skeleton className="h-2.5 lg:h-3 w-full" />
+                    <Skeleton className="h-2.5 lg:h-3 w-3/4" />
+                    <Skeleton className="h-2.5 lg:h-3 w-2/3" />
                   </div>
                 </CardContent>
               </Card>
@@ -125,25 +125,28 @@ function CheckoutSuccessPageSkeleton() {
           {/* Sidebar skeleton */}
           <div className="lg:col-span-1">
             <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <Skeleton className="h-4 w-20" />
+              <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                <Skeleton className="h-3.5 lg:h-4 w-16 lg:w-20" />
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-4">
+              <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                <div className="space-y-3 lg:space-y-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-start space-x-3">
-                      <Skeleton className="w-6 h-6 rounded-full" />
+                    <div
+                      key={i}
+                      className="flex items-start space-x-2 lg:space-x-3"
+                    >
+                      <Skeleton className="w-5 lg:w-6 h-5 lg:h-6 rounded-full" />
                       <div className="flex-1">
-                        <Skeleton className="h-3 w-2/3 mb-1" />
-                        <Skeleton className="h-2 w-full" />
+                        <Skeleton className="h-2.5 lg:h-3 w-2/3 mb-0.5 lg:mb-1" />
+                        <Skeleton className="h-2 lg:h-2 w-full" />
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="space-y-2 mt-6">
-                  <Skeleton className="h-9 w-full rounded-lg" />
-                  <Skeleton className="h-9 w-full rounded-lg" />
-                  <Skeleton className="h-9 w-full rounded-lg" />
+                <div className="space-y-1.5 lg:space-y-2 mt-4 lg:mt-6">
+                  <Skeleton className="h-8 lg:h-9 w-full rounded-lg" />
+                  <Skeleton className="h-8 lg:h-9 w-full rounded-lg" />
+                  <Skeleton className="h-8 lg:h-9 w-full rounded-lg" />
                 </div>
               </CardContent>
             </Card>
@@ -331,34 +334,34 @@ function CheckoutSuccessPageContent() {
   if (error || !orderData) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-3 lg:px-4 py-8 lg:py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-md mx-auto text-center"
           >
             <Card className="border-red-200 bg-red-50">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ExclamationTriangleIcon className="w-6 h-6 text-red-500" />
+              <CardContent className="p-4 lg:p-6">
+                <div className="w-10 lg:w-12 h-10 lg:h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                  <ExclamationTriangleIcon className="w-5 lg:w-6 h-5 lg:h-6 text-red-500" />
                 </div>
-                <h1 className="text-base font-semibold text-gray-900 mb-1">
+                <h1 className="text-sm lg:text-base font-semibold text-gray-900 mb-1">
                   Order Not Found
                 </h1>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-xs lg:text-sm text-gray-600 mb-3 lg:mb-4">
                   {error || "We couldn't find the order details."}
                 </p>
                 <div className="space-y-2">
                   <Link
                     href="/orders"
-                    className="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+                    className="inline-flex items-center px-3 lg:px-4 py-2 bg-gray-900 text-white text-xs lg:text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
                   >
                     View My Orders
                   </Link>
                   <div>
                     <Link
                       href="/products"
-                      className="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="inline-flex items-center px-3 lg:px-4 py-2 bg-white text-gray-700 text-xs lg:text-sm font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       Continue Shopping
                     </Link>
@@ -375,8 +378,8 @@ function CheckoutSuccessPageContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Breadcrumb */}
-      <div className="pt-8 px-4 pb-4">
-        <div className="container mx-auto px-4">
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -421,7 +424,7 @@ function CheckoutSuccessPageContent() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-4 space-y-4"
+        className="container mx-auto px-3 lg:px-4 py-3 lg:py-4 space-y-3 lg:space-y-4"
       >
         {/* Success Header */}
         <motion.div
@@ -430,21 +433,21 @@ function CheckoutSuccessPageContent() {
           transition={{ duration: 0.6 }}
         >
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-4 text-center">
+            <CardContent className="p-3 lg:p-4 text-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3"
+                className="w-10 lg:w-12 h-10 lg:h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2 lg:mb-3"
               >
-                <CheckCircleIcon className="w-6 h-6 text-white" />
+                <CheckCircleIcon className="w-5 lg:w-6 h-5 lg:h-6 text-white" />
               </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="text-lg font-bold text-gray-900 mb-1"
+                className="text-base lg:text-lg font-bold text-gray-900 mb-1"
               >
                 Order Confirmed!
               </motion.h1>
@@ -453,7 +456,7 @@ function CheckoutSuccessPageContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="text-sm text-gray-600 mb-1"
+                className="text-xs lg:text-sm text-gray-600 mb-1"
               >
                 Thank you for your purchase,{" "}
                 {orderData.shippingAddress.firstName}{" "}
@@ -464,7 +467,7 @@ function CheckoutSuccessPageContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
-                className="text-xs text-gray-500"
+                className="text-[10px] lg:text-xs text-gray-500"
               >
                 Order #{formatOrderNumber(orderData.orderNumber)}
               </motion.p>
@@ -472,9 +475,9 @@ function CheckoutSuccessPageContent() {
           </Card>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Order Details - Main Content */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3 lg:space-y-4">
             {/* Order Summary with Variant Support */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -482,17 +485,19 @@ function CheckoutSuccessPageContent() {
               transition={{ delay: 0.2 }}
             >
               <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Order Summary</CardTitle>
+                <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-sm lg:text-base">
+                    Order Summary
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
+                <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                  <div className="space-y-2 lg:space-y-3">
                     {orderData.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center space-x-3 pb-3 border-b border-gray-200 last:border-b-0"
+                        className="flex items-center space-x-2 lg:space-x-3 pb-2 lg:pb-3 border-b border-gray-200 last:border-b-0"
                       >
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="w-8 lg:w-10 h-8 lg:h-10 bg-gray-100 rounded-lg overflow-hidden">
                           {item.image ? (
                             <img
                               src={item.image}
@@ -504,23 +509,23 @@ function CheckoutSuccessPageContent() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900 text-sm">
+                          <h3 className="font-medium text-gray-900 text-xs lg:text-sm">
                             {item.variantName
                               ? `${item.name} - ${item.variantName}`
                               : item.name}
                           </h3>
                           {item.brand && (
-                            <p className="text-xs text-gray-600">
+                            <p className="text-[10px] lg:text-xs text-gray-600">
                               {item.brand}
                             </p>
                           )}
-                          <p className="text-xs text-gray-500">
+                          <p className="text-[10px] lg:text-xs text-gray-500">
                             Qty: {item.quantity}
                           </p>
 
                           {/* Show variant details if available */}
                           {item.variantSnapshot && (
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-[10px] lg:text-xs text-gray-500 mt-0.5 lg:mt-1">
                               {item.variantSnapshot.color && (
                                 <span className="mr-2">
                                   Color: {item.variantSnapshot.color}
@@ -539,21 +544,21 @@ function CheckoutSuccessPageContent() {
                             </div>
                           )}
                         </div>
-                        <p className="font-semibold text-gray-900 text-sm">
+                        <p className="font-semibold text-gray-900 text-xs lg:text-sm">
                           {formatPrice(item.price * item.quantity)}
                         </p>
                       </div>
                     ))}
 
                     {/* Order Totals */}
-                    <div className="space-y-2 pt-3 border-t border-gray-200">
-                      <div className="flex justify-between text-xs">
+                    <div className="space-y-1.5 lg:space-y-2 pt-2 lg:pt-3 border-t border-gray-200">
+                      <div className="flex justify-between text-[10px] lg:text-xs">
                         <span className="text-gray-600">Subtotal</span>
                         <span className="text-gray-900">
                           {formatPrice(orderData.totals.subtotal)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-[10px] lg:text-xs">
                         <span className="text-gray-600">Shipping</span>
                         <span className="text-gray-900">
                           {orderData.totals.shipping === 0
@@ -561,17 +566,17 @@ function CheckoutSuccessPageContent() {
                             : formatPrice(orderData.totals.shipping)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-[10px] lg:text-xs">
                         <span className="text-gray-600">Tax (VAT 19%)</span>
                         <span className="text-gray-900">
                           {formatPrice(orderData.totals.tax)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <span className="text-sm font-semibold text-gray-900">
+                      <div className="flex justify-between items-center pt-1.5 lg:pt-2 border-t border-gray-200">
+                        <span className="text-xs lg:text-sm font-semibold text-gray-900">
                           Total
                         </span>
-                        <span className="text-base font-bold text-gray-900">
+                        <span className="text-sm lg:text-base font-bold text-gray-900">
                           {formatPrice(orderData.total)}
                         </span>
                       </div>
@@ -586,30 +591,30 @@ function CheckoutSuccessPageContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4"
             >
               {/* Shipping Address */}
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-3">
-                    <MapPinIcon className="w-4 h-4 text-gray-600 mr-2" />
-                    <h3 className="text-sm font-semibold text-gray-900">
+                <CardContent className="p-3 lg:p-4">
+                  <div className="flex items-center mb-2 lg:mb-3">
+                    <MapPinIcon className="w-3 lg:w-4 h-3 lg:h-4 text-gray-600 mr-1.5 lg:mr-2" />
+                    <h3 className="text-xs lg:text-sm font-semibold text-gray-900">
                       Shipping Address
                     </h3>
                   </div>
-                  <div className="text-gray-700 space-y-1">
-                    <p className="font-medium text-xs">
+                  <div className="text-gray-700 space-y-0.5 lg:space-y-1">
+                    <p className="font-medium text-[10px] lg:text-xs">
                       {orderData.shippingAddress.firstName}{" "}
                       {orderData.shippingAddress.lastName}
                     </p>
-                    <p className="text-xs">
+                    <p className="text-[10px] lg:text-xs">
                       {orderData.shippingAddress.address}
                     </p>
-                    <p className="text-xs">
+                    <p className="text-[10px] lg:text-xs">
                       {orderData.shippingAddress.city},{" "}
                       {orderData.shippingAddress.postalCode}
                     </p>
-                    <p className="text-xs">
+                    <p className="text-[10px] lg:text-xs">
                       {orderData.shippingAddress.country}
                     </p>
                   </div>
@@ -618,21 +623,25 @@ function CheckoutSuccessPageContent() {
 
               {/* Payment Method */}
               <Card className="border-0 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-3">
-                    <CreditCardIcon className="w-4 h-4 text-gray-600 mr-2" />
-                    <h3 className="text-sm font-semibold text-gray-900">
+                <CardContent className="p-3 lg:p-4">
+                  <div className="flex items-center mb-2 lg:mb-3">
+                    <CreditCardIcon className="w-3 lg:w-4 h-3 lg:h-4 text-gray-600 mr-1.5 lg:mr-2" />
+                    <h3 className="text-xs lg:text-sm font-semibold text-gray-900">
                       Payment Method
                     </h3>
                   </div>
                   <div className="text-gray-700">
-                    <p className="font-medium text-xs">Credit Card</p>
-                    <p className="text-xs">{getPaymentMethodDisplay()}</p>
-                    <p className="text-xs text-green-600 mt-2">
+                    <p className="font-medium text-[10px] lg:text-xs">
+                      Credit Card
+                    </p>
+                    <p className="text-[10px] lg:text-xs">
+                      {getPaymentMethodDisplay()}
+                    </p>
+                    <p className="text-[10px] lg:text-xs text-green-600 mt-1.5 lg:mt-2">
                       ✓ Payment Successful
                     </p>
                     {orderData.paymentIntentId && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-[10px] lg:text-xs text-gray-500 mt-1">
                         Payment ID: {orderData.paymentIntentId}
                       </p>
                     )}
@@ -650,24 +659,26 @@ function CheckoutSuccessPageContent() {
             className="lg:col-span-1"
           >
             <Card className="border-0 shadow-sm sticky top-24">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">What&apos;s Next?</CardTitle>
+              <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                <CardTitle className="text-sm lg:text-base">
+                  What&apos;s Next?
+                </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-4">
+              <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                <div className="space-y-3 lg:space-y-4">
                   {/* Delivery Info */}
-                  <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <TruckIcon className="w-3 h-3 text-blue-600" />
+                  <div className="flex items-start space-x-2 lg:space-x-3">
+                    <div className="w-5 lg:w-6 h-5 lg:h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <TruckIcon className="w-2.5 lg:w-3 h-2.5 lg:h-3 text-blue-600" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900 text-xs">
+                      <h4 className="font-medium text-gray-900 text-[10px] lg:text-xs">
                         Estimated Delivery
                       </h4>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-[10px] lg:text-xs text-gray-600 mt-0.5 lg:mt-1">
                         {getEstimatedDelivery()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-[10px] lg:text-xs text-gray-500 mt-0.5 lg:mt-1">
                         {orderData.totals.shipping === 0
                           ? "Free standard shipping"
                           : "Standard shipping"}
@@ -676,15 +687,15 @@ function CheckoutSuccessPageContent() {
                   </div>
 
                   {/* Email Confirmation */}
-                  <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <EnvelopeIcon className="w-3 h-3 text-green-600" />
+                  <div className="flex items-start space-x-2 lg:space-x-3">
+                    <div className="w-5 lg:w-6 h-5 lg:h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <EnvelopeIcon className="w-2.5 lg:w-3 h-2.5 lg:h-3 text-green-600" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900 text-xs">
+                      <h4 className="font-medium text-gray-900 text-[10px] lg:text-xs">
                         Order Confirmation
                       </h4>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-[10px] lg:text-xs text-gray-600 mt-0.5 lg:mt-1">
                         Check your email for order details and tracking
                         information.
                       </p>
@@ -692,15 +703,15 @@ function CheckoutSuccessPageContent() {
                   </div>
 
                   {/* Order Tracking */}
-                  <div className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CalendarDaysIcon className="w-3 h-3 text-purple-600" />
+                  <div className="flex items-start space-x-2 lg:space-x-3">
+                    <div className="w-5 lg:w-6 h-5 lg:h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CalendarDaysIcon className="w-2.5 lg:w-3 h-2.5 lg:h-3 text-purple-600" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900 text-xs">
+                      <h4 className="font-medium text-gray-900 text-[10px] lg:text-xs">
                         Track Your Order
                       </h4>
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-[10px] lg:text-xs text-gray-600 mt-0.5 lg:mt-1">
                         You&apos;ll receive tracking details once your order
                         ships.
                       </p>
@@ -709,10 +720,10 @@ function CheckoutSuccessPageContent() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="space-y-2 mt-6 pt-4 border-t border-gray-200">
+                <div className="space-y-1.5 lg:space-y-2 mt-4 lg:mt-6 pt-3 lg:pt-4 border-t border-gray-200">
                   <Link
                     href={`/orders`}
-                    className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-gray-800 transition-all cursor-pointer"
+                    className="w-full bg-gray-900 text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg font-medium text-[10px] lg:text-xs text-center block hover:bg-gray-800 transition-all cursor-pointer"
                   >
                     View Order Details
                   </Link>
@@ -720,27 +731,27 @@ function CheckoutSuccessPageContent() {
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    className="w-full bg-white text-gray-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full bg-white text-gray-700 py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg font-medium text-[10px] lg:text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-1.5 lg:space-x-2 cursor-pointer"
                   >
-                    <PrinterIcon className="w-3 h-3" />
+                    <PrinterIcon className="w-2.5 lg:w-3 h-2.5 lg:h-3" />
                     <span>Print Receipt</span>
                   </motion.button>
 
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    className="w-full bg-white text-gray-700 py-2.5 px-4 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full bg-white text-gray-700 py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg font-medium text-[10px] lg:text-xs border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center space-x-1.5 lg:space-x-2 cursor-pointer"
                   >
-                    <ArrowDownTrayIcon className="w-3 h-3" />
+                    <ArrowDownTrayIcon className="w-2.5 lg:w-3 h-2.5 lg:h-3" />
                     <span>Download Invoice</span>
                   </motion.button>
                 </div>
 
                 {/* Continue Shopping */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-3 lg:mt-4 pt-3 lg:pt-4 border-t border-gray-200">
                   <Link
                     href="/products"
-                    className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium text-xs text-center block hover:bg-blue-700 transition-all cursor-pointer"
+                    className="w-full bg-gray-900 text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg font-medium text-[10px] lg:text-xs text-center block hover:bg-gray-800 transition-all cursor-pointer"
                   >
                     Continue Shopping
                   </Link>
@@ -757,24 +768,24 @@ function CheckoutSuccessPageContent() {
           transition={{ delay: 0.5 }}
         >
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-6 text-center">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">
+            <CardContent className="p-4 lg:p-6 text-center">
+              <h3 className="text-xs lg:text-sm font-semibold text-gray-900 mb-1.5 lg:mb-2">
                 Need Help with Your Order?
               </h3>
-              <p className="text-xs text-gray-600 mb-4">
+              <p className="text-[10px] lg:text-xs text-gray-600 mb-3 lg:mb-4">
                 Our customer support team is here to help you with any
                 questions.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-2 lg:gap-3 justify-center">
                 <Link
                   href="/support"
-                  className="px-4 py-2.5 bg-gray-900 text-white rounded-lg font-medium text-xs hover:bg-gray-800 transition-all cursor-pointer"
+                  className="px-3 lg:px-4 py-2 lg:py-2.5 bg-gray-900 text-white rounded-lg font-medium text-[10px] lg:text-xs hover:bg-gray-800 transition-all cursor-pointer"
                 >
                   Contact Support
                 </Link>
                 <Link
                   href="/faq"
-                  className="px-4 py-2.5 bg-white text-gray-700 rounded-lg font-medium text-xs border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
+                  className="px-3 lg:px-4 py-2 lg:py-2.5 bg-white text-gray-700 rounded-lg font-medium text-[10px] lg:text-xs border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
                 >
                   View FAQ
                 </Link>

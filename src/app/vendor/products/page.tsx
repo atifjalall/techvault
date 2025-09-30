@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,12 +13,10 @@ import {
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
   PhotoIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,
-  StarIcon,
   CubeIcon,
   FunnelIcon,
   CurrencyEuroIcon,
@@ -29,7 +26,7 @@ import {
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 // UI Components
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -131,19 +128,7 @@ interface Category {
   slug: string;
 }
 
-interface ProductsResponse {
-  success: boolean;
-  products: Product[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalCount: number;
-    totalPages: number;
-  };
-  categories: Category[];
-}
-
-// Stats Card Component
+// Stats Card Component with mobile-responsive ultra-small text
 function StatCard({
   title,
   value,
@@ -168,32 +153,38 @@ function StatCard({
       transition={{ duration: 0.3 }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-600">{title}</p>
-              <p className="text-xl font-bold text-gray-900">{value}</p>
-              <div className="flex items-center space-x-1">
+            <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-gray-600 truncate">
+                {title}
+              </p>
+              <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
+                {value}
+              </p>
+              <div className="flex items-center space-x-0.5 sm:space-x-1">
                 {isPositive ? (
-                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-2 w-2 sm:h-3 sm:w-3 text-green-500 flex-shrink-0" />
                 ) : (
-                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-2 w-2 sm:h-3 sm:w-3 text-red-500 flex-shrink-0" />
                 )}
                 <span
-                  className={`text-xs font-medium ${
+                  className={`text-[9px] sm:text-xs font-medium ${
                     isPositive ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {isPositive ? "+" : ""}
                   {change.toFixed(1)}%
                 </span>
-                <span className="text-xs text-gray-500">vs last month</span>
+                <span className="text-[7px] sm:text-xs text-gray-500 hidden sm:inline">
+                  vs last month
+                </span>
               </div>
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-7 h-7 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-0`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -239,20 +230,20 @@ function SortButton({
   );
 }
 
-// Loading Skeletons
+// Loading Skeletons with mobile optimization
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-32" />
+              <div className="space-y-1 sm:space-y-2 flex-1">
+                <Skeleton className="h-2 sm:h-3 w-14 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-10 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-32" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -288,6 +279,236 @@ function TableSkeleton() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Mobile Product Card Component with ultra-compact design
+function MobileProductCard({
+  product,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+}: {
+  product: Product;
+  onEdit: (id: string) => void;
+  onDelete: (product: Product) => void;
+  onToggleStatus: (product: Product) => void;
+}) {
+  // Calculate stock status from variants
+  const activeVariants = product.variants.filter((v) => v.isActive);
+  const totalStock =
+    product.totalStock || activeVariants.reduce((sum, v) => sum + v.stock, 0);
+  const lowStockThreshold = 10;
+
+  // Get price range from variants
+  const prices = activeVariants.map((v) => v.price);
+  const minPrice =
+    prices.length > 0 ? Math.min(...prices) : product.basePrice || 0;
+  const maxPrice =
+    prices.length > 0 ? Math.max(...prices) : product.basePrice || 0;
+
+  const formatPrice = (price: number) => `€${Number(price).toFixed(2)}`;
+
+  // Get primary product image
+  const primaryImage =
+    product.images?.[0] ||
+    activeVariants.find((v) => v.thumbnailImage)?.thumbnailImage ||
+    activeVariants.find((v) => v.images?.length > 0)?.images[0];
+
+  return (
+    <Card className="border-0 shadow-sm bg-white mb-2">
+      <CardContent className="p-2">
+        <div className="flex items-start space-x-2">
+          {/* Product Image */}
+          <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+            {primaryImage ? (
+              <Image
+                src={primaryImage}
+                alt={product.name}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <PhotoIcon className="h-4 w-4 text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          {/* Product Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between mb-1">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[12px] font-medium text-gray-900 truncate leading-tight">
+                  {product.name}
+                </h3>
+                <p className="text-[10px] text-gray-500 truncate">
+                  {product.brand?.name} • {product.category.name}
+                </p>
+              </div>
+
+              {/* Actions Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 hover:bg-gray-100 flex-shrink-0 ml-1"
+                  >
+                    <EllipsisVerticalIcon className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => onEdit(product.id)}
+                    className="text-[11px] py-1"
+                  >
+                    <PencilIcon className="h-3 w-3 mr-1" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onToggleStatus(product)}
+                    className="text-[11px] py-1"
+                  >
+                    {product.isActive ? (
+                      <>
+                        <XCircleIcon className="h-3 w-3 mr-1" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-3 w-3 mr-1" />
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(product)}
+                    className="text-red-600 text-[11px] py-1"
+                  >
+                    <TrashIcon className="h-3 w-3 mr-1" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Price and Stock Row */}
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                {minPrice === maxPrice ? (
+                  <p className="text-[12px] font-semibold text-gray-900">
+                    {formatPrice(minPrice)}
+                  </p>
+                ) : (
+                  <p className="text-[12px] font-semibold text-gray-900">
+                    {formatPrice(minPrice)}-{formatPrice(maxPrice)}
+                  </p>
+                )}
+              </div>
+
+              <div className="text-right">
+                <p className="text-[12px] font-medium text-gray-900">
+                  {totalStock}
+                </p>
+                <p className="text-[9px] text-gray-500">units</p>
+              </div>
+            </div>
+
+            {/* Status and Badges Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1">
+                {/* Stock Status Badge */}
+                {totalStock === 0 ? (
+                  <Badge
+                    variant="out_of_stock"
+                    className="text-[9px] px-1.5 py-0.5 h-5"
+                  >
+                    Out
+                  </Badge>
+                ) : totalStock <= lowStockThreshold ? (
+                  <Badge
+                    variant="high"
+                    className="text-[9px] px-1.5 py-0.5 h-5"
+                  >
+                    Low
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="active"
+                    className="text-[9px] px-1.5 py-0.5 h-5"
+                  >
+                    Stock
+                  </Badge>
+                )}
+
+                {/* Product Status */}
+                <button onClick={() => onToggleStatus(product)}>
+                  <Badge
+                    variant={product.isActive ? "active" : "inactive"}
+                    className="text-[9px] px-1.5 py-0.5 h-5"
+                  >
+                    {product.isActive ? "Active" : "Draft"}
+                  </Badge>
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-2 text-[9px] text-gray-500">
+                {product.featured && (
+                  <div className="flex items-center">
+                    <StarIconSolid className="h-2 w-2 text-yellow-400 mr-0.5" />
+                    <span>★</span>
+                  </div>
+                )}
+                {product.variants.length > 1 && (
+                  <span>{product.variants.length}v</span>
+                )}
+                <span>{product._count?.reviews || 0}r</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Mobile skeleton for product loading
+function MobileProductsSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-2">
+            <div className="flex items-start space-x-2">
+              <Skeleton className="w-10 h-10 rounded-md flex-shrink-0" />
+              <div className="flex-1 space-y-1">
+                <div className="flex justify-between">
+                  <div className="space-y-1 flex-1">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-2 w-20" />
+                  </div>
+                  <Skeleton className="w-5 h-5 rounded" />
+                </div>
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="flex space-x-1">
+                    <Skeleton className="h-4 w-10 rounded-full" />
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <Skeleton className="h-2 w-16" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
 
@@ -450,7 +671,7 @@ function ProductRow({
               size="sm"
               className="h-7 w-7 p-0 hover:bg-gray-100 cursor-pointer"
             >
-              <EllipsisVerticalIcon className="h-3 w-3" />
+              <EllipsisVerticalIcon className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -538,7 +759,6 @@ function VendorProductsPageSkeleton() {
 
 // Main content component that uses useSearchParams
 function VendorProductsPageContent() {
-  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -663,6 +883,7 @@ function VendorProductsPageContent() {
 
   useEffect(() => {
     loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentPage,
     searchTerm,
@@ -736,24 +957,33 @@ function VendorProductsPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Products</h1>
-            <p className="text-sm text-gray-600">
+      <div className="p-2 sm:p-6 space-y-3 sm:space-y-6">
+        {/* Mobile-optimized Header */}
+        <div className="flex items-start sm:items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-gray-900">
+              Products
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600 truncate">
               Manage your product inventory with variant support
             </p>
           </div>
-          <Button asChild size="sm" variant="active">
+          <Button
+            asChild
+            size="sm"
+            variant="active"
+            className="flex-shrink-0 ml-2 h-7 sm:h-8"
+          >
             <Link href="/vendor/products/add">
-              <PlusIcon className="h-4 w-4 mr-1.5" />
-              Add Product
+              <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline text-xs sm:text-sm">
+                Add Product
+              </span>
             </Link>
           </Button>
         </div>
 
-        {/* Stats Grid */}
+        {/* Mobile-optimized Stats Grid */}
         {loading ? (
           <StatsSkeleton />
         ) : (
@@ -761,7 +991,7 @@ function VendorProductsPageContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
           >
             <StatCard
               title="Total Products"
@@ -798,37 +1028,37 @@ function VendorProductsPageContent() {
           </motion.div>
         )}
 
-        {/* Filters */}
+        {/* Mobile-optimized Filters */}
         <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardContent className="p-2 sm:p-4">
+            <form onSubmit={handleSearch} className="space-y-2 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="md:col-span-2 space-y-2">
+                <div className="sm:col-span-2 md:col-span-2 space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="search"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Search Products
                   </Label>
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     <Input
                       id="search"
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm"
-                      placeholder="Search by name, brand, or category..."
+                      className="pl-7 sm:pl-10 h-7 sm:h-9 text-[11px] sm:text-sm"
+                      placeholder="Search by name, brand..."
                     />
                   </div>
                 </div>
 
                 {/* Category Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="category"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Category
                   </Label>
@@ -838,13 +1068,22 @@ function VendorProductsPageContent() {
                       setCategoryFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem
+                        value="all"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        All Categories
+                      </SelectItem>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
+                        <SelectItem
+                          key={category.id}
+                          value={category.id}
+                          className="text-[11px] sm:text-sm"
+                        >
                           {category.name}
                         </SelectItem>
                       ))}
@@ -853,10 +1092,10 @@ function VendorProductsPageContent() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="status"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Status
                   </Label>
@@ -866,26 +1105,54 @@ function VendorProductsPageContent() {
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="lowstock">Low Stock</SelectItem>
-                      <SelectItem value="outofstock">Out of Stock</SelectItem>
+                      <SelectItem
+                        value="all"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        All Status
+                      </SelectItem>
+                      <SelectItem
+                        value="active"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Active
+                      </SelectItem>
+                      <SelectItem
+                        value="draft"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Draft
+                      </SelectItem>
+                      <SelectItem
+                        value="lowstock"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Low Stock
+                      </SelectItem>
+                      <SelectItem
+                        value="outofstock"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Out of Stock
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">
+              <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
+                <p className="text-[9px] sm:text-xs text-gray-600">
                   {totalCount} products found
                 </p>
-                <Button variant="active" className="text-blue-700">
-                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
+                <Button
+                  variant="active"
+                  className="text-blue-700 h-6 sm:h-8 text-[10px] sm:text-sm px-2 sm:px-3"
+                >
+                  <FunnelIcon className="text-current h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
@@ -893,151 +1160,222 @@ function VendorProductsPageContent() {
           </CardContent>
         </Card>
 
-        {/* Products Table */}
+        {/* Products Display - Mobile Cards / Desktop Table */}
         {loading ? (
-          <TableSkeleton />
+          <>
+            {/* Mobile Loading */}
+            <div className="block lg:hidden">
+              <MobileProductsSkeleton />
+            </div>
+            {/* Desktop Loading */}
+            <div className="hidden lg:block">
+              <TableSkeleton />
+            </div>
+          </>
         ) : !products || products.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-12 text-center">
-              <CubeIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <CardContent className="p-6 sm:p-12 text-center">
+              <CubeIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-[11px] sm:text-sm font-semibold text-gray-900 mb-1">
                 No products found
               </h3>
-              <p className="text-xs text-gray-500 mb-4">
+              <p className="text-[9px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
                 {searchTerm || categoryFilter || statusFilter
                   ? "Try adjusting your filters or search terms"
                   : "Get started by creating your first product"}
               </p>
-              <Button asChild size="sm" variant="active">
+              <Button
+                asChild
+                size="sm"
+                variant="active"
+                className="h-6 sm:h-8 text-[10px] sm:text-sm"
+              >
                 <Link href="/vendor/products/add">
-                  <PlusIcon className="h-4 w-4 mr-1.5" />
-                  Add Product
+                  <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Add Product</span>
+                  <span className="sm:hidden">Add</span>
                 </Link>
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="name"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Product
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="basePrice"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Price
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-center">
-                      <SortButton
-                        field="totalStock"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Stock
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-center">Status</TableHead>
-                    <TableHead className="h-10 text-center">Reviews</TableHead>
-                    <TableHead className="w-[50px] h-10 text-center">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <ProductRow
-                      key={product.id}
-                      product={product}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onToggleStatus={handleToggleStatus}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <>
+            {/* Mobile Product Cards - Only visible on mobile */}
+            <div className="block lg:hidden">
+              {products.map((product) => (
+                <MobileProductCard
+                  key={product.id}
+                  product={product}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleStatus={handleToggleStatus}
+                />
+              ))}
+            </div>
+
+            {/* Desktop Table - Only visible on desktop (unchanged) */}
+            <div className="hidden lg:block">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-b border-gray-100">
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="name"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Product
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="basePrice"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Price
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-center">
+                          <SortButton
+                            field="totalStock"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Stock
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-center">
+                          Status
+                        </TableHead>
+                        <TableHead className="h-10 text-center">
+                          Reviews
+                        </TableHead>
+                        <TableHead className="w-[50px] h-10 text-center">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products.map((product) => (
+                        <ProductRow
+                          key={product.id}
+                          product={product}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onToggleStatus={handleToggleStatus}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
-        {/* Pagination */}
+        {/* Mobile-optimized Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-700">
-              Showing {(currentPage - 1) * 10 + 1} to{" "}
-              {Math.min(currentPage * 10, totalCount)} of {totalCount} products
-            </p>
-
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="h-8 px-3 text-xs cursor-pointer"
-              >
-                Previous
-              </Button>
-
-              <div className="flex space-x-1">
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNumber;
-                  if (totalPages <= 7) {
-                    pageNumber = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNumber = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNumber = totalPages - 6 + i;
-                  } else {
-                    pageNumber = currentPage - 3 + i;
-                  }
-
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={
-                        currentPage === pageNumber ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNumber)}
-                      className={`w-8 h-8 text-xs cursor-pointer ${
-                        currentPage === pageNumber
-                          ? "bg-slate-900 hover:bg-slate-800 text-white"
-                          : ""
-                      }`}
-                    >
-                      {pageNumber}
-                    </Button>
-                  );
-                })}
+          <>
+            {/* Mobile Pagination - Ultra compact */}
+            <div className="flex flex-col space-y-2 sm:hidden">
+              <p className="text-[9px] text-gray-700 text-center">
+                Page {currentPage} of {totalPages} ({totalCount} items)
+              </p>
+              <div className="flex items-center justify-center space-x-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-6 px-2 text-[9px]"
+                >
+                  Prev
+                </Button>
+                <span className="text-[9px] text-gray-500 px-1">
+                  {currentPage}/{totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-6 px-2 text-[9px]"
+                >
+                  Next
+                </Button>
               </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs cursor-pointer"
-              >
-                Next
-              </Button>
             </div>
-          </div>
+
+            {/* Desktop Pagination - Unchanged */}
+            <div className="hidden sm:flex items-center justify-between">
+              <p className="text-xs text-gray-700">
+                Showing {(currentPage - 1) * 10 + 1} to{" "}
+                {Math.min(currentPage * 10, totalCount)} of {totalCount}{" "}
+                products
+              </p>
+
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 px-3 text-xs cursor-pointer"
+                >
+                  Previous
+                </Button>
+
+                <div className="flex space-x-1">
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 7) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 4) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNumber = totalPages - 6 + i;
+                    } else {
+                      pageNumber = currentPage - 3 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={
+                          currentPage === pageNumber ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-8 h-8 text-xs cursor-pointer ${
+                          currentPage === pageNumber
+                            ? "bg-slate-900 hover:bg-slate-800 text-white"
+                            : ""
+                        }`}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 text-xs cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

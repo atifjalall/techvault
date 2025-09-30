@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Footer from "@/components/layout/Footer";
 import HeroCarousel from "@/components/home/HeroCarousel";
@@ -14,12 +14,36 @@ export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // Newsletter state
+  const [email, setEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   // Block vendors from accessing store homepage
   useEffect(() => {
     if (status === "authenticated" && session?.user?.role === "VENDOR") {
       router.replace("/vendor/dashboard");
     }
   }, [status, session, router]);
+
+  // Newsletter subscription handler
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !email.includes("@")) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simulate subscription (you can add actual API call here)
+    setTimeout(() => {
+      setIsSubscribed(true);
+      setIsLoading(false);
+      setEmail("");
+    }, 1000);
+  };
 
   // Show loading while checking auth
   if (status === "loading") {
@@ -221,113 +245,6 @@ export default function HomePage() {
         {/* Featured Categories Section */}
         <FeaturedCategories />
 
-        {/* Trust Indicators Section */}
-        <section className="py-10 bg-white border-t border-gray-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              {[
-                {
-                  icon: (
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
-                  ),
-                  title: "Free Shipping",
-                  subtitle: "Orders over €50",
-                },
-                {
-                  icon: (
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                      />
-                    </svg>
-                  ),
-                  title: "2 Year Warranty",
-                  subtitle: "All electronics",
-                },
-                {
-                  icon: (
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                      />
-                    </svg>
-                  ),
-                  title: "Secure Payment",
-                  subtitle: "SSL encryption",
-                },
-                {
-                  icon: (
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 109.75 9.75A9.75 9.75 0 0012 2.25z"
-                      />
-                    </svg>
-                  ),
-                  title: "24/7 Support",
-                  subtitle: "Expert service",
-                },
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ y: -3 }}
-                  className="space-y-2 cursor-pointer"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                    className="w-10 h-10 bg-black rounded-full flex items-center justify-center mx-auto"
-                  >
-                    {item.icon}
-                  </motion.div>
-                  <h3 className="font-medium text-sm text-gray-900">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-gray-600">{item.subtitle}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Compact Newsletter Section */}
         <section className="relative py-16 bg-gradient-to-br from-gray-900 via-black to-gray-800 overflow-hidden">
           {/* Background Pattern */}
@@ -386,30 +303,72 @@ export default function HomePage() {
               insights delivered to your inbox.
             </motion.p>
 
-            {/* Email Form */}
+            {/* Email Form or Success Message */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
               className="relative max-w-md mx-auto mb-6"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-20"></div>
-              <div className="relative bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/20">
-                <div className="flex flex-col sm:flex-row gap-1.5">
-                  <input
-                    type="email"
-                    placeholder="Enter email address"
-                    className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent backdrop-blur-sm transition-all duration-300"
-                  />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-white text-black font-medium text-sm rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
+              {isSubscribed ? (
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center justify-center gap-3 px-6 py-4 bg-green-500/20 border border-green-500/30 rounded-xl backdrop-blur-md"
+                >
+                  <svg
+                    className="w-6 h-6 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    Subscribe
-                  </motion.button>
-                </div>
-              </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-white">
+                    Successfully subscribed! Check your inbox.
+                  </span>
+                </motion.div>
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-20"></div>
+                  <div className="relative bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/20">
+                    <form
+                      onSubmit={handleSubscribe}
+                      className="flex flex-col sm:flex-row gap-1.5"
+                    >
+                      <input
+                        type="email"
+                        placeholder="Enter email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent backdrop-blur-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <motion.button
+                        type="submit"
+                        disabled={isLoading}
+                        whileHover={{ scale: isLoading ? 1 : 1.05 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.95 }}
+                        className="px-6 py-3 bg-white text-black font-medium text-sm rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[120px]"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            <span>Subscribing...</span>
+                          </>
+                        ) : (
+                          "Subscribe"
+                        )}
+                      </motion.button>
+                    </form>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Trust Indicators */}
@@ -417,7 +376,7 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-6 text-gray-400 text-xs"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400 text-xs"
             >
               {[
                 "No spam, unsubscribe anytime",
@@ -430,7 +389,7 @@ export default function HomePage() {
                   className="flex items-center cursor-pointer"
                 >
                   <svg
-                    className="w-3 h-3 text-green-400 mr-1.5"
+                    className="w-3 h-3 text-green-400 mr-1.5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -440,7 +399,7 @@ export default function HomePage() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  {text}
+                  <span className="whitespace-nowrap">{text}</span>
                 </motion.div>
               ))}
             </motion.div>

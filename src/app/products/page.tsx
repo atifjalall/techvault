@@ -97,7 +97,7 @@ function transformProduct(dbProduct: DatabaseProduct): ProductCardType {
     image: dbProduct.images[0] || "/api/placeholder/400/400",
     images: dbProduct.images,
     variants: dbProduct.hasMultipleVariants
-      ? `${dbProduct.variantCount} variants`
+      ? dbProduct.variantCount
       : undefined,
     isNew: dbProduct.newArrival,
     isFeatured: dbProduct.featured,
@@ -164,6 +164,9 @@ function ProductsPageContent() {
   const [onlyInStock, setOnlyInStock] = useState(
     searchParams.get("onlyInStock") === "true"
   );
+  const [onlyNewArrival, setOnlyNewArrival] = useState(
+    searchParams.get("newArrival") === "true"
+  );
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Get available subcategories
@@ -212,6 +215,7 @@ function ProductsPageContent() {
     if (maxPrice) params.set("maxPrice", maxPrice);
     if (onlyOnSale) params.set("onlyOnSale", "true");
     if (onlyInStock) params.set("onlyInStock", "true");
+    if (onlyNewArrival) params.set("newArrival", "true");
 
     const newURL = `/products${params.toString() ? `?${params.toString()}` : ""}`;
     router.push(newURL, { scroll: false });
@@ -225,6 +229,7 @@ function ProductsPageContent() {
     maxPrice,
     onlyOnSale,
     onlyInStock,
+    onlyNewArrival,
     router,
     categories,
     availableSubcategories,
@@ -250,6 +255,7 @@ function ProductsPageContent() {
     const maxPriceParam = searchParams.get("maxPrice");
     const sale = searchParams.get("onlyOnSale");
     const stock = searchParams.get("onlyInStock");
+    const newArrival = searchParams.get("newArrival");
 
     // Handle category - support both ID and slug
     if (categoryParam) {
@@ -302,6 +308,7 @@ function ProductsPageContent() {
     if (maxPriceParam) setMaxPrice(maxPriceParam);
     if (sale === "true") setOnlyOnSale(true);
     if (stock === "true") setOnlyInStock(true);
+    if (newArrival === "true") setOnlyNewArrival(true);
   }, [searchParams, categories, brands]);
 
   // Load initial data
@@ -358,6 +365,7 @@ function ProductsPageContent() {
         if (maxPrice) queryParams.set("maxPrice", maxPrice);
         if (onlyOnSale) queryParams.set("onlyOnSale", "true");
         if (onlyInStock) queryParams.set("onlyInStock", "true");
+        if (onlyNewArrival) queryParams.set("newArrival", "true");
 
         console.log("API call with params:", queryParams.toString());
 
@@ -398,6 +406,7 @@ function ProductsPageContent() {
       maxPrice,
       onlyOnSale,
       onlyInStock,
+      onlyNewArrival,
       pagination.limit,
     ]
   );
@@ -423,6 +432,7 @@ function ProductsPageContent() {
     maxPrice,
     onlyOnSale,
     onlyInStock,
+    onlyNewArrival,
     loading,
     loadProducts,
     updateURL,
@@ -459,6 +469,9 @@ function ProductsPageContent() {
       case "onlyInStock":
         setOnlyInStock(value);
         break;
+      case "onlyNewArrival":
+        setOnlyNewArrival(value);
+        break;
     }
     // URL will be updated by the useEffect that watches these state changes
   };
@@ -473,6 +486,7 @@ function ProductsPageContent() {
     setMaxPrice("");
     setOnlyOnSale(false);
     setOnlyInStock(false);
+    setOnlyNewArrival(false);
   };
 
   const handlePageChange = (page: number) => {
@@ -491,7 +505,8 @@ function ProductsPageContent() {
       maxPrice,
     ].filter((f) => f && f !== "").length +
     (onlyOnSale ? 1 : 0) +
-    (onlyInStock ? 1 : 0);
+    (onlyInStock ? 1 : 0) +
+    (onlyNewArrival ? 1 : 0);
 
   if (loading) {
     return (
@@ -541,25 +556,30 @@ function ProductsPageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {/* Header with Breadcrumb */}
-      <div className="pt-8 px-4 pb-4">
-        <div className="container mx-auto px-4">
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
             <Breadcrumb>
-              <BreadcrumbList>
+              <BreadcrumbList className="text-[10px] lg:text-sm">
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="/" className="cursor-pointer">
+                    <Link
+                      href="/"
+                      className="cursor-pointer text-[10px] lg:text-sm hover:text-slate-900"
+                    >
                       Home
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Products</BreadcrumbPage>
+                  <BreadcrumbPage className="text-[10px] lg:text-sm font-medium">
+                    Products
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -568,267 +588,402 @@ function ProductsPageContent() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-4 space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="container mx-auto px-2 lg:px-4 py-2 lg:py-4 space-y-2 lg:space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 lg:gap-6">
           {/* Desktop Sidebar */}
-          <div className="lg:col-span-1 space-y-4 hidden lg:block sticky top-18 self-start">
+          <div className="lg:col-span-1 space-y-3 lg:space-y-4 hidden lg:block sticky top-18 self-start">
             {/* Search */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
+                <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-xs lg:text-sm font-semibold text-slate-900">
+                    Search Products
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-2 lg:left-3 top-1/2 transform -translate-y-1/2 w-3 lg:w-4 h-3 lg:h-4 text-slate-400" />
+                    <motion.div whileFocus={{ scale: 1.01 }}>
+                      <Input
+                        placeholder="Search products..."
+                        value={searchTerm}
+                        onChange={(e) =>
+                          handleFilterChange("search", e.target.value)
+                        }
+                        className="pl-7 lg:pl-9 h-8 lg:h-9 text-[10px] lg:text-sm bg-white border-slate-200 focus:border-slate-400"
+                      />
+                    </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Categories */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
+                <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-xs lg:text-sm font-semibold text-slate-900">
+                    Categories
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6 space-y-3 lg:space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
+                  >
+                    <label className="block text-[10px] lg:text-xs font-medium text-slate-700 mb-1 lg:mb-2">
+                      Category
+                    </label>
+                    <Select
+                      value={selectedCategory || "all"}
+                      onValueChange={(value) =>
+                        handleFilterChange(
+                          "category",
+                          value === "all" ? "" : value
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-full h-8 lg:h-10 text-[10px] lg:text-sm bg-white border-slate-200">
+                        <SelectValue placeholder="All Categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+
+                  <AnimatePresence>
+                    {availableSubcategories.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, x: -20 }}
+                        animate={{ opacity: 1, height: "auto", x: 0 }}
+                        exit={{ opacity: 0, height: 0, x: -20 }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <label className="block text-[10px] lg:text-xs font-medium text-slate-700 mb-1 lg:mb-2">
+                          Subcategory
+                        </label>
+                        <Select
+                          value={selectedSubcategory || "all"}
+                          onValueChange={(value) =>
+                            handleFilterChange(
+                              "subcategory",
+                              value === "all" ? "" : value
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-full h-8 lg:h-10 text-[10px] lg:text-sm bg-white border-slate-200">
+                            <SelectValue placeholder="All Subcategories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              All Subcategories
+                            </SelectItem>
+                            {availableSubcategories.map((subcategory) => (
+                              <SelectItem
+                                key={subcategory.id}
+                                value={subcategory.id}
+                              >
+                                {subcategory.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.4 }}
+                  >
+                    <label className="block text-[10px] lg:text-xs font-medium text-slate-700 mb-1 lg:mb-2">
+                      Brand
+                    </label>
+                    <Select
+                      value={selectedBrand || "all"}
+                      onValueChange={(value) =>
+                        handleFilterChange(
+                          "brand",
+                          value === "all" ? "" : value
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-full h-8 lg:h-10 text-[10px] lg:text-sm bg-white border-slate-200">
+                        <SelectValue placeholder="All Brands" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Brands</SelectItem>
+                        {brands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.id}>
+                            {brand.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Price Range */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
+                <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-xs lg:text-sm font-semibold text-slate-900">
+                    Price Range
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6">
+                  <div className="space-y-2 lg:space-y-3">
+                    <div className="flex justify-between text-[10px] lg:text-sm text-slate-600">
+                      <span>€0</span>
+                      <span>€5000</span>
+                    </div>
+                    <div className="flex space-x-1 lg:space-x-2">
+                      <motion.div
+                        whileFocus={{ scale: 1.01 }}
+                        className="flex-1"
+                      >
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={minPrice}
+                          onChange={(e) =>
+                            handleFilterChange("minPrice", e.target.value)
+                          }
+                          className="h-7 lg:h-8 text-[10px] lg:text-xs bg-white border-slate-200 focus:border-slate-400"
+                        />
+                      </motion.div>
+                      <motion.div
+                        whileFocus={{ scale: 1.01 }}
+                        className="flex-1"
+                      >
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={maxPrice}
+                          onChange={(e) =>
+                            handleFilterChange("maxPrice", e.target.value)
+                          }
+                          className="h-7 lg:h-8 text-[10px] lg:text-xs bg-white border-slate-200 focus:border-slate-400"
+                        />
+                      </motion.div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Additional Options */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
+                <CardHeader className="pb-2 lg:pb-3 px-3 lg:px-6 pt-3 lg:pt-6">
+                  <CardTitle className="text-xs lg:text-sm font-semibold text-slate-900">
+                    Options
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 px-3 lg:px-6 pb-3 lg:pb-6 space-y-2 lg:space-y-3">
+                  <motion.label
+                    whileHover={{ x: 2 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center cursor-pointer"
+                  >
+                    <motion.input
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="checkbox"
+                      checked={onlyOnSale}
+                      onChange={(e) =>
+                        handleFilterChange("onlyOnSale", e.target.checked)
+                      }
+                      className="h-3 w-3 lg:h-4 lg:w-4 text-slate-900 border-slate-300 rounded cursor-pointer"
+                    />
+                    <span className="ml-1 lg:ml-2 text-[10px] lg:text-xs text-slate-700">
+                      On Sale Only
+                    </span>
+                  </motion.label>
+                  <motion.label
+                    whileHover={{ x: 2 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center cursor-pointer"
+                  >
+                    <motion.input
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="checkbox"
+                      checked={onlyInStock}
+                      onChange={(e) =>
+                        handleFilterChange("onlyInStock", e.target.checked)
+                      }
+                      className="h-3 w-3 lg:h-4 lg:w-4 text-slate-900 border-slate-300 rounded cursor-pointer"
+                    />
+                    <span className="ml-1 lg:ml-2 text-[10px] lg:text-xs text-slate-700">
+                      In Stock Only
+                    </span>
+                  </motion.label>
+                  <motion.label
+                    whileHover={{ x: 2 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center cursor-pointer"
+                  >
+                    <motion.input
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      type="checkbox"
+                      checked={onlyNewArrival}
+                      onChange={(e) =>
+                        handleFilterChange("onlyNewArrival", e.target.checked)
+                      }
+                      className="h-3 w-3 lg:h-4 lg:w-4 text-slate-900 border-slate-300 rounded cursor-pointer"
+                    />
+                    <span className="ml-1 lg:ml-2 text-[10px] lg:text-xs text-slate-700">
+                      New Arrivals Only
+                    </span>
+                  </motion.label>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Mobile Filters */}
+          <div className="lg:hidden space-y-2">
             <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
-                  Search Products
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <CardContent className="p-2">
+                <div className="relative mb-2">
+                  <MagnifyingGlassIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-400" />
                   <Input
                     placeholder="Search products..."
                     value={searchTerm}
                     onChange={(e) =>
                       handleFilterChange("search", e.target.value)
                     }
-                    className="pl-9 h-9 text-sm bg-white border-slate-200 focus:border-slate-400"
+                    className="pl-7 h-8 text-[10px]"
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Categories */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
-                  Categories
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
-                    Category
-                  </label>
-                  <Select
-                    value={selectedCategory || "all"}
-                    onValueChange={(value) =>
-                      handleFilterChange(
-                        "category",
-                        value === "all" ? "" : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-white border-slate-200">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {availableSubcategories.length > 0 && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
-                      Subcategory
-                    </label>
+                <div className="space-y-2 mb-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Select
-                      value={selectedSubcategory || "all"}
+                      value={selectedCategory || "all"}
                       onValueChange={(value) =>
                         handleFilterChange(
-                          "subcategory",
+                          "category",
                           value === "all" ? "" : value
                         )
                       }
                     >
-                      <SelectTrigger className="w-full bg-white border-slate-200">
-                        <SelectValue placeholder="All Subcategories" />
+                      <SelectTrigger className="text-[10px] h-8">
+                        <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Subcategories</SelectItem>
-                        {availableSubcategories.map((subcategory) => (
-                          <SelectItem
-                            key={subcategory.id}
-                            value={subcategory.id}
-                          >
-                            {subcategory.name}
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={selectedBrand || "all"}
+                      onValueChange={(value) =>
+                        handleFilterChange(
+                          "brand",
+                          value === "all" ? "" : value
+                        )
+                      }
+                    >
+                      <SelectTrigger className="text-[10px] h-8">
+                        <SelectValue placeholder="Brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Brands</SelectItem>
+                        {brands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.id}>
+                            {brand.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
-                    Brand
-                  </label>
-                  <Select
-                    value={selectedBrand || "all"}
-                    onValueChange={(value) =>
-                      handleFilterChange("brand", value === "all" ? "" : value)
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-white border-slate-200">
-                      <SelectValue placeholder="All Brands" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Brands</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Price Range */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
-                  Price Range
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-slate-600">
-                    <span>€0</span>
-                    <span>€5000</span>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={minPrice}
-                      onChange={(e) =>
-                        handleFilterChange("minPrice", e.target.value)
-                      }
-                      className="h-8 text-xs bg-white border-slate-200 focus:border-slate-400"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={maxPrice}
-                      onChange={(e) =>
-                        handleFilterChange("maxPrice", e.target.value)
-                      }
-                      className="h-8 text-xs bg-white border-slate-200 focus:border-slate-400"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Additional Options */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
-                  Options
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={onlyOnSale}
-                    onChange={(e) =>
-                      handleFilterChange("onlyOnSale", e.target.checked)
-                    }
-                    className="h-3 w-3 text-slate-900 border-slate-300 rounded cursor-pointer"
-                  />
-                  <span className="ml-2 text-xs text-slate-700">
-                    On Sale Only
-                  </span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={onlyInStock}
-                    onChange={(e) =>
-                      handleFilterChange("onlyInStock", e.target.checked)
-                    }
-                    className="h-3 w-3 text-slate-900 border-slate-300 rounded cursor-pointer"
-                  />
-                  <span className="ml-2 text-xs text-slate-700">
-                    In Stock Only
-                  </span>
-                </label>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Mobile Filters */}
-          <div className="lg:hidden space-y-4">
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardContent className="p-4">
-                <div className="relative mb-3">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) =>
-                      handleFilterChange("search", e.target.value)
-                    }
-                    className="pl-9 h-9 text-sm"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <Select
-                    value={selectedCategory || "all"}
-                    onValueChange={(value) =>
-                      handleFilterChange(
-                        "category",
-                        value === "all" ? "" : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="text-xs">
-                      <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={selectedBrand || "all"}
-                    onValueChange={(value) =>
-                      handleFilterChange("brand", value === "all" ? "" : value)
-                    }
-                  >
-                    <SelectTrigger className="text-xs">
-                      <SelectValue placeholder="Brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Brands</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Subcategory dropdown for mobile */}
+                  <AnimatePresence>
+                    {availableSubcategories.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full"
+                      >
+                        <Select
+                          value={selectedSubcategory || "all"}
+                          onValueChange={(value) =>
+                            handleFilterChange(
+                              "subcategory",
+                              value === "all" ? "" : value
+                            )
+                          }
+                        >
+                          <SelectTrigger className="text-[10px] h-8">
+                            <SelectValue placeholder="Subcategory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              All Subcategories
+                            </SelectItem>
+                            {availableSubcategories.map((subcategory) => (
+                              <SelectItem
+                                key={subcategory.id}
+                                value={subcategory.id}
+                              >
+                                {subcategory.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="flex items-center justify-between">
                   <Button
                     onClick={() => setShowMobileFilters(true)}
                     variant="outline"
                     size="sm"
-                    className="text-xs cursor-pointer"
+                    className="text-[10px] h-7 px-2 cursor-pointer"
                   >
                     <AdjustmentsHorizontalIcon className="w-3 h-3 mr-1" />
                     More Filters
                     {activeFiltersCount > 2 && (
-                      <Badge variant="secondary" className="ml-1 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 text-[8px] px-1 py-0"
+                      >
                         {activeFiltersCount - 2}
                       </Badge>
                     )}
@@ -838,7 +993,7 @@ function ProductsPageContent() {
                       variant="ghost"
                       size="sm"
                       onClick={clearFilters}
-                      className="text-xs cursor-pointer"
+                      className="text-[10px] h-7 px-2 cursor-pointer"
                     >
                       Clear ({activeFiltersCount})
                     </Button>
@@ -849,21 +1004,21 @@ function ProductsPageContent() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 space-y-2 lg:space-y-4">
             {/* Top Bar */}
             <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600">
+              <CardContent className="px-2 lg:px-4 py-2 lg:py-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="text-[10px] lg:text-sm text-slate-600">
                     {pagination.totalCount} products found
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 lg:gap-2">
                     {activeFiltersCount > 0 && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={clearFilters}
-                        className="text-xs cursor-pointer"
+                        className="text-[10px] lg:text-xs h-7 lg:h-8 px-2 cursor-pointer"
                       >
                         Clear Filters ({activeFiltersCount})
                       </Button>
@@ -874,7 +1029,7 @@ function ProductsPageContent() {
                         handleFilterChange("sort", value)
                       }
                     >
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-24 lg:w-40 h-7 lg:h-10 text-[10px] lg:text-sm">
                         <SelectValue placeholder="Featured" />
                       </SelectTrigger>
                       <SelectContent>
@@ -898,7 +1053,7 @@ function ProductsPageContent() {
             {productsLoading ? (
               <ProductGridSkeleton />
             ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 lg:gap-6">
                 <AnimatePresence mode="wait">
                   {products.map((product, index) => (
                     <motion.div
@@ -923,15 +1078,15 @@ function ProductsPageContent() {
               </div>
             ) : (
               <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
-                <CardContent className="p-8">
+                <CardContent className="p-4 lg:p-8">
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <MagnifyingGlassIcon className="w-8 h-8 text-slate-400" />
+                    <div className="w-12 h-12 lg:w-16 lg:h-16 bg-slate-100 rounded-full mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+                      <MagnifyingGlassIcon className="w-6 h-6 lg:w-8 lg:h-8 text-slate-400" />
                     </div>
-                    <h3 className="text-base font-medium text-slate-900 mb-2">
+                    <h3 className="text-sm lg:text-base font-medium text-slate-900 mb-2">
                       No products found
                     </h3>
-                    <p className="text-sm text-slate-600 mb-4">
+                    <p className="text-[10px] lg:text-sm text-slate-600 mb-3 lg:mb-4">
                       {activeFiltersCount > 0
                         ? "Try adjusting your search or filters."
                         : "No products are currently available."}
@@ -940,7 +1095,7 @@ function ProductsPageContent() {
                       <Button
                         variant="outline"
                         onClick={clearFilters}
-                        className="cursor-pointer"
+                        className="h-8 lg:h-10 text-[10px] lg:text-sm px-3 cursor-pointer"
                       >
                         Clear Filters
                       </Button>
@@ -964,28 +1119,35 @@ function ProductsPageContent() {
             onClick={() => setShowMobileFilters(false)}
           >
             <motion.div
-              className="w-80 h-full bg-white shadow-2xl overflow-y-auto"
+              className="w-72 sm:w-80 h-full bg-white shadow-2xl overflow-y-auto"
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-slate-900">
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-900">
                     Filters
                   </h3>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setShowMobileFilters(false)}
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                    className="p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                   >
-                    <XMarkIcon className="w-5 h-5 text-slate-600" />
-                  </button>
+                    <XMarkIcon className="w-4 h-4 text-slate-600" />
+                  </motion.button>
                 </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                <div className="space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
+                    <label className="block text-[10px] font-medium text-slate-700 mb-2">
                       Category
                     </label>
                     <Select
@@ -997,7 +1159,7 @@ function ProductsPageContent() {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-8 text-[10px]">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1009,42 +1171,55 @@ function ProductsPageContent() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </motion.div>
 
-                  {availableSubcategories.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-3">
-                        Subcategory
-                      </label>
-                      <Select
-                        value={selectedSubcategory || "all"}
-                        onValueChange={(value) =>
-                          handleFilterChange(
-                            "subcategory",
-                            value === "all" ? "" : value
-                          )
-                        }
+                  <AnimatePresence>
+                    {availableSubcategories.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, x: -20 }}
+                        animate={{ opacity: 1, height: "auto", x: 0 }}
+                        exit={{ opacity: 0, height: 0, x: -20 }}
+                        transition={{ duration: 0.4 }}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Subcategories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Subcategories</SelectItem>
-                          {availableSubcategories.map((subcategory) => (
-                            <SelectItem
-                              key={subcategory.id}
-                              value={subcategory.id}
-                            >
-                              {subcategory.name}
+                        <label className="block text-[10px] font-medium text-slate-700 mb-2">
+                          Subcategory
+                        </label>
+                        <Select
+                          value={selectedSubcategory || "all"}
+                          onValueChange={(value) =>
+                            handleFilterChange(
+                              "subcategory",
+                              value === "all" ? "" : value
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-full h-8 text-[10px]">
+                            <SelectValue placeholder="All Subcategories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              All Subcategories
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                            {availableSubcategories.map((subcategory) => (
+                              <SelectItem
+                                key={subcategory.id}
+                                value={subcategory.id}
+                              >
+                                {subcategory.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                  >
+                    <label className="block text-[10px] font-medium text-slate-700 mb-2">
                       Brand
                     </label>
                     <Select
@@ -1056,7 +1231,7 @@ function ProductsPageContent() {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-8 text-[10px]">
                         <SelectValue placeholder="All Brands" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1068,14 +1243,18 @@ function ProductsPageContent() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
+                  >
+                    <label className="block text-[10px] font-medium text-slate-700 mb-2">
                       Price Range
                     </label>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm text-slate-600">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] text-slate-600">
                         <span>€0</span>
                         <span>€5000</span>
                       </div>
@@ -1087,7 +1266,7 @@ function ProductsPageContent() {
                           onChange={(e) =>
                             handleFilterChange("minPrice", e.target.value)
                           }
-                          className="h-8 text-xs"
+                          className="h-7 text-[10px]"
                         />
                         <Input
                           type="number"
@@ -1096,64 +1275,111 @@ function ProductsPageContent() {
                           onChange={(e) =>
                             handleFilterChange("maxPrice", e.target.value)
                           }
-                          className="h-8 text-xs"
+                          className="h-7 text-[10px]"
                         />
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.4 }}
+                  >
+                    <label className="block text-[10px] font-medium text-slate-700 mb-2">
                       Options
                     </label>
-                    <div className="space-y-3">
-                      <label className="flex items-center cursor-pointer">
-                        <input
+                    <div className="space-y-2">
+                      <motion.label
+                        whileHover={{ x: 2 }}
+                        className="flex items-center cursor-pointer"
+                      >
+                        <motion.input
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           type="checkbox"
                           checked={onlyOnSale}
                           onChange={(e) =>
                             handleFilterChange("onlyOnSale", e.target.checked)
                           }
-                          className="h-4 w-4 text-slate-900 border-slate-300 rounded cursor-pointer"
+                          className="h-3 w-3 text-slate-900 border-slate-300 rounded cursor-pointer"
                         />
-                        <span className="ml-2 text-sm text-slate-700">
+                        <span className="ml-2 text-[10px] text-slate-700">
                           On Sale Only
                         </span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
+                      </motion.label>
+                      <motion.label
+                        whileHover={{ x: 2 }}
+                        className="flex items-center cursor-pointer"
+                      >
+                        <motion.input
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           type="checkbox"
                           checked={onlyInStock}
                           onChange={(e) =>
                             handleFilterChange("onlyInStock", e.target.checked)
                           }
-                          className="h-4 w-4 text-slate-900 border-slate-300 rounded cursor-pointer"
+                          className="h-3 w-3 text-slate-900 border-slate-300 rounded cursor-pointer"
                         />
-                        <span className="ml-2 text-sm text-slate-700">
+                        <span className="ml-2 text-[10px] text-slate-700">
                           In Stock Only
                         </span>
-                      </label>
+                      </motion.label>
+                      <motion.label
+                        whileHover={{ x: 2 }}
+                        className="flex items-center cursor-pointer"
+                      >
+                        <motion.input
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          type="checkbox"
+                          checked={onlyNewArrival}
+                          onChange={(e) =>
+                            handleFilterChange(
+                              "onlyNewArrival",
+                              e.target.checked
+                            )
+                          }
+                          className="h-3 w-3 text-slate-900 border-slate-300 rounded cursor-pointer"
+                        />
+                        <span className="ml-2 text-[10px] text-slate-700">
+                          New Arrivals Only
+                        </span>
+                      </motion.label>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <Button
-                    onClick={() => setShowMobileFilters(false)}
-                    className="w-full cursor-pointer bg-slate-900 hover:bg-slate-800 text-white"
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.5 }}
                   >
-                    Apply Filters
-                  </Button>
+                    <Button
+                      onClick={() => setShowMobileFilters(false)}
+                      className="w-full h-8 text-[10px] cursor-pointer bg-slate-900 hover:bg-slate-800 text-white"
+                    >
+                      Apply Filters
+                    </Button>
+                  </motion.div>
 
                   {activeFiltersCount > 0 && (
-                    <Button
-                      onClick={() => {
-                        clearFilters();
-                        setShowMobileFilters(false);
-                      }}
-                      variant="outline"
-                      className="w-full cursor-pointer"
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.6 }}
                     >
-                      Clear All Filters ({activeFiltersCount})
-                    </Button>
+                      <Button
+                        onClick={() => {
+                          clearFilters();
+                          setShowMobileFilters(false);
+                        }}
+                        variant="outline"
+                        className="w-full h-8 text-[10px] cursor-pointer"
+                      >
+                        Clear All Filters ({activeFiltersCount})
+                      </Button>
+                    </motion.div>
                   )}
                 </div>
               </div>

@@ -7,7 +7,6 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowLeftIcon,
   EyeIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -19,7 +18,7 @@ import ProductFormSteps from "@/components/vendor/product/ProductFormSteps";
 import ProductPreview from "@/components/vendor/product/ProductPreview";
 
 // UI Components
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {

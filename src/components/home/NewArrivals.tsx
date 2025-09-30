@@ -1,126 +1,148 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { HeartIcon } from "@heroicons/react/24/outline";
-import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { formatPrice } from "@/lib/utils";
 import ProductCard from "@/components/ui/ProductCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const newProducts = [
-  {
-    id: 1,
-    name: "Wireless Gaming Headset Pro",
-    brand: "AudioTech",
-    price: 189.99,
-    originalPrice: 249.99,
-    image: "/api/placeholder/300/300",
-    variants: "3 colors",
-    isNew: true,
-    category: "Audio",
-    slug: "wireless-gaming-headset-pro",
-  },
-  {
-    id: 2,
-    name: 'UltraSlim Laptop 15"',
-    brand: "TechFlow",
-    price: 1299.99,
-    originalPrice: 1499.99,
-    image: "/api/placeholder/300/300",
-    variants: "2 configurations",
-    isNew: true,
-    category: "Computing",
-    slug: "ultraslim-laptop-15",
-  },
-  {
-    id: 3,
-    name: "Smart Fitness Watch",
-    brand: "HealthTech",
-    price: 299.99,
-    originalPrice: 399.99,
-    image: "/api/placeholder/300/300",
-    variants: "4 colors",
-    isNew: true,
-    category: "Wearables",
-    slug: "smart-fitness-watch",
-  },
-  {
-    id: 4,
-    name: "Mechanical Gaming Keyboard",
-    brand: "GameForce",
-    price: 159.99,
-    originalPrice: 199.99,
-    image: "/api/placeholder/300/300",
-    variants: "3 switch types",
-    isNew: true,
-    category: "Gaming",
-    slug: "mechanical-gaming-keyboard",
-  },
-  {
-    id: 5,
-    name: "Portable Bluetooth Speaker",
-    brand: "SoundWave",
-    price: 89.99,
-    originalPrice: 119.99,
-    image: "/api/placeholder/300/300",
-    variants: "5 colors",
-    isNew: true,
-    category: "Audio",
-    slug: "portable-bluetooth-speaker",
-  },
-  {
-    id: 6,
-    name: "Wireless Charging Stand",
-    brand: "PowerUp",
-    price: 49.99,
-    originalPrice: 69.99,
-    image: "/api/placeholder/300/300",
-    variants: "2 colors",
-    isNew: true,
-    category: "Accessories",
-    slug: "wireless-charging-stand",
-  },
-  {
-    id: 7,
-    name: "4K Webcam Pro",
-    brand: "StreamTech",
-    price: 199.99,
-    originalPrice: 249.99,
-    image: "/api/placeholder/300/300",
-    variants: "1 model",
-    isNew: true,
-    category: "Computing",
-    slug: "4k-webcam-pro",
-  },
-  {
-    id: 8,
-    name: "Premium Noise-Canceling Earbuds",
-    brand: "AudioElite",
-    price: 249.99,
-    originalPrice: 299.99,
-    image: "/api/placeholder/300/300",
-    variants: "3 colors",
-    isNew: true,
-    category: "Audio",
-    slug: "premium-noise-canceling-earbuds",
-  },
-];
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  brand?: string | { id: string; name: string };
+  basePrice: number;
+  images: string[];
+  categoryId: string;
+  category?: { id: string; name: string; slug: string };
+  newArrival: boolean;
+  featured: boolean;
+  variants: Array<{
+    id: string;
+    variantName: string;
+    price: number;
+    comparePrice?: number;
+    stock: number;
+    color?: string;
+    colorHex?: string;
+    images: string[];
+  }>;
+}
 
-interface ProductCardProps {
-  product: (typeof newProducts)[0];
+// Loading Skeleton Component
+function ProductCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl lg:rounded-2xl border border-gray-100 overflow-hidden">
+      <Skeleton className="aspect-square w-full" />
+      <div className="p-2 sm:p-3 lg:p-4 space-y-2 lg:space-y-3">
+        <Skeleton className="h-2 lg:h-3 w-1/4" />
+        <Skeleton className="h-3 lg:h-4 w-full" />
+        <Skeleton className="h-2 lg:h-3 w-2/3" />
+        <Skeleton className="h-4 lg:h-5 w-1/3" />
+      </div>
+    </div>
+  );
 }
 
 export default function NewArrivals() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNewProducts = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch products from dedicated new arrivals API
+        const response = await fetch("/api/new-arrivals?limit=8");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch new arrivals");
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.products) {
+          setProducts(data.products);
+        } else {
+          throw new Error("Invalid response format");
+        }
+      } catch (err) {
+        console.error("Error fetching new arrivals:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load products"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewProducts();
+  }, []);
+
+  // Transform API products to ProductCard format
+  const transformedProducts = products
+    .map((product) => {
+      // Handle case where variants might be empty
+      if (!product.variants || product.variants.length === 0) {
+        return null;
+      }
+
+      const cheapestVariant = product.variants.reduce((prev, curr) =>
+        Number(curr.price) < Number(prev.price) ? curr : prev
+      );
+
+      const hasDiscount =
+        cheapestVariant.comparePrice &&
+        Number(cheapestVariant.comparePrice) > Number(cheapestVariant.price);
+
+      // Extract brand name if it's an object
+      const brandName =
+        typeof product.brand === "object" && product.brand
+          ? product.brand.name
+          : typeof product.brand === "string"
+            ? product.brand
+            : undefined;
+
+      // Extract category name safely
+      const categoryName = product.category?.name || undefined;
+
+      return {
+        id: product.id,
+        name: product.name,
+        brand: brandName,
+        price: Number(cheapestVariant.price),
+        originalPrice: hasDiscount
+          ? Number(cheapestVariant.comparePrice)
+          : undefined,
+        image:
+          product.images[0] ||
+          cheapestVariant.images[0] ||
+          "/api/placeholder/300/300",
+        category: categoryName,
+        slug: product.slug,
+        isNew: product.newArrival,
+        isFeatured: product.featured,
+        // Pass variant count as a number for proper multi-variant detection
+        variants:
+          product.variants.length > 1 ? product.variants.length : undefined,
+      };
+    })
+    .filter(
+      (product): product is NonNullable<typeof product> => product !== null
+    );
+
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-12 lg:py-16 bg-white">
+      {/* Match container width with other sections */}
+      <div className="container mx-auto px-3 lg:px-4">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="text-center mb-12"
+          className="text-center mb-8 lg:mb-12"
         >
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -142,63 +164,109 @@ export default function NewArrivals() {
               delay: 0.2,
               ease: [0.25, 0.46, 0.45, 0.94],
             }}
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
+            className="text-sm text-gray-600 max-w-2xl mx-auto"
           >
             Fresh tech, just dropped. Discover the latest innovations in
             electronics and computing.
           </motion.p>
         </motion.div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
+            {[...Array(8)].map((_, index) => (
+              <ProductCardSkeleton key={index} />
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-12">
+            <p className="text-sm text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm text-gray-900 font-medium hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && transformedProducts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-sm text-gray-600 mb-4">
+              No new arrivals at the moment. Check back soon!
+            </p>
+            <Link
+              href="/products"
+              className="text-sm text-gray-900 font-medium hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              Browse All Products
+            </Link>
+          </div>
+        )}
+
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {newProducts.map((product, index) => (
+        {!loading && !error && transformedProducts.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 lg:mb-12">
+              {transformedProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.05,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  className="flex h-full" // ✅ Add this
+                >
+                  <ProductCard
+                    product={product}
+                    variant="compact"
+                    className="h-full w-full flex flex-col" // ✅ Add this
+                  />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* View All Button */}
             <motion.div
-              key={product.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{
                 duration: 0.5,
-                delay: index * 0.05,
+                delay: 0.3,
                 ease: [0.25, 0.46, 0.45, 0.94],
               }}
+              className="text-center"
             >
-              <ProductCard product={product} />
+              <Link
+                href="/products?newArrival=true"
+                className="inline-flex items-center text-gray-900 text-sm font-medium hover:text-gray-600 transition-colors group cursor-pointer"
+              >
+                View all new arrivals
+                <motion.svg
+                  whileHover={{ x: 2 }}
+                  className="ml-2 h-4 w-4 transition-transform"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </motion.svg>
+              </Link>
             </motion.div>
-          ))}
-        </div>
-
-        {/* View All Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 0.5,
-            delay: 0.3,
-            ease: [0.25, 0.46, 0.45, 0.94],
-          }}
-          className="text-center"
-        >
-          <Link
-            href="/products?filter=new"
-            className="inline-flex items-center text-gray-900 font-medium hover:text-gray-600 transition-colors group cursor-pointer"
-          >
-            View all new arrivals
-            <motion.svg
-              whileHover={{ x: 2 }}
-              className="ml-2 h-4 w-4 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </motion.svg>
-          </Link>
-        </motion.div>
+          </>
+        )}
       </div>
     </section>
   );

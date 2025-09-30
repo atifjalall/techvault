@@ -5,9 +5,10 @@ import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,35 +123,41 @@ interface OrderDetail {
   }>;
 }
 
-const OrderStatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status }: { status: string }) => {
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toUpperCase()) {
       case "PENDING":
-      case "PAYMENT_PENDING":
-        return "bg-yellow-100 text-yellow-600 border-yellow-200";
-      case "PAYMENT_FAILED":
-      case "CANCELLED":
-        return "bg-red-100 text-red-600 border-red-200";
+        return "bg-yellow-100 text-yellow-800";
       case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
       case "PROCESSING":
-        return "bg-blue-100 text-blue-600 border-blue-200";
+        return "bg-purple-100 text-purple-800";
+      case "PACKAGING":
+        return "bg-indigo-100 text-indigo-800";
+      case "READY_TO_SHIP":
+        return "bg-cyan-100 text-cyan-800";
       case "SHIPPED":
+        return "bg-orange-100 text-orange-800";
       case "IN_TRANSIT":
-        return "bg-purple-100 text-purple-600 border-purple-200";
+        return "bg-amber-100 text-amber-800";
+      case "OUT_FOR_DELIVERY":
+        return "bg-pink-100 text-pink-800";
       case "DELIVERED":
+        return "bg-green-100 text-green-800";
       case "COMPLETED":
-        return "bg-green-100 text-green-600 border-green-200";
+        return "bg-emerald-100 text-emerald-800";
       case "ON_HOLD":
-      case "REQUIRES_ACTION":
-        return "bg-orange-100 text-orange-600 border-orange-200";
+        return "bg-gray-100 text-gray-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-600 border-gray-200";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
     <Badge
-      className={`${getStatusColor(status)} text-[10px] px-1 py-0.25 rounded font-normal`}
+      className={`${getStatusColor(status)} text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded font-medium`}
     >
       {status.replace(/_/g, " ")}
     </Badge>
@@ -221,11 +228,11 @@ const VariantDisplayChips = ({ item }: { item: VariantOrderItem }) => {
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-1 mt-1">
+    <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
       {chips.map((chip, index) => (
         <span
           key={index}
-          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600"
+          className="inline-flex items-center px-1 sm:px-2 py-0.5 rounded text-[8px] sm:text-xs bg-gray-100 text-gray-600"
         >
           {chip.label}
         </span>
@@ -234,27 +241,27 @@ const VariantDisplayChips = ({ item }: { item: VariantOrderItem }) => {
   );
 };
 
-// Loading skeleton components
+// Mobile-responsive Loading skeleton components
 const OrderDetailSkeleton = () => (
   <div className="bg-gray-50 min-h-screen">
-    <div className="p-6 space-y-4">
-      <div className="flex items-center space-x-4">
-        <Skeleton className="h-6 w-12" />
-        <div className="space-y-1">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3 w-48" />
+    <div className="p-2 sm:p-6 space-y-2 sm:space-y-4">
+      <div className="flex items-center space-x-2 sm:space-x-4">
+        <Skeleton className="h-4 w-8 sm:h-6 sm:w-12" />
+        <div className="space-y-1 flex-1">
+          <Skeleton className="h-4 w-24 sm:h-5 sm:w-32" />
+          <Skeleton className="h-2.5 w-32 sm:h-3 sm:w-48" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div className="lg:col-span-3 space-y-4">
-          <Skeleton className="h-48" />
-          <Skeleton className="h-32" />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="lg:col-span-3 space-y-2 sm:space-y-4">
+          <Skeleton className="h-32 sm:h-48" />
+          <Skeleton className="h-24 sm:h-32" />
         </div>
-        <div className="space-y-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-28" />
+        <div className="space-y-2 sm:space-y-4">
+          <Skeleton className="h-24 sm:h-32" />
+          <Skeleton className="h-20 sm:h-24" />
+          <Skeleton className="h-20 sm:h-28" />
         </div>
       </div>
     </div>
@@ -285,46 +292,48 @@ export default function OrderDetailPage({
   });
 
   useEffect(() => {
+    const fetchOrderDetail = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/vendor/orders/${resolvedParams.id}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            toast.error("Order not found");
+            router.push("/vendor/orders");
+            return;
+          }
+          throw new Error("Failed to fetch order details");
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setOrder(data.order);
+          setFormData({
+            status: data.order.status || "",
+            trackingNumber: data.order.trackingNumber || "",
+            shippingCarrier: data.order.shippingCarrier || "",
+            estimatedDelivery: data.order.estimatedDelivery
+              ? format(new Date(data.order.estimatedDelivery), "yyyy-MM-dd")
+              : "",
+            notes: data.order.notes || "",
+            priority: data.order.priority || "NORMAL",
+          });
+        } else {
+          throw new Error("Failed to load order details");
+        }
+      } catch (error) {
+        console.error("Error fetching order:", error);
+        toast.error("Failed to load order details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (session?.user) {
       fetchOrderDetail();
     }
-  }, [session, resolvedParams.id]);
-
-  const fetchOrderDetail = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/vendor/orders/${resolvedParams.id}`);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          toast.error("Order not found");
-          router.push("/vendor/orders");
-          return;
-        }
-        throw new Error("Failed to fetch order");
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        setOrder(result.order);
-        setFormData({
-          status: result.order.status,
-          trackingNumber: result.order.trackingNumber || "",
-          shippingCarrier: result.order.shippingCarrier || "",
-          estimatedDelivery: result.order.estimatedDelivery
-            ? format(new Date(result.order.estimatedDelivery), "yyyy-MM-dd")
-            : "",
-          notes: result.order.notes || "",
-          priority: result.order.priority,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching order:", error);
-      toast.error("Failed to load order details");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [session, resolvedParams.id, router]);
 
   const handleUpdateOrder = async () => {
     if (!order) return;
@@ -424,8 +433,14 @@ export default function OrderDetailPage({
                 <h1 className="text-xl font-bold text-gray-900">
                   Order #{order.orderNumber.slice(-8).toUpperCase()}
                 </h1>
-                <OrderStatusBadge status={order.status} />
-                <PaymentStatusBadge status={order.paymentStatus} />
+                <StatusBadge status={order.status} />
+                <Badge
+                  variant="default"
+                  size="sm"
+                  className="text-[8px] sm:text-[10px]"
+                >
+                  {order.paymentStatus}
+                </Badge>
                 <PriorityBadge priority={order.priority} />
               </div>
               <p className="text-xs text-gray-500 flex items-center">
@@ -481,9 +496,11 @@ export default function OrderDetailPage({
                       >
                         <div className="w-12 h-12 bg-white rounded-lg shadow-sm flex-shrink-0 overflow-hidden border border-gray-200">
                           {item.image ? (
-                            <img
+                            <Image
                               src={item.image}
                               alt={item.productName}
+                              width={48}
+                              height={48}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -854,8 +871,8 @@ export default function OrderDetailPage({
             </motion.div>
           </div>
 
-          {/* Sidebar - 1 column */}
-          <div className="space-y-4">
+          {/* Mobile-optimized Sidebar - 1 column */}
+          <div className="space-y-2 sm:space-y-4">
             {/* Customer Information */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -863,39 +880,39 @@ export default function OrderDetailPage({
               transition={{ delay: 0.1 }}
             >
               <Card className="border-0 shadow-sm bg-white">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-gray-900 flex items-center">
-                    <UserIcon className="w-4 h-4 mr-2 text-blue-600" />
+                <CardHeader className="pb-2 sm:pb-3">
+                  <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900 flex items-center">
+                    <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-blue-600 flex-shrink-0" />
                     Customer
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <UserIcon className="w-4 h-4 text-blue-600" />
+                <CardContent className="space-y-2 sm:space-y-3">
+                  <div className="flex items-center space-x-1.5 sm:space-x-2 p-1.5 sm:p-2 bg-blue-50 rounded-lg">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
                         {order.user.name}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-[9px] sm:text-xs text-gray-600 truncate">
                         {order.user.email}
                       </p>
                     </div>
                   </div>
 
                   {order.user.phone && (
-                    <div className="flex items-center space-x-2 text-xs text-gray-600">
-                      <PhoneIcon className="w-3 h-3" />
-                      <span>{order.user.phone}</span>
+                    <div className="flex items-center space-x-1.5 sm:space-x-2 text-[9px] sm:text-xs text-gray-600">
+                      <PhoneIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                      <span className="truncate">{order.user.phone}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <EnvelopeIcon className="w-3 h-3" />
+                  <div className="flex items-center space-x-1.5 sm:space-x-2 text-[9px] sm:text-xs text-gray-600">
+                    <EnvelopeIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                     <Link
                       href={`mailto:${order.user.email}`}
-                      className="hover:text-blue-600 cursor-pointer"
+                      className="hover:text-blue-600 cursor-pointer truncate"
                     >
                       Send Email
                     </Link>

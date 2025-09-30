@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 
 // Components
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/buttonSidebar";
 import { Badge } from "@/components/ui/badge";
 import ProductFormSteps from "@/components/vendor/product/ProductFormSteps";
 import ProductPreview from "@/components/vendor/product/ProductPreview";
@@ -359,12 +358,36 @@ export default function AddProductPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 bg-gray-50/30 min-h-screen">
-      {/* Compact Header - Matching Dashboard Style */}
+    <div className="p-2 lg:p-4 space-y-2 lg:space-y-4 bg-gray-50/30 min-h-screen">
+      {/* Mobile Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-4"
+        className="flex items-center justify-between mb-2 lg:mb-4 lg:hidden"
+      >
+        <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-200 flex-1 mr-2">
+          <h1 className="text-[12px] font-bold text-gray-900 mb-0.5">
+            Add New Product
+          </h1>
+          <p className="text-[9px] text-gray-600">
+            Create product with variants
+          </p>
+        </div>
+        <Badge
+          variant="secondary"
+          size="sm"
+          icon="auto"
+          className="bg-blue-50 text-blue-700 h-5 text-[9px] px-1.5 min-w-[36px] flex items-center justify-center"
+        >
+          {getCompletionPercentage()}%
+        </Badge>
+      </motion.div>
+
+      {/* Desktop Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="hidden lg:flex items-center justify-between mb-4"
       >
         <div>
           <h1 className="text-lg font-bold text-gray-900 mb-0.5">
@@ -384,8 +407,41 @@ export default function AddProductPage() {
         </Badge>
       </motion.div>
 
-      {/* Compact Progress Bar */}
-      <Card className="border-0 shadow-sm bg-white">
+      {/* Mobile Progress Bar */}
+      <Card className="border-0 shadow-sm bg-white lg:hidden">
+        <CardContent className="p-2">
+          <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+            <motion.div
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          </div>
+          <div className="flex justify-between space-x-1">
+            {STEPS.map((step) => (
+              <motion.button
+                key={step.id}
+                onClick={() => setCurrentStep(step.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`text-[8px] font-medium transition-colors cursor-pointer px-1.5 py-1 rounded-md flex-1 text-center ${
+                  currentStep >= step.id
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-500 hover:text-blue-600 hover:bg-blue-50/50"
+                }`}
+              >
+                <div className="truncate">
+                  {step.id}. {step.name.replace(" ", "\n").split("\n")[0]}
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Desktop Progress Bar */}
+      <Card className="hidden lg:block border-0 shadow-sm bg-white">
         <CardContent className="p-3">
           <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
             <motion.div
@@ -415,8 +471,28 @@ export default function AddProductPage() {
         </CardContent>
       </Card>
 
-      {/* Compact Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Mobile Layout - Single Column */}
+      <div className="lg:hidden space-y-2">
+        {/* Form Steps */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+          <ProductFormSteps
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
+            formData={formData}
+            updateFormData={updateFormData}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+
+        {/* Mobile Preview - Collapsible */}
+        <div className="lg:hidden">
+          <ProductPreview formData={formData} />
+        </div>
+      </div>
+
+      {/* Desktop Layout - Two Column Grid */}
+      <div className="hidden lg:grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Form Steps - Compact Cards */}
         <div className="lg:col-span-2">
           <ProductFormSteps

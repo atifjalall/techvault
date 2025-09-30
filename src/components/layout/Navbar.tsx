@@ -29,12 +29,12 @@ import MobileNavbar from "./MobileNavbar";
 function SearchBar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<
-    Array<{
+    {
       id: string;
       name: string;
       type: "category" | "subcategory" | "product";
       category?: string;
-    }>
+    }[]
   >([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -241,18 +241,19 @@ function SearchBar() {
 }
 
 // Dynamic Categories Component - Desktop Only
+// Dynamic Categories Component - Desktop Only
 function CategoriesNavigation() {
   const [categories, setCategories] = useState<
-    Array<{
+    {
       id: string;
       name: string;
       href: string;
-      subcategories: Array<{
+      subcategories: {
         id: string;
         name: string;
         href: string;
-      }>;
-    }>
+      }[];
+    }[]
   >([]);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -277,19 +278,23 @@ function CategoriesNavigation() {
     loadCategories();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="hidden lg:block">
-        <div className="flex items-baseline space-x-4 w-64">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="px-3 py-2 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-16"></div>
+if (loading) {
+  return (
+    <div className="hidden lg:block">
+      {/* Match exact structure of real categories with minimal spacing */}
+      <div className="flex items-baseline space-x-1">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="relative">
+            <div className="text-slate-700 px-3 py-2 text-xs font-medium flex items-center">
+              <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+              <div className="ml-1 w-4 h-4"></div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="hidden lg:block">
@@ -1133,24 +1138,30 @@ function NotificationButton() {
   );
 }
 
-// Enhanced skeleton components with improved styling
+// Enhanced skeleton components with exact dimensions
 function NavActionsSkeleton() {
   return (
     <div className="flex items-center space-x-2">
-      {/* Notifications Skeleton */}
-      <div className="w-8 h-8 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      {/* Notifications Skeleton - exact same size as NotificationButton */}
+      <div className="p-2 relative">
+        <div className="w-5 h-5 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      </div>
 
-      {/* Wishlist Skeleton */}
-      <div className="w-8 h-8 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      {/* Wishlist Skeleton - exact same size */}
+      <div className="p-2 relative">
+        <div className="w-5 h-5 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      </div>
 
-      {/* Cart Skeleton */}
-      <div className="w-8 h-8 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      {/* Cart Skeleton - exact same size */}
+      <div className="p-2 relative">
+        <div className="w-5 h-5 rounded-lg bg-gray-200/50 animate-pulse"></div>
+      </div>
 
       {/* Profile Skeleton - exact same dimensions as real profile */}
-      <div className="flex items-center space-x-2 p-2 rounded-lg backdrop-blur-md bg-white/20 border border-white/30 animate-pulse">
-        <div className="w-7 h-7 rounded-full bg-gray-300/50"></div>
+      <div className="flex items-center space-x-2 p-2 rounded-lg backdrop-blur-md bg-white/20 border border-white/30">
+        <div className="w-7 h-7 rounded-full bg-gray-300/50 animate-pulse"></div>
         <div className="hidden md:flex items-center space-x-1">
-          <div className="w-8 h-3 bg-gray-300/50 rounded"></div>
+          <div className="w-12 h-3 bg-gray-300/50 rounded animate-pulse"></div>
         </div>
       </div>
     </div>
@@ -1264,30 +1275,30 @@ export default function Navbar() {
       {/* Desktop Navbar */}
       <nav className="hidden md:block sticky top-0 backdrop-blur-xl bg-white/90 border-b border-gray-200/50 z-50">
         <div className="w-full px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14 min-h-[3.5rem]">
+          <div className="flex items-center justify-between h-14 min-h-[3.5rem] gap-4">
             {/* Left side - Logo and Categories */}
-            <div className="flex items-center space-x-8 w-80 flex-shrink-0">
+            <div className="flex items-center space-x-4 flex-shrink-0 min-w-0">
               {/* Logo */}
               <Link
                 href="/"
-                className="text-lg font-bold text-slate-900 flex-shrink-0"
+                className="text-lg font-bold text-slate-900 flex-shrink-0 whitespace-nowrap"
               >
                 TechVault
               </Link>
 
               {/* Desktop Navigation - Categories */}
-              <CategoriesNavigation />
-            </div>
-
-            {/* Center - Search Bar */}
-            <div className="flex-1 max-w-2xl mx-6">
-              <div className="w-full">
-                <SearchBar />
+              <div className="flex-shrink-0">
+                <CategoriesNavigation />
               </div>
             </div>
 
+            {/* Center - Search Bar */}
+            <div className="flex-1 max-w-xl mx-4 min-w-0">
+              <SearchBar />
+            </div>
+
             {/* Right side - Actions and Profile */}
-            <div className="flex items-center justify-end space-x-2 w-80 flex-shrink-0">
+            <div className="flex items-center justify-end space-x-2 flex-shrink-0 min-w-fit">
               {status === "loading" ? (
                 <NavActionsSkeleton />
               ) : (
@@ -1339,7 +1350,7 @@ export default function Navbar() {
                   ) : (
                     <Link
                       href="/signin"
-                      className="text-slate-700 hover:text-slate-900 px-4 py-2.5 text-sm font-medium backdrop-blur-md bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 transition-all duration-200 cursor-pointer"
+                      className="text-slate-700 hover:text-slate-900 px-4 py-2.5 text-sm font-medium backdrop-blur-md bg-white/20 hover:bg-white/30 rounded-xl border border-white/30 transition-all duration-200 cursor-pointer whitespace-nowrap"
                     >
                       Sign In
                     </Link>

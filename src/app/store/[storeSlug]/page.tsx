@@ -127,74 +127,74 @@ function VendorHeaderSkeleton() {
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
       {/* Breadcrumb Section */}
-      <div className="container mx-auto px-4 pt-8">
+      <div className="container mx-auto px-3 lg:px-4 pt-4 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <div className="flex items-center space-x-2">
-            <Skeleton className="h-4 w-12" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-1" />
-            <Skeleton className="h-4 w-40" />
+          <div className="flex items-center space-x-1 lg:space-x-2">
+            <Skeleton className="h-2.5 lg:h-4 w-8 lg:w-12" />
+            <Skeleton className="h-2.5 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-2.5 lg:h-4 w-12 lg:w-16" />
+            <Skeleton className="h-2.5 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-2.5 lg:h-4 w-24 lg:w-40" />
           </div>
         </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+      <div className="container mx-auto px-3 lg:px-4 py-3 lg:py-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-6">
           {/* Vendor Info */}
-          <div className="flex items-start gap-4 flex-1">
+          <div className="flex items-start gap-2 lg:gap-4 flex-1">
             <div className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
+              <div className="w-14 h-14 lg:w-20 lg:h-20 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
                 <Skeleton className="w-full h-full" />
               </div>
               {/* Verified icon placeholder - always show for skeleton */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center">
-                <Skeleton className="w-5 h-5 rounded-full" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                <Skeleton className="w-3 h-3 lg:w-5 lg:h-5 rounded-full" />
               </div>
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-2 lg:mb-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Skeleton className="h-7 w-48" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
+                  <div className="flex items-center gap-1 lg:gap-2 mb-1">
+                    <Skeleton className="h-5 lg:h-7 w-32 lg:w-48" />
+                    <Skeleton className="h-4 lg:h-5 w-16 lg:w-20 rounded-full" />
                   </div>
 
-                  <div className="flex items-center gap-1 text-sm text-slate-600 mb-2">
-                    <Skeleton className="w-4 h-4 flex-shrink-0" />
-                    <Skeleton className="h-[14px] w-32" />
+                  <div className="flex items-center gap-0.5 lg:gap-1 text-sm text-slate-600 mb-1 lg:mb-2">
+                    <Skeleton className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+                    <Skeleton className="h-2.5 lg:h-[14px] w-24 lg:w-32" />
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm mb-2">
-                    <div className="flex items-center gap-1">
-                      <Skeleton className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <Skeleton className="h-[14px] w-6" />
-                      <Skeleton className="h-[14px] w-12" />
+                  <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-sm mb-1 lg:mb-2">
+                    <div className="flex items-center gap-0.5 lg:gap-1">
+                      <Skeleton className="w-3 h-3 lg:w-4 lg:h-4 fill-yellow-400 text-yellow-400" />
+                      <Skeleton className="h-2.5 lg:h-[14px] w-4 lg:w-6" />
+                      <Skeleton className="h-2.5 lg:h-[14px] w-8 lg:w-12" />
                     </div>
-                    <Skeleton className="h-[14px] w-20" />
-                    <Skeleton className="h-[14px] w-24" />
+                    <Skeleton className="h-2.5 lg:h-[14px] w-16 lg:w-20" />
+                    <Skeleton className="h-2.5 lg:h-[14px] w-18 lg:w-24 hidden sm:block" />
                   </div>
 
-                  <div className="mb-3">
-                    <Skeleton className="h-[14px] w-full max-w-md mb-1" />
-                    <Skeleton className="h-[14px] w-3/4 max-w-sm" />
+                  <div className="mb-2 lg:mb-3">
+                    <Skeleton className="h-2.5 lg:h-[14px] w-full max-w-md mb-1" />
+                    <Skeleton className="h-2.5 lg:h-[14px] w-3/4 max-w-sm" />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <div className="flex items-center gap-1">
-                  <Skeleton className="w-3 h-3" />
-                  <Skeleton className="h-3 w-20" />
+              <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs text-slate-500">
+                <div className="flex items-center gap-0.5 lg:gap-1">
+                  <Skeleton className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                  <Skeleton className="h-2 lg:h-3 w-16 lg:w-20" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <Skeleton className="w-3 h-3" />
-                  <Skeleton className="h-3 w-32" />
+                <div className="flex items-center gap-0.5 lg:gap-1">
+                  <Skeleton className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                  <Skeleton className="h-2 lg:h-3 w-24 lg:w-32" />
                 </div>
               </div>
             </div>
@@ -202,26 +202,26 @@ function VendorHeaderSkeleton() {
 
           {/* Store Stats */}
           <div className="flex-shrink-0">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <Skeleton className="w-4 h-4 text-slate-400" />
+            <div className="grid grid-cols-3 gap-2 lg:gap-3">
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <Skeleton className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <Skeleton className="h-3 w-14 mb-1" />
-                  <Skeleton className="h-3 w-8" />
+                  <Skeleton className="h-2 lg:h-3 w-10 lg:w-14 mb-0.5 lg:mb-1" />
+                  <Skeleton className="h-1.5 lg:h-3 w-6 lg:w-8" />
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <Skeleton className="w-4 h-4 text-slate-400" />
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <Skeleton className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <Skeleton className="h-3 w-12 mb-1" />
-                  <Skeleton className="h-3 w-10" />
+                  <Skeleton className="h-2 lg:h-3 w-8 lg:w-12 mb-0.5 lg:mb-1" />
+                  <Skeleton className="h-1.5 lg:h-3 w-7 lg:w-10" />
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <Skeleton className="w-4 h-4 text-slate-400" />
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <Skeleton className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <Skeleton className="h-3 w-10 mb-1" />
-                  <Skeleton className="h-3 w-8" />
+                  <Skeleton className="h-2 lg:h-3 w-7 lg:w-10 mb-0.5 lg:mb-1" />
+                  <Skeleton className="h-1.5 lg:h-3 w-6 lg:w-8" />
                 </div>
               </div>
             </div>
@@ -234,42 +234,42 @@ function VendorHeaderSkeleton() {
 
 function FiltersSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 lg:space-y-4">
       <Card className="shadow-sm bg-white border border-slate-200/50">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-4 w-24" />
+        <CardHeader className="pb-2">
+          <Skeleton className="h-3 lg:h-4 w-20 lg:w-24" />
         </CardHeader>
         <CardContent className="pt-0">
-          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-7 lg:h-9 w-full" />
         </CardContent>
       </Card>
 
       <Card className="shadow-sm bg-white border border-slate-200/50">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-4 w-20" />
+        <CardHeader className="pb-2">
+          <Skeleton className="h-3 lg:h-4 w-16 lg:w-20" />
         </CardHeader>
-        <CardContent className="pt-0 space-y-4">
+        <CardContent className="pt-0 space-y-3 lg:space-y-4">
           <div>
-            <Skeleton className="h-3 w-16 mb-2" />
-            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-2 lg:h-3 w-12 lg:w-16 mb-1 lg:mb-2" />
+            <Skeleton className="h-7 lg:h-9 w-full" />
           </div>
           <div>
-            <Skeleton className="h-3 w-12 mb-2" />
-            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-2 lg:h-3 w-10 lg:w-12 mb-1 lg:mb-2" />
+            <Skeleton className="h-7 lg:h-9 w-full" />
           </div>
         </CardContent>
       </Card>
 
       <Card className="shadow-sm bg-white border border-slate-200/50">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-4 w-32" />
+        <CardHeader className="pb-2">
+          <Skeleton className="h-3 lg:h-4 w-24 lg:w-32" />
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="space-y-3">
+          <div className="space-y-2 lg:space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex justify-between items-center">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-3 w-8" />
+                <Skeleton className="h-2 lg:h-3 w-16 lg:w-20" />
+                <Skeleton className="h-2 lg:h-3 w-6 lg:w-8" />
               </div>
             ))}
           </div>
@@ -281,11 +281,11 @@ function FiltersSkeleton() {
 
 function ProductGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-6">
       {Array.from({ length: 9 }).map((_, i) => (
         <div
           key={i}
-          className="group relative bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 min-h-[320px]"
+          className="group relative bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 min-h-[280px] lg:min-h-[320px]"
         >
           {/* Product Image */}
           <div className="relative aspect-square bg-gray-50 overflow-hidden">
@@ -406,34 +406,37 @@ function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="text-sm text-slate-600">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 lg:gap-0">
+      <div className="text-[10px] lg:text-sm text-slate-600 order-2 sm:order-1">
         Showing {startItem} to {endItem} of {totalCount} products
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1 lg:space-x-2 order-1 sm:order-2">
         <Button
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="h-8 px-3 text-xs cursor-pointer backdrop-blur-xl bg-white/70 border-white/50"
+          className="h-7 lg:h-8 px-2 lg:px-3 text-[10px] lg:text-xs cursor-pointer backdrop-blur-xl bg-white/70 border-white/50"
         >
-          <ChevronLeftIcon className="w-3 h-3 mr-1" />
-          Previous
+          <ChevronLeftIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-0.5 lg:mr-1" />
+          <span className="hidden sm:inline">Previous</span>
+          <span className="sm:hidden">Prev</span>
         </Button>
 
-        <div className="flex space-x-1">
+        <div className="flex space-x-0.5 lg:space-x-1">
           {getVisiblePages().map((page, index) => (
             <React.Fragment key={index}>
               {page === "..." ? (
-                <span className="px-2 text-slate-400">...</span>
+                <span className="px-1.5 lg:px-2 text-[10px] lg:text-xs text-slate-400">
+                  ...
+                </span>
               ) : (
                 <Button
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => onPageChange(page as number)}
-                  className={`w-8 h-8 text-xs cursor-pointer ${
+                  className={`w-7 h-7 lg:w-8 lg:h-8 text-[10px] lg:text-xs cursor-pointer ${
                     currentPage === page
                       ? "bg-slate-900 hover:bg-slate-800 text-white"
                       : "backdrop-blur-xl bg-white/70 border-white/50"
@@ -451,10 +454,11 @@ function Pagination({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="h-8 px-3 text-xs cursor-pointer backdrop-blur-xl bg-white/70 border-white/50"
+          className="h-7 lg:h-8 px-2 lg:px-3 text-[10px] lg:text-xs cursor-pointer backdrop-blur-xl bg-white/70 border-white/50"
         >
-          Next
-          <ChevronRightIcon className="w-3 h-3 ml-1" />
+          <span className="hidden sm:inline">Next</span>
+          <span className="sm:hidden">Next</span>
+          <ChevronRightIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3 ml-0.5 lg:ml-1" />
         </Button>
       </div>
     </div>
@@ -466,23 +470,30 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
   return (
     <div className="backdrop-blur-xl bg-white/70 border-b border-white/50">
       {/* Breadcrumb */}
-      <div className="container mx-auto px-4 pt-8">
+      <div className="container mx-auto px-3 lg:px-4 pt-4 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <Breadcrumb>
+          <Breadcrumb className="text-[10px] lg:text-sm">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                <BreadcrumbLink href="/" className="text-[10px] lg:text-sm">
+                  Home
+                </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator />
+              <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
               <BreadcrumbItem>
-                <BreadcrumbLink href="/products">Products</BreadcrumbLink>
+                <BreadcrumbLink
+                  href="/products"
+                  className="text-[10px] lg:text-sm"
+                >
+                  Products
+                </BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbPage>
+              <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
+              <BreadcrumbPage className="text-[10px] lg:text-sm">
                 {vendor.storeName || vendor.businessName}
               </BreadcrumbPage>
             </BreadcrumbList>
@@ -490,12 +501,12 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
         </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+      <div className="container mx-auto px-3 lg:px-4 py-3 lg:py-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-6">
           {/* Vendor Info */}
-          <div className="flex items-start gap-4 flex-1">
+          <div className="flex items-start gap-2 lg:gap-4 flex-1">
             <div className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
+              <div className="w-14 h-14 lg:w-20 lg:h-20 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm">
                 <Image
                   src={vendor.image || "/placeholder-store.jpg"}
                   alt={vendor.name}
@@ -505,35 +516,35 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
                 />
               </div>
               {vendor.verified && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full flex items-center justify-center">
-                  <CheckBadgeIconSolid className="w-5 h-5 text-blue-500" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                  <CheckBadgeIconSolid className="w-3 h-3 lg:w-5 lg:h-5 text-blue-500" />
                 </div>
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-2 lg:mb-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-semibold text-slate-900 truncate">
+                  <div className="flex items-center gap-1 lg:gap-2 mb-1">
+                    <h1 className="text-sm lg:text-lg font-semibold text-slate-900 truncate">
                       {vendor.storeName || vendor.businessName || vendor.name}
                     </h1>
                     <Badge
                       variant="secondary"
-                      className="text-xs flex-shrink-0"
+                      className="text-[8px] lg:text-xs flex-shrink-0 px-1.5 py-0.5 lg:px-2 lg:py-1"
                     >
                       Official Store
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-1 text-sm text-slate-600 mb-2">
-                    <MapPinIcon className="w-4 h-4 flex-shrink-0" />
+                  <div className="flex items-center gap-0.5 lg:gap-1 text-[10px] lg:text-sm text-slate-600 mb-1 lg:mb-2">
+                    <MapPinIcon className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
                     <span className="truncate">{vendor.location}</span>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm mb-2">
-                    <div className="flex items-center gap-1">
-                      <StarIcon className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-[10px] lg:text-sm mb-1 lg:mb-2">
+                    <div className="flex items-center gap-0.5 lg:gap-1">
+                      <StarIcon className="w-3 h-3 lg:w-4 lg:h-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-medium">{vendor.rating}</span>
                       <span className="text-slate-500">
                         ({vendor.totalReviews.toLocaleString()})
@@ -542,27 +553,30 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
                     <div className="text-slate-500">
                       {vendor.totalProducts} products
                     </div>
-                    <div className="text-slate-500">
+                    <div className="text-slate-500 hidden sm:block">
                       {vendor.followers.toLocaleString()} followers
                     </div>
                   </div>
 
-                  <p className="text-sm text-slate-600 line-clamp-2">
+                  <p className="text-[10px] lg:text-sm text-slate-600 line-clamp-2">
                     {vendor.description}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="w-3 h-3" />
+              <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-[8px] lg:text-xs text-slate-500">
+                <div className="flex items-center gap-0.5 lg:gap-1">
+                  <CalendarIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
                   <span>
                     Joined {new Date(vendor.joinedDate).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <ChatBubbleBottomCenterTextIcon className="w-3 h-3" />
-                  <span>Usually responds in {vendor.responseTime}</span>
+                <div className="flex items-center gap-0.5 lg:gap-1">
+                  <ChatBubbleBottomCenterTextIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
+                  <span className="hidden sm:inline">
+                    Usually responds in {vendor.responseTime}
+                  </span>
+                  <span className="sm:hidden">{vendor.responseTime}</span>
                 </div>
               </div>
             </div>
@@ -570,36 +584,36 @@ function VendorStoreHeader({ vendor }: { vendor: VendorStore }) {
 
           {/* Store Stats */}
           <div className="flex-shrink-0">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <ClockIcon className="w-4 h-4 text-slate-400" />
+            <div className="grid grid-cols-3 gap-2 lg:gap-3">
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <ClockIcon className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <div className="text-xs font-medium text-slate-900">
+                  <div className="text-[8px] lg:text-xs font-medium text-slate-900">
                     Response
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[7px] lg:text-xs text-slate-500">
                     {vendor.responseTime}
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <TruckIcon className="w-4 h-4 text-slate-400" />
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <TruckIcon className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <div className="text-xs font-medium text-slate-900">
+                  <div className="text-[8px] lg:text-xs font-medium text-slate-900">
                     Shipping
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[7px] lg:text-xs text-slate-500">
                     {vendor.shippingTime}
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-center gap-1 px-3 py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[70px]">
-                <ShieldCheckIcon className="w-4 h-4 text-slate-400" />
+              <div className="flex flex-col items-center gap-0.5 lg:gap-1 px-2 lg:px-3 py-1.5 lg:py-2 backdrop-blur-xl bg-white/50 border border-white/30 rounded-lg min-w-[50px] lg:min-w-[70px]">
+                <ShieldCheckIcon className="w-3 h-3 lg:w-4 lg:h-4 text-slate-400" />
                 <div className="text-center">
-                  <div className="text-xs font-medium text-slate-900">
+                  <div className="text-[8px] lg:text-xs font-medium text-slate-900">
                     Returns
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-[7px] lg:text-xs text-slate-500">
                     {vendor.returnPolicy}
                   </div>
                 </div>
@@ -975,36 +989,36 @@ function VendorStoreContent() {
             className="lg:col-span-1 space-y-4 hidden lg:block sticky top-18 self-start"
           >
             {/* Search Products */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
+            <Card className="shadow-sm bg-white border border-slate-200/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold text-slate-900">
                   Search Products
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-400" />
                   <Input
                     placeholder="Search in store..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-9 h-9 text-sm bg-white border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                    className="pl-8 h-8 text-xs bg-white border-slate-200 focus:border-slate-400 focus:ring-slate-400"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Categories & Brands */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
+            <Card className="shadow-sm bg-white border border-slate-200/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold text-slate-900">
                   Categories
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 space-y-4">
+              <CardContent className="pt-0 space-y-3">
                 {/* Category Select */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
+                  <label className="block text-[10px] font-medium text-slate-700 mb-1">
                     Category
                   </label>
                   <Select
@@ -1016,10 +1030,10 @@ function VendorStoreContent() {
                       )
                     }
                   >
-                    <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                    <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="text-xs">
                       <SelectItem value="all">All Categories</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.name}>
@@ -1038,7 +1052,7 @@ function VendorStoreContent() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-[10px] font-medium text-slate-700 mb-1">
                       Subcategory
                     </label>
                     <Select
@@ -1050,10 +1064,10 @@ function VendorStoreContent() {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                         <SelectValue placeholder="All Subcategories" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="text-xs">
                         <SelectItem value="all">All Subcategories</SelectItem>
                         {subcategoryOptions.slice(1).map((option) => (
                           <SelectItem key={option.value} value={option.value}>
@@ -1067,7 +1081,7 @@ function VendorStoreContent() {
 
                 {/* Brand Select */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-2">
+                  <label className="block text-[10px] font-medium text-slate-700 mb-1">
                     Brand
                   </label>
                   <Select
@@ -1076,10 +1090,10 @@ function VendorStoreContent() {
                       handleFilterChange("brand", value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                    <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                       <SelectValue placeholder="All Brands" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="text-xs">
                       <SelectItem value="all">All Brands</SelectItem>
                       {brands.map((brand) => (
                         <SelectItem key={brand.id} value={brand.name}>
@@ -1093,14 +1107,14 @@ function VendorStoreContent() {
             </Card>
 
             {/* Store Information */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-slate-900">
+            <Card className="shadow-sm bg-white border border-slate-200/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-semibold text-slate-900">
                   Store Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-3 text-sm">
+                <div className="space-y-2 text-xs">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Total Products</span>
                     <span className="font-medium text-slate-900">
@@ -1109,8 +1123,8 @@ function VendorStoreContent() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Store Rating</span>
-                    <div className="flex items-center gap-1">
-                      <StarIcon className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <div className="flex items-center gap-0.5">
+                      <StarIcon className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
                       <span className="font-medium text-slate-900">
                         {vendor.rating}
                       </span>
@@ -1141,26 +1155,26 @@ function VendorStoreContent() {
             className="lg:hidden space-y-4"
           >
             {/* Mobile Search */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardContent className="p-4">
+            <Card className="shadow-sm bg-white border border-slate-200/50">
+              <CardContent className="p-3">
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-slate-400" />
                   <Input
                     placeholder="Search in store..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-9 h-9 text-sm bg-white border-slate-200 focus:border-slate-400 focus:ring-slate-400"
+                    className="pl-8 h-8 text-xs bg-white border-slate-200 focus:border-slate-400 focus:ring-slate-400"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Mobile Filters Row */}
-            <Card className="border-0 shadow-sm bg-white border border-slate-200/50">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card className="shadow-sm bg-white border border-slate-200/50">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-[10px] font-medium text-slate-700 mb-1">
                       Category
                     </label>
                     <Select
@@ -1172,10 +1186,10 @@ function VendorStoreContent() {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="text-xs">
                         <SelectItem value="all">All Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.id} value={category.name}>
@@ -1193,7 +1207,7 @@ function VendorStoreContent() {
                       exit={{ opacity: 0, width: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <label className="block text-xs font-medium text-slate-700 mb-2">
+                      <label className="block text-[10px] font-medium text-slate-700 mb-1">
                         Subcategory
                       </label>
                       <Select
@@ -1205,10 +1219,10 @@ function VendorStoreContent() {
                           )
                         }
                       >
-                        <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                        <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                           <SelectValue placeholder="All Subcategories" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="text-xs">
                           <SelectItem value="all">All Subcategories</SelectItem>
                           {subcategoryOptions.slice(1).map((option) => (
                             <SelectItem key={option.value} value={option.value}>
@@ -1221,7 +1235,7 @@ function VendorStoreContent() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                    <label className="block text-[10px] font-medium text-slate-700 mb-1">
                       Brand
                     </label>
                     <Select
@@ -1233,10 +1247,10 @@ function VendorStoreContent() {
                         )
                       }
                     >
-                      <SelectTrigger className="w-full bg-white border-slate-200 focus:border-slate-400">
+                      <SelectTrigger className="w-full h-8 text-xs bg-white border-slate-200 focus:border-slate-400">
                         <SelectValue placeholder="All Brands" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="text-xs">
                         <SelectItem value="all">All Brands</SelectItem>
                         {brands.map((brand) => (
                           <SelectItem key={brand.id} value={brand.name}>
@@ -1259,20 +1273,20 @@ function VendorStoreContent() {
             className="lg:col-span-3 space-y-4"
           >
             {/* Top Filter Bar */}
-            <Card className="border-0 shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
-              <CardContent className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600">
+            <Card className="shadow-sm backdrop-blur-xl bg-white/70 border border-white/50">
+              <CardContent className="px-3 lg:px-4 py-2 lg:py-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="text-[10px] lg:text-sm text-slate-600">
                     {pagination.totalCount} products found
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 lg:gap-2">
                     {activeFiltersCount > 0 && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={clearFilters}
-                        className="text-xs px-3 py-1.5 cursor-pointer backdrop-blur-xl bg-white/70 border-white/50 hover:bg-white/80"
+                        className="text-[10px] lg:text-xs px-2 lg:px-3 py-1 lg:py-1.5 h-7 lg:h-8 cursor-pointer backdrop-blur-xl bg-white/70 border-white/50 hover:bg-white/80"
                       >
                         Clear Filters ({activeFiltersCount})
                       </Button>
@@ -1283,10 +1297,10 @@ function VendorStoreContent() {
                         handleFilterChange("sort", value)
                       }
                     >
-                      <SelectTrigger className="w-40 backdrop-blur-xl bg-white/70 border-white/50">
+                      <SelectTrigger className="w-32 lg:w-40 h-7 lg:h-9 text-[10px] lg:text-sm bg-white border-slate-200/50 focus:border-slate-400">
                         <SelectValue placeholder="Featured" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="text-[10px] lg:text-sm">
                         <SelectItem value="featured">Featured</SelectItem>
                         <SelectItem value="newest">Newest First</SelectItem>
                         <SelectItem value="price-asc">
@@ -1309,7 +1323,7 @@ function VendorStoreContent() {
               <ProductGridSkeleton />
             ) : products.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-6">
                   <AnimatePresence mode="wait">
                     {products.map((product, index) => {
                       // Validate product data before rendering

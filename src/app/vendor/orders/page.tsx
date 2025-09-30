@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -26,7 +26,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -130,7 +130,7 @@ interface OrdersResponse {
   };
 }
 
-// Enhanced Stats Card Component matching customers page style
+// Mobile-responsive Stats Card Component with ultra-compact design
 function StatCard({
   title,
   value,
@@ -157,33 +157,43 @@ function StatCard({
       transition={{ duration: 0.3 }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-600">{title}</p>
-              <p className="text-xl font-bold text-gray-900">{value}</p>
-              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-              <div className="flex items-center space-x-1">
+            <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-gray-600 truncate">
+                {title}
+              </p>
+              <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
+                {value}
+              </p>
+              {subtitle && (
+                <p className="text-[9px] sm:text-xs text-gray-500 truncate">
+                  {subtitle}
+                </p>
+              )}
+              <div className="flex items-center space-x-0.5 sm:space-x-1">
                 {isPositive ? (
-                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-2 w-2 sm:h-3 sm:w-3 text-green-500 flex-shrink-0" />
                 ) : (
-                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-2 w-2 sm:h-3 sm:w-3 text-red-500 flex-shrink-0" />
                 )}
                 <span
-                  className={`text-xs font-medium ${
+                  className={`text-[9px] sm:text-xs font-medium ${
                     isPositive ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {isPositive ? "+" : ""}
                   {Math.abs(change).toFixed(1)}%
                 </span>
-                <span className="text-xs text-gray-500">vs last month</span>
+                <span className="text-[8px] sm:text-xs text-gray-500 hidden sm:inline">
+                  vs last month
+                </span>
               </div>
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-7 h-7 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-0`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -268,6 +278,200 @@ function PaymentStatusBadge({ status }: { status: string }) {
   );
 }
 
+// Mobile Order Card Component with ultra-compact design
+function MobileOrderCard({
+  order,
+  onStatusUpdate,
+  updating,
+  getAvailableStatusActions,
+}: {
+  order: Order;
+  onStatusUpdate: (orderId: string, newStatus: string) => void;
+  updating: string | null;
+  getAvailableStatusActions: (
+    status: string
+  ) => { value: string; label: string; icon: React.ElementType }[];
+}) {
+  return (
+    <Card className="border-0 shadow-sm bg-white mb-2">
+      <CardContent className="p-2">
+        <div className="space-y-2">
+          {/* Header Row */}
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[11px] font-medium text-gray-900 truncate">
+                {order.orderNumber}
+              </h3>
+              <p className="text-[9px] text-gray-500 truncate">
+                ID: {order.id.slice(-8)}
+              </p>
+            </div>
+
+            {/* Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0 hover:bg-gray-100 flex-shrink-0 ml-1"
+                >
+                  <EllipsisVerticalIcon className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={`/vendor/orders/${order.id}`}
+                    className="cursor-pointer text-[11px] py-1"
+                  >
+                    <EyeIcon className="w-3 h-3 mr-1" />
+                    View Details
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {getAvailableStatusActions(order.status).map((action) => (
+                  <DropdownMenuItem
+                    key={action.value}
+                    onClick={() => onStatusUpdate(order.id, action.value)}
+                    disabled={updating === order.id}
+                    className="text-slate-600 focus:text-slate-900 cursor-pointer text-[11px] py-1"
+                  >
+                    <action.icon className="w-3 h-3 mr-1" />
+                    {updating === order.id ? "Updating..." : action.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Customer & Items Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 flex-1 min-w-0">
+              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <UserIcon className="w-3 h-3 text-gray-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-medium text-gray-900 truncate">
+                  {order.customerName}
+                </p>
+                <p className="text-[8px] text-gray-500 truncate">
+                  {order.customerEmail}
+                </p>
+              </div>
+            </div>
+
+            {/* Items preview */}
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              {order.items.slice(0, 2).map((item, index) => (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="w-6 h-6 bg-gray-100 rounded border overflow-hidden flex-shrink-0"
+                >
+                  <Image
+                    src={item.productImage}
+                    alt={item.productName}
+                    width={24}
+                    height={24}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "/products/default.jpg";
+                    }}
+                  />
+                </div>
+              ))}
+              {order.items.length > 2 && (
+                <div className="w-6 h-6 bg-gray-200 rounded border flex items-center justify-center flex-shrink-0">
+                  <span className="text-[8px] font-medium text-gray-600">
+                    +{order.items.length - 2}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status & Payment Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1.5">
+              <StatusBadge status={order.status} />
+              <PaymentStatusBadge status={order.paymentStatus} />
+            </div>
+
+            <div className="text-right">
+              <p className="text-[11px] font-bold text-gray-900">
+                {formatPrice(order.totalAmount)}
+              </p>
+              <p className="text-[8px] text-gray-500">
+                {order.items.length} items
+              </p>
+            </div>
+          </div>
+
+          {/* Date Row */}
+          <div className="text-center">
+            <p className="text-[9px] text-gray-500">
+              {new Date(order.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
+              at{" "}
+              {new Date(order.createdAt).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Mobile skeleton for order loading
+function MobileOrdersSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-2">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <div className="space-y-1 flex-1">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2 w-16" />
+                </div>
+                <Skeleton className="w-5 h-5 rounded" />
+              </div>
+              <div className="flex justify-between">
+                <div className="space-y-1 flex-1">
+                  <Skeleton className="h-2.5 w-20" />
+                  <Skeleton className="h-2 w-28" />
+                </div>
+                <div className="flex space-x-1">
+                  <Skeleton className="w-6 h-6 rounded" />
+                  <Skeleton className="w-6 h-6 rounded" />
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <div className="flex space-x-1">
+                  <Skeleton className="h-4 w-12 rounded-full" />
+                  <Skeleton className="h-4 w-10 rounded-full" />
+                </div>
+                <div className="text-right space-y-1">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-2 w-10" />
+                </div>
+              </div>
+              <Skeleton className="h-2 w-32 mx-auto" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 // Sort Button Component
 function SortButton({
   field,
@@ -305,20 +509,20 @@ function SortButton({
   );
 }
 
-// Enhanced Loading Skeletons matching customers page
+// Mobile-responsive Loading Skeletons
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-32" />
+              <div className="space-y-1 sm:space-y-2 flex-1">
+                <Skeleton className="h-2 sm:h-3 w-14 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-10 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-32" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -366,7 +570,6 @@ function OrdersTableSkeleton() {
 
 export default function VendorOrdersPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -592,7 +795,13 @@ export default function VendorOrdersPage() {
             </CardContent>
           </Card>
 
-          <OrdersTableSkeleton />
+          {/* Mobile/Desktop Skeleton Display */}
+          <div className="block lg:hidden">
+            <MobileOrdersSkeleton />
+          </div>
+          <div className="hidden lg:block">
+            <OrdersTableSkeleton />
+          </div>
         </div>
       </div>
     );
@@ -620,23 +829,25 @@ export default function VendorOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Orders</h1>
-            <p className="text-sm text-gray-600">
+      <div className="p-2 sm:p-6 space-y-3 sm:space-y-6">
+        {/* Mobile-optimized Header */}
+        <div className="flex items-start sm:items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-gray-900">
+              Orders
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600 truncate">
               Manage and track your customer orders
             </p>
           </div>
         </div>
 
-        {/* Enhanced Stats Grid */}
+        {/* Mobile-optimized Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
         >
           <StatCard
             title="Total Revenue"
@@ -675,37 +886,37 @@ export default function VendorOrdersPage() {
           />
         </motion.div>
 
-        {/* Filters */}
+        {/* Mobile-optimized Filters */}
         <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardContent className="p-2 sm:p-6">
+            <form onSubmit={handleSearch} className="space-y-2 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="md:col-span-2 space-y-2">
+                <div className="sm:col-span-2 md:col-span-2 space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="search"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Search Orders
                   </Label>
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <MagnifyingGlassIcon className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="search"
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm"
-                      placeholder="Search by order number, customer name..."
+                      className="pl-7 sm:pl-10 h-7 sm:h-9 text-[11px] sm:text-sm"
+                      placeholder="Search orders..."
                     />
                   </div>
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="status"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Status
                   </Label>
@@ -715,27 +926,67 @@ export default function VendorOrdersPage() {
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="refunded">Refunded</SelectItem>
+                      <SelectItem
+                        value="all"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        All Status
+                      </SelectItem>
+                      <SelectItem
+                        value="pending"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Pending
+                      </SelectItem>
+                      <SelectItem
+                        value="confirmed"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Confirmed
+                      </SelectItem>
+                      <SelectItem
+                        value="processing"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Processing
+                      </SelectItem>
+                      <SelectItem
+                        value="shipped"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Shipped
+                      </SelectItem>
+                      <SelectItem
+                        value="delivered"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Delivered
+                      </SelectItem>
+                      <SelectItem
+                        value="cancelled"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Cancelled
+                      </SelectItem>
+                      <SelectItem
+                        value="refunded"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Refunded
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Date Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="date"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Date Range
                   </Label>
@@ -745,26 +996,54 @@ export default function VendorOrdersPage() {
                       setDateFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Dates" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Dates</SelectItem>
-                      <SelectItem value="today">Today</SelectItem>
-                      <SelectItem value="week">This Week</SelectItem>
-                      <SelectItem value="month">This Month</SelectItem>
-                      <SelectItem value="quarter">This Quarter</SelectItem>
+                      <SelectItem
+                        value="all"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        All Dates
+                      </SelectItem>
+                      <SelectItem
+                        value="today"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        Today
+                      </SelectItem>
+                      <SelectItem
+                        value="week"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        This Week
+                      </SelectItem>
+                      <SelectItem
+                        value="month"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        This Month
+                      </SelectItem>
+                      <SelectItem
+                        value="quarter"
+                        className="text-[11px] sm:text-sm"
+                      >
+                        This Quarter
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-600">
+              <div className="flex items-center justify-between pt-2 sm:pt-4 border-t border-gray-100">
+                <p className="text-[9px] sm:text-xs text-gray-600">
                   {totalCount} orders found
                 </p>
-                <Button variant="active" className="text-blue-700">
-                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
+                <Button
+                  variant="active"
+                  className="text-blue-700 h-6 sm:h-8 text-[10px] sm:text-sm px-2 sm:px-3"
+                >
+                  <FunnelIcon className="text-current h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
                   Apply Filters
                 </Button>
               </div>
@@ -772,303 +1051,365 @@ export default function VendorOrdersPage() {
           </CardContent>
         </Card>
 
-        {/* Orders Table */}
-        <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-0">
-            {orders.length === 0 ? (
-              <div className="p-12 text-center">
-                <ShoppingBagIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                  No orders found
-                </h3>
-                <p className="text-slate-500">
-                  Orders will appear here once customers start purchasing your
-                  products
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="id"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Order
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="customerName"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Customer
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-left pl-4">Items</TableHead>
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="total"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Total
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="h-10 text-center">Status</TableHead>
-                    <TableHead className="h-10 text-center">Payment</TableHead>
-                    <TableHead className="h-10 text-left pl-4">
-                      <SortButton
-                        field="createdAt"
-                        currentSort={sortBy}
-                        currentOrder={sortOrder}
-                        onSort={handleSort}
-                      >
-                        Date
-                      </SortButton>
-                    </TableHead>
-                    <TableHead className="w-[50px] h-10 text-center">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow
-                      key={order.id}
-                      className="hover:bg-slate-50/50 border-slate-100"
-                    >
-                      {/* Order Column */}
-                      <TableCell className="py-3 text-left pl-4">
-                        <div>
-                          <p className="font-medium text-slate-900 text-sm">
-                            {order.orderNumber}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            ID: {order.id.slice(-8)}
-                          </p>
-                        </div>
-                      </TableCell>
+        {/* Orders Display - Mobile Cards / Desktop Table */}
+        {orders.length === 0 ? (
+          <Card className="border-0 shadow-sm bg-white">
+            <CardContent className="p-6 sm:p-12 text-center">
+              <ShoppingBagIcon className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-sm sm:text-xl font-semibold text-slate-900 mb-1 sm:mb-2">
+                No orders found
+              </h3>
+              <p className="text-[11px] sm:text-base text-slate-500">
+                Orders will appear here once customers start purchasing your
+                products
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Mobile Order Cards - Only visible on mobile */}
+            <div className="block lg:hidden">
+              {orders.map((order) => (
+                <MobileOrderCard
+                  key={order.id}
+                  order={order}
+                  onStatusUpdate={handleStatusUpdate}
+                  updating={updating}
+                  getAvailableStatusActions={getAvailableStatusActions}
+                />
+              ))}
+            </div>
 
-                      {/* Customer Column */}
-                      <TableCell className="py-3 text-left pl-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <UserIcon className="w-4 h-4 text-slate-600" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-slate-900 text-sm truncate">
-                              {order.customerName}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate">
-                              {order.customerEmail}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Items Column */}
-                      <TableCell className="py-3 text-left pl-4">
-                        <div className="flex items-center space-x-2">
-                          {order.items.slice(0, 2).map((item, index) => (
-                            <div
-                              key={`${item.id}-${index}`}
-                              className="w-8 h-8 bg-slate-100 rounded border overflow-hidden flex-shrink-0"
-                            >
-                              <Image
-                                src={item.productImage}
-                                alt={`${item.productName}${
-                                  item.variantName
-                                    ? ` - ${item.variantName}`
-                                    : ""
-                                }`}
-                                width={32}
-                                height={32}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "/products/default.jpg";
-                                }}
-                              />
+            {/* Desktop Table - Only visible on desktop (unchanged) */}
+            <div className="hidden lg:block">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-slate-100">
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="id"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Order
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="customerName"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Customer
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-left pl-4">
+                          Items
+                        </TableHead>
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="total"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Total
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="h-10 text-center">
+                          Status
+                        </TableHead>
+                        <TableHead className="h-10 text-center">
+                          Payment
+                        </TableHead>
+                        <TableHead className="h-10 text-left pl-4">
+                          <SortButton
+                            field="createdAt"
+                            currentSort={sortBy}
+                            currentOrder={sortOrder}
+                            onSort={handleSort}
+                          >
+                            Date
+                          </SortButton>
+                        </TableHead>
+                        <TableHead className="w-[50px] h-10 text-center">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow
+                          key={order.id}
+                          className="hover:bg-slate-50/50 border-slate-100"
+                        >
+                          {/* Order Column */}
+                          <TableCell className="py-3 text-left pl-4">
+                            <div>
+                              <p className="font-medium text-slate-900 text-sm">
+                                {order.orderNumber}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                ID: {order.id.slice(-8)}
+                              </p>
                             </div>
-                          ))}
-                          {order.items.length > 2 && (
-                            <div className="w-8 h-8 bg-slate-200 rounded border flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-medium text-slate-600">
-                                +{order.items.length - 2}
+                          </TableCell>
+
+                          {/* Customer Column */}
+                          <TableCell className="py-3 text-left pl-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <UserIcon className="w-4 h-4 text-slate-600" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-slate-900 text-sm truncate">
+                                  {order.customerName}
+                                </p>
+                                <p className="text-xs text-slate-500 truncate">
+                                  {order.customerEmail}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+
+                          {/* Items Column */}
+                          <TableCell className="py-3 text-left pl-4">
+                            <div className="flex items-center space-x-2">
+                              {order.items.slice(0, 2).map((item, index) => (
+                                <div
+                                  key={`${item.id}-${index}`}
+                                  className="w-8 h-8 bg-slate-100 rounded border overflow-hidden flex-shrink-0"
+                                >
+                                  <Image
+                                    src={item.productImage}
+                                    alt={`${item.productName}${
+                                      item.variantName
+                                        ? ` - ${item.variantName}`
+                                        : ""
+                                    }`}
+                                    width={32}
+                                    height={32}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src =
+                                        "/products/default.jpg";
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                              {order.items.length > 2 && (
+                                <div className="w-8 h-8 bg-slate-200 rounded border flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-medium text-slate-600">
+                                    +{order.items.length - 2}
+                                  </span>
+                                </div>
+                              )}
+                              <span className="text-sm text-slate-600">
+                                ({order.items.length} items)
                               </span>
                             </div>
-                          )}
-                          <span className="text-sm text-slate-600">
-                            ({order.items.length} items)
-                          </span>
-                        </div>
-                      </TableCell>
+                          </TableCell>
 
-                      {/* Total Column */}
-                      <TableCell className="py-3 text-left pl-4">
-                        <p className="font-bold text-slate-900 text-sm">
-                          {formatPrice(order.totalAmount)}
-                        </p>
-                      </TableCell>
+                          {/* Total Column */}
+                          <TableCell className="py-3 text-left pl-4">
+                            <p className="font-bold text-slate-900 text-sm">
+                              {formatPrice(order.totalAmount)}
+                            </p>
+                          </TableCell>
 
-                      {/* Status Column */}
-                      <TableCell className="py-3 text-center">
-                        <StatusBadge status={order.status} />
-                      </TableCell>
+                          {/* Status Column */}
+                          <TableCell className="py-3 text-center">
+                            <StatusBadge status={order.status} />
+                          </TableCell>
 
-                      {/* Payment Column */}
-                      <TableCell className="py-3 text-center">
-                        <PaymentStatusBadge status={order.paymentStatus} />
-                      </TableCell>
+                          {/* Payment Column */}
+                          <TableCell className="py-3 text-center">
+                            <PaymentStatusBadge status={order.paymentStatus} />
+                          </TableCell>
 
-                      {/* Date Column */}
-                      <TableCell className="py-3 text-left pl-4">
-                        <div>
-                          <p className="font-medium text-slate-900 text-sm">
-                            {new Date(order.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {new Date(order.createdAt).toLocaleTimeString(
-                              "en-US",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </p>
-                        </div>
-                      </TableCell>
-
-                      {/* Actions Column */}
-                      <TableCell className="py-3 text-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 hover:bg-slate-100 cursor-pointer"
-                            >
-                              <EllipsisVerticalIcon className="h-3 w-3" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/vendor/orders/${order.id}`}
-                                className="cursor-pointer"
-                              >
-                                <EyeIcon className="w-3 h-3 mr-2" />
-                                View Details
-                              </Link>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator />
-
-                            {getAvailableStatusActions(order.status).map(
-                              (action) => (
-                                <DropdownMenuItem
-                                  key={action.value}
-                                  onClick={() =>
-                                    handleStatusUpdate(order.id, action.value)
+                          {/* Date Column */}
+                          <TableCell className="py-3 text-left pl-4">
+                            <div>
+                              <p className="font-medium text-slate-900 text-sm">
+                                {new Date(order.createdAt).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
                                   }
-                                  disabled={updating === order.id}
-                                  className="text-slate-600 focus:text-slate-900 cursor-pointer"
+                                )}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {new Date(order.createdAt).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </p>
+                            </div>
+                          </TableCell>
+
+                          {/* Actions Column */}
+                          <TableCell className="py-3 text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 hover:bg-slate-100 cursor-pointer"
                                 >
-                                  <action.icon className="w-3 h-3 mr-2" />
-                                  {updating === order.id
-                                    ? "Updating..."
-                                    : action.label}
+                                  <EllipsisVerticalIcon className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/vendor/orders/${order.id}`}
+                                    className="cursor-pointer"
+                                  >
+                                    <EyeIcon className="w-3 h-3 mr-2" />
+                                    View Details
+                                  </Link>
                                 </DropdownMenuItem>
-                              )
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-700">
-              Showing {(currentPage - 1) * 15 + 1} to{" "}
-              {Math.min(currentPage * 15, totalCount)} of {totalCount} orders
-            </p>
+                                <DropdownMenuSeparator />
 
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="h-8 px-3 text-xs cursor-pointer"
-              >
-                Previous
-              </Button>
-
-              <div className="flex space-x-1">
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNumber;
-                  if (totalPages <= 7) {
-                    pageNumber = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNumber = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNumber = totalPages - 6 + i;
-                  } else {
-                    pageNumber = currentPage - 3 + i;
-                  }
-
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={
-                        currentPage === pageNumber ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNumber)}
-                      className={`w-8 h-8 text-xs cursor-pointer ${
-                        currentPage === pageNumber
-                          ? "bg-slate-900 hover:bg-slate-800 text-white"
-                          : ""
-                      }`}
-                    >
-                      {pageNumber}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs cursor-pointer"
-              >
-                Next
-              </Button>
+                                {getAvailableStatusActions(order.status).map(
+                                  (action) => (
+                                    <DropdownMenuItem
+                                      key={action.value}
+                                      onClick={() =>
+                                        handleStatusUpdate(
+                                          order.id,
+                                          action.value
+                                        )
+                                      }
+                                      disabled={updating === order.id}
+                                      className="text-slate-600 focus:text-slate-900 cursor-pointer"
+                                    >
+                                      <action.icon className="w-3 h-3 mr-2" />
+                                      {updating === order.id
+                                        ? "Updating..."
+                                        : action.label}
+                                    </DropdownMenuItem>
+                                  )
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
-          </div>
+          </>
+        )}
+
+        {/* Mobile-optimized Pagination */}
+        {totalPages > 1 && (
+          <>
+            {/* Mobile Pagination - Ultra compact */}
+            <div className="flex flex-col space-y-2 sm:hidden">
+              <p className="text-[9px] text-slate-700 text-center">
+                Page {currentPage} of {totalPages} ({totalCount} orders)
+              </p>
+              <div className="flex items-center justify-center space-x-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-6 px-2 text-[9px]"
+                >
+                  Prev
+                </Button>
+                <span className="text-[9px] text-slate-500 px-1">
+                  {currentPage}/{totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-6 px-2 text-[9px]"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Pagination - Unchanged */}
+            <div className="hidden sm:flex items-center justify-between">
+              <p className="text-xs text-slate-700">
+                Showing {(currentPage - 1) * 15 + 1} to{" "}
+                {Math.min(currentPage * 15, totalCount)} of {totalCount} orders
+              </p>
+
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 px-3 text-xs cursor-pointer"
+                >
+                  Previous
+                </Button>
+
+                <div className="flex space-x-1">
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 7) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 4) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 3) {
+                      pageNumber = totalPages - 6 + i;
+                    } else {
+                      pageNumber = currentPage - 3 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={
+                          currentPage === pageNumber ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-8 h-8 text-xs cursor-pointer ${
+                          currentPage === pageNumber
+                            ? "bg-slate-900 hover:bg-slate-800 text-white"
+                            : ""
+                        }`}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 text-xs cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

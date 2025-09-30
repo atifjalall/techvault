@@ -21,7 +21,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -178,10 +178,10 @@ function TransactionIcon({ type }: { type: string }) {
 
   return (
     <div
-      className={`w-8 h-8 ${config.bg} rounded-lg flex items-center justify-center`}
+      className={`w-6 h-6 sm:w-8 sm:h-8 ${config.bg} rounded-lg flex items-center justify-center`}
     >
       <IconComponent
-        className={`h-4 w-4 ${config.color} ${config.rotate || ""}`}
+        className={`h-3 w-3 sm:h-4 sm:w-4 ${config.color} ${config.rotate || ""}`}
       />
     </div>
   );
@@ -204,27 +204,33 @@ function StatCard({
 }) {
   return (
     <Card className="border-0 shadow-sm bg-white">
-      <CardContent className="p-4">
+      <CardContent className="p-2 sm:p-4">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-gray-600">{title}</p>
-            <p className="text-lg font-bold text-gray-900">{value}</p>
-            <div className="flex items-center space-x-1">
+          <div className="space-y-0.5 sm:space-y-1">
+            <p className="text-[9px] sm:text-xs font-medium text-gray-600">
+              {title}
+            </p>
+            <p className="text-sm sm:text-lg font-bold text-gray-900">
+              {value}
+            </p>
+            <div className="flex items-center space-x-0.5 sm:space-x-1">
               <span
-                className={`text-xs font-medium ${
+                className={`text-[8px] sm:text-xs font-medium ${
                   change >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
                 {change >= 0 ? "+" : ""}
                 {change}%
               </span>
-              <span className="text-xs text-gray-500">vs last month</span>
+              <span className="text-[8px] sm:text-xs text-gray-500 hidden sm:inline">
+                vs last month
+              </span>
             </div>
           </div>
           <div
-            className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+            className={`w-6 h-6 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center`}
           >
-            <Icon className={`h-5 w-5 ${iconColor}`} />
+            <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
           </div>
         </div>
       </CardContent>
@@ -235,17 +241,17 @@ function StatCard({
 // Loading Skeletons - matching dashboard style
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-32" />
+              <div className="space-y-1 sm:space-y-2">
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-12 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-20 sm:w-32" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg" />
             </div>
           </CardContent>
         </Card>
@@ -336,32 +342,37 @@ export default function VendorTransactionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 space-y-6">
+      <div className="p-2 sm:p-6 space-y-2 sm:space-y-6">
         {/* Header - matching dashboard style */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Transactions</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-sm sm:text-xl font-bold text-gray-900">
+              Transactions
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600">
               View and manage all your wallet transactions
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button
               variant="outline"
               size="sm"
               asChild
-              className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
+              className="bg-white border-gray-200 hover:bg-gray-50 h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs cursor-pointer"
             >
               <Link href="/vendor/wallet">
-                <XMarkIcon className="w-3 h-3 mr-1.5" />
-                Back to Wallet
+                <XMarkIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+                <span className="hidden sm:inline">Back to Wallet</span>
+                <span className="sm:hidden">Back</span>
               </Link>
             </Button>
             <Button
               onClick={exportTransactions}
+              className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
             >
-              <ArrowDownTrayIcon className="w-3 h-3 mr-1.5" />
-              Export
+              <ArrowDownTrayIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Export</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </div>
         </div>
@@ -374,7 +385,7 @@ export default function VendorTransactionsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
           >
             <StatCard
               title="Total Income"
@@ -413,35 +424,35 @@ export default function VendorTransactionsPage() {
 
         {/* Filters - compact style */}
         <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <CardContent className="p-2 sm:p-4">
+            <form onSubmit={handleSearch} className="space-y-2 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="md:col-span-2 space-y-2">
+                <div className="sm:col-span-2 md:col-span-2 space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="search"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Search Transactions
                   </Label>
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     <Input
                       id="search"
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm"
-                      placeholder="Search by description, reference..."
+                      className="pl-8 sm:pl-10 h-7 sm:h-9 text-[11px] sm:text-sm"
+                      placeholder="Search..."
                     />
                   </div>
                 </div>
 
                 {/* Type Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="type"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Type
                   </Label>
@@ -451,7 +462,7 @@ export default function VendorTransactionsPage() {
                       setTypeFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
@@ -465,10 +476,10 @@ export default function VendorTransactionsPage() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="status"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Status
                   </Label>
@@ -478,7 +489,7 @@ export default function VendorTransactionsPage() {
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -491,10 +502,10 @@ export default function VendorTransactionsPage() {
                 </div>
 
                 {/* Date Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="date"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Date Range
                   </Label>
@@ -504,7 +515,7 @@ export default function VendorTransactionsPage() {
                       setDateFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -518,9 +529,9 @@ export default function VendorTransactionsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <div className="flex items-center space-x-2">
-                  <p className="text-xs text-gray-600">
+              <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <p className="text-[9px] sm:text-xs text-gray-600">
                     {totalCount} transactions found
                   </p>
                   {(searchTerm || typeFilter || statusFilter || dateFilter) && (
@@ -529,210 +540,313 @@ export default function VendorTransactionsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={clearFilters}
-                      className="h-6 px-2 text-xs cursor-pointer"
+                      className="h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-xs cursor-pointer"
                     >
-                      <XMarkIcon className="w-3 h-3 mr-1" />
+                      <XMarkIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                       Clear
                     </Button>
                   )}
                 </div>
-                <Button variant="active" className="text-blue-700">
-                  <FunnelIcon className="text-current h-4 w-4 mr-1.5" />
-                  Apply Filters
+                <Button
+                  variant="active"
+                  className="text-blue-700 h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
+                >
+                  <FunnelIcon className="text-current h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Apply Filters</span>
+                  <span className="sm:hidden">Apply</span>
                 </Button>
               </div>
             </form>
           </CardContent>
         </Card>
 
-        {/* Transactions Table */}
+        {/* Transactions Table/Cards */}
         {loading ? (
           <TableSkeleton />
         ) : !transactions || transactions.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-12 text-center">
-              <CreditCardIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <CardContent className="p-6 sm:p-12 text-center">
+              <CreditCardIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-[11px] sm:text-sm font-semibold text-gray-900 mb-1">
                 No transactions found
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 Transactions will appear here as you receive payments and make
                 payouts
               </p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                      Transaction
-                    </TableHead>
-                    <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                      Date
-                    </TableHead>
-                    <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                      Status
-                    </TableHead>
-                    <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
-                      Amount
-                    </TableHead>
-                    <TableHead className="h-10 w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow
-                      key={transaction.id}
-                      className="hover:bg-gray-50/50 border-b border-gray-50"
-                    >
-                      <TableCell className="py-3">
-                        <div className="flex items-center space-x-3">
-                          <TransactionIcon type={transaction.type} />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {transaction.description}
-                            </p>
-                            <div className="flex items-center space-x-2 text-xs text-gray-500">
-                              <span className="capitalize">
-                                {transaction.type}
+          <>
+            {/* Mobile Cards - visible on small screens */}
+            <div className="block lg:hidden space-y-2">
+              {transactions.map((transaction) => (
+                <motion.div
+                  key={transaction.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-lg border border-gray-100 p-3"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center`}
+                      >
+                        <TransactionIcon type={transaction.type} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-medium text-gray-900 truncate">
+                          {transaction.description}
+                        </p>
+                        <div className="flex items-center space-x-1 mt-0.5">
+                          <span className="text-[8px] text-gray-500 capitalize">
+                            {transaction.type}
+                          </span>
+                          {transaction.reference && (
+                            <>
+                              <span className="text-[8px] text-gray-400">
+                                •
                               </span>
-                              {transaction.reference && (
-                                <>
-                                  <span>•</span>
-                                  <span>{transaction.reference}</span>
-                                </>
-                              )}
-                              {transaction.customerName && (
-                                <>
-                                  <span>•</span>
-                                  <span>{transaction.customerName}</span>
-                                </>
-                              )}
+                              <span className="text-[8px] text-gray-500 truncate">
+                                {transaction.reference}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p
+                        className={`text-[10px] font-semibold ${
+                          transaction.amount > 0
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {transaction.amount > 0 ? "+" : ""}
+                        {formatPrice(Math.abs(transaction.amount))}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-[8px] text-gray-500">
+                        {new Date(transaction.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                      <StatusBadge status={transaction.status} />
+                    </div>
+                    {transaction.orderId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="h-5 px-2 text-[8px]"
+                      >
+                        <Link
+                          href={`/vendor/orders?search=${transaction.orderId}`}
+                          className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                        >
+                          View
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Desktop Table - hidden on small screens */}
+            <Card className="border-0 shadow-sm bg-white hidden lg:block">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-b border-gray-100">
+                      <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Transaction
+                      </TableHead>
+                      <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Date
+                      </TableHead>
+                      <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Status
+                      </TableHead>
+                      <TableHead className="h-10 text-xs font-semibold text-gray-600 uppercase tracking-wide text-right">
+                        Amount
+                      </TableHead>
+                      <TableHead className="h-10 w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((transaction) => (
+                      <TableRow
+                        key={transaction.id}
+                        className="hover:bg-gray-50/50 border-b border-gray-50"
+                      >
+                        <TableCell className="py-3">
+                          <div className="flex items-center space-x-3">
+                            <TransactionIcon type={transaction.type} />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {transaction.description}
+                              </p>
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <span className="capitalize">
+                                  {transaction.type}
+                                </span>
+                                {transaction.reference && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{transaction.reference}</span>
+                                  </>
+                                )}
+                                {transaction.customerName && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{transaction.customerName}</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      <TableCell className="py-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(transaction.date).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
+                        <TableCell className="py-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(transaction.date).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(transaction.date).toLocaleTimeString(
+                                "en-US",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </p>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="py-3">
+                          <StatusBadge status={transaction.status} />
+                        </TableCell>
+
+                        <TableCell className="py-3 text-right">
+                          <p
+                            className={`text-sm font-semibold ${
+                              transaction.amount > 0
+                                ? "text-green-600"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {transaction.amount > 0 ? "+" : ""}
+                            {formatPrice(Math.abs(transaction.amount))}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(transaction.date).toLocaleTimeString(
-                              "en-US",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </p>
-                        </div>
-                      </TableCell>
+                          {transaction.paymentMethod && (
+                            <p className="text-xs text-gray-500">
+                              {transaction.paymentMethod}
+                            </p>
+                          )}
+                        </TableCell>
 
-                      <TableCell className="py-3">
-                        <StatusBadge status={transaction.status} />
-                      </TableCell>
-
-                      <TableCell className="py-3 text-right">
-                        <p
-                          className={`text-sm font-semibold ${
-                            transaction.amount > 0
-                              ? "text-green-600"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {transaction.amount > 0 ? "+" : ""}
-                          {formatPrice(Math.abs(transaction.amount))}
-                        </p>
-                        {transaction.paymentMethod && (
-                          <p className="text-xs text-gray-500">
-                            {transaction.paymentMethod}
-                          </p>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="py-3">
-                        {transaction.orderId && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`/vendor/orders?search=${transaction.orderId}`}
-                              className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer"
-                            >
-                              View
-                            </Link>
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                        <TableCell className="py-3">
+                          {transaction.orderId && (
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link
+                                href={`/vendor/orders?search=${transaction.orderId}`}
+                                className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer"
+                              >
+                                View
+                              </Link>
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Pagination - compact style */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-700">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+            <p className="text-[9px] sm:text-xs text-gray-700">
               Showing {(currentPage - 1) * 20 + 1} to{" "}
               {Math.min(currentPage * 20, totalCount)} of {totalCount}{" "}
               transactions
             </p>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </Button>
 
-              <div className="flex space-x-1">
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNumber;
-                  if (totalPages <= 7) {
-                    pageNumber = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNumber = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNumber = totalPages - 6 + i;
-                  } else {
-                    pageNumber = currentPage - 3 + i;
-                  }
+              <div className="flex space-x-0.5 sm:space-x-1">
+                {Array.from(
+                  {
+                    length: Math.min(
+                      totalPages,
+                      window.innerWidth < 640 ? 3 : 7
+                    ),
+                  },
+                  (_, i) => {
+                    let pageNumber;
+                    const maxPages = window.innerWidth < 640 ? 3 : 7;
+                    if (totalPages <= maxPages) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= Math.floor(maxPages / 2) + 1) {
+                      pageNumber = i + 1;
+                    } else if (
+                      currentPage >=
+                      totalPages - Math.floor(maxPages / 2)
+                    ) {
+                      pageNumber = totalPages - maxPages + 1 + i;
+                    } else {
+                      pageNumber = currentPage - Math.floor(maxPages / 2) + i;
+                    }
 
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={
-                        currentPage === pageNumber ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNumber)}
-                      className={`w-8 h-8 text-xs cursor-pointer ${
-                        currentPage === pageNumber
-                          ? "bg-slate-900 hover:bg-slate-800 text-white"
-                          : ""
-                      }`}
-                    >
-                      {pageNumber}
-                    </Button>
-                  );
-                })}
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={
+                          currentPage === pageNumber ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`w-6 h-6 sm:w-8 sm:h-8 text-[9px] sm:text-xs cursor-pointer ${
+                          currentPage === pageNumber
+                            ? "bg-slate-900 hover:bg-slate-800 text-white"
+                            : ""
+                        }`}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  }
+                )}
               </div>
 
               <Button
@@ -740,7 +854,7 @@ export default function VendorTransactionsPage() {
                 size="sm"
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
                 Next
               </Button>

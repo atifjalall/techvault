@@ -24,7 +24,7 @@ import {
 import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/Button1";
+import Button from "@/components/ui/userButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -113,21 +113,34 @@ function StatCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        duration: 0.4,
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+      }}
+      whileHover={{
+        scale: 1.02,
+        transition: { duration: 0.2 },
+      }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-600">{title}</p>
-              <p className="text-xl font-bold text-gray-900">{value}</p>
+            <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+              <p className="text-[9px] sm:text-xs font-medium text-gray-600 truncate">
+                {title}
+              </p>
+              <p className="text-sm sm:text-xl font-bold text-gray-900">
+                {value}
+              </p>
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-6 h-6 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-2`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -175,9 +188,9 @@ function NotificationIcon({ type }: { type: string }) {
 
   return (
     <div
-      className={`w-8 h-8 ${config.bg} rounded-lg flex items-center justify-center`}
+      className={`w-6 h-6 sm:w-8 sm:h-8 ${config.bg} rounded-lg flex items-center justify-center flex-shrink-0`}
     >
-      <IconComponent className={`h-4 w-4 ${config.color}`} />
+      <IconComponent className={`h-3 w-3 sm:h-4 sm:w-4 ${config.color}`} />
     </div>
   );
 }
@@ -232,28 +245,7 @@ const formatDate = (dateString: string) => {
   }
 };
 
-// Loading Skeletons (matching vendor style)
-function StatsSkeleton() {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
+// Notifications Skeleton - EXACT MATCH to your real notification structure
 function NotificationsSkeleton() {
   return (
     <Card className="border-0 shadow-sm bg-white">
@@ -262,23 +254,173 @@ function NotificationsSkeleton() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0"
+              className="flex items-start space-x-3 p-3 sm:p-4 border-b border-gray-100 last:border-b-0"
             >
-              <Skeleton className="h-8 w-8 rounded-lg" />
-              <div className="flex-1 space-y-1">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/2" />
+              {/* Notification Icon Skeleton - EXACT SIZE */}
+              <Skeleton className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex-shrink-0" />
+
+              {/* Main Content - EXACT STRUCTURE */}
+              <div className="flex-1 min-w-0">
+                {/* Title with unread indicator - EXACT MATCH */}
+                <div className="flex items-center space-x-2 mb-1">
+                  <Skeleton className="h-4 w-48 sm:w-64" />
+                  {i % 3 === 0 && (
+                    <Skeleton className="w-2 h-2 rounded-full flex-shrink-0" />
+                  )}
+                </div>
+
+                {/* Message content - EXACT HEIGHT AND SPACING */}
+                <Skeleton className="h-4 w-full mb-2" />
+
+                {/* Order info - CONDITIONAL (every 3rd item) - EXACT STRUCTURE */}
+                {i % 3 === 0 && (
+                  <div className="flex items-center space-x-2 mb-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="p-1 bg-gray-200 rounded flex-shrink-0">
+                      <Skeleton className="w-3 h-3" />
+                    </div>
+                    <div className="text-xs min-w-0 space-y-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Metadata row - EXACT MATCH */}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-3 w-2" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-8 w-8" />
+
+              {/* Action buttons - EXACT MATCH */}
+              <div className="flex items-center space-x-1 flex-shrink-0">
+                <Skeleton className="h-6 w-12 rounded" />
+                <Skeleton className="h-6 w-6 rounded" />
               </div>
             </div>
           ))}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Stats Skeleton - EXACT MATCH to prevent shifts
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-0 shadow-sm bg-white">
+          <CardContent className="p-2 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+                {/* Title skeleton - match your actual titles */}
+                <Skeleton
+                  className={`h-2 sm:h-3 ${
+                    i === 0
+                      ? "w-16 sm:w-20" // "All Messages"
+                      : i === 1
+                        ? "w-10 sm:w-12" // "Unread"
+                        : i === 2
+                          ? "w-8 sm:w-10" // "Today"
+                          : "w-12 sm:w-14" // "Critical"
+                  }`}
+                />
+                {/* Value skeleton - match number width */}
+                <Skeleton className="h-4 sm:h-6 w-4 sm:w-6" />
+              </div>
+              <Skeleton className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg flex-shrink-0 ml-1 sm:ml-2" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Complete Page Skeleton matching your exact structure
+function PageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-6 sm:pt-8 px-4 pb-4">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-4 w-10" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-4 space-y-4 sm:space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div>
+            <Skeleton className="h-6 sm:h-7 w-28" />
+            <Skeleton className="h-4 w-72 mt-1" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-8 w-32 rounded" />
+            <Skeleton className="h-8 w-18 rounded sm:hidden" />
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <StatsSkeleton />
+
+        {/* Desktop Filters */}
+        <Card className="border-0 shadow-sm bg-white hidden sm:block">
+          <CardContent className="p-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton
+                      className={`h-3 ${
+                        i === 0
+                          ? "w-32" // "Search Notifications"
+                          : i === 1
+                            ? "w-8" // "Type"
+                            : i === 2
+                              ? "w-12" // "Status"
+                              : "w-12" // "Priority"
+                      }`}
+                    />
+                    <Skeleton className="h-9 w-full rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-8 w-16 rounded" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications List */}
+        <NotificationsSkeleton />
+
+        {/* Pagination */}
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <Skeleton className="h-3 w-64 text-center sm:text-left" />
+          <div className="flex items-center justify-center space-x-2">
+            <Skeleton className="h-8 w-16 rounded" />
+            <div className="flex space-x-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="w-8 h-8 rounded" />
+              ))}
+            </div>
+            <Skeleton className="h-8 w-12 rounded" />
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
   );
 }
 
@@ -303,6 +445,9 @@ export default function NotificationsPage() {
     todayCount: 0,
     criticalCount: 0,
   });
+
+  // Mobile filters state
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Filter options
   const filterOptions = [
@@ -331,7 +476,7 @@ export default function NotificationsPage() {
       setLoading(true);
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "20", // Increased from 15 to show more notifications
+        limit: "20",
       });
 
       if (searchTerm) params.append("search", searchTerm);
@@ -369,6 +514,7 @@ export default function NotificationsPage() {
     e.preventDefault();
     setCurrentPage(1);
     loadNotifications();
+    setShowMobileFilters(false);
   };
 
   const clearFilters = () => {
@@ -377,12 +523,12 @@ export default function NotificationsPage() {
     setStatusFilter("");
     setSeverityFilter("");
     setCurrentPage(1);
+    setShowMobileFilters(false);
   };
 
-  // Mark notification as read - SAME AS VENDOR (local state update only)
+  // Mark notification as read
   const markAsRead = async (notificationId: string) => {
     try {
-      // Update local state immediately
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === notificationId ? { ...notif, isRead: true } : notif
@@ -393,7 +539,6 @@ export default function NotificationsPage() {
         unreadCount: Math.max(0, prev.unreadCount - 1),
       }));
 
-      // Make API call in background
       const response = await fetch("/api/notifications", {
         method: "POST",
         headers: {
@@ -403,7 +548,6 @@ export default function NotificationsPage() {
       });
 
       if (!response.ok) {
-        // Revert on error
         setNotifications((prev) =>
           prev.map((notif) =>
             notif.id === notificationId ? { ...notif, isRead: false } : notif
@@ -416,7 +560,6 @@ export default function NotificationsPage() {
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      // Revert on error
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === notificationId ? { ...notif, isRead: false } : notif
@@ -429,16 +572,14 @@ export default function NotificationsPage() {
     }
   };
 
-  // Mark all as read - SAME AS VENDOR (local state update only)
+  // Mark all as read
   const markAllAsRead = async () => {
     try {
-      // Update local state immediately
       setNotifications((prev) =>
         prev.map((notif) => ({ ...notif, isRead: true }))
       );
       setStats((prev) => ({ ...prev, unreadCount: 0 }));
 
-      // Make API call in background
       const response = await fetch("/api/notifications", {
         method: "POST",
         headers: {
@@ -448,12 +589,10 @@ export default function NotificationsPage() {
       });
 
       if (!response.ok) {
-        // Revert on error (would need to track original unread count)
         loadNotifications();
       }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
-      // Revert on error
       loadNotifications();
     }
   };
@@ -469,7 +608,7 @@ export default function NotificationsPage() {
     }
   };
 
-  // Safe pagination calculation (same as vendor)
+  // Safe pagination calculation
   const generatePaginationNumbers = () => {
     if (totalPages <= 1) return [];
 
@@ -501,14 +640,7 @@ export default function NotificationsPage() {
   const paginationNumbers = generatePaginationNumbers();
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="container mx-auto px-4 py-4 space-y-4">
-          <StatsSkeleton />
-          <NotificationsSkeleton />
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (!session?.user) {
@@ -518,8 +650,8 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {/* Header with Breadcrumb */}
-      <div className="pt-8 px-4 pb-4">
-        <div className="container mx-auto px-4">
+      <div className="pt-3 sm:pt-8 px-2 sm:px-4 pb-2 sm:pb-4">
+        <div className="container mx-auto px-2 sm:px-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -529,14 +661,19 @@ export default function NotificationsPage() {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href="/" className="cursor-pointer">
+                    <Link
+                      href="/"
+                      className="cursor-pointer text-[11px] sm:text-sm"
+                    >
                       Home
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Notifications</BreadcrumbPage>
+                  <BreadcrumbPage className="text-[11px] sm:text-sm">
+                    Notifications
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -544,26 +681,37 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4 space-y-6">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 space-y-2 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col space-y-2 sm:space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-sm sm:text-lg sm:text-xl font-bold text-gray-900">
+              Notifications
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
               Stay updated on orders, payments, and account activity
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             {stats.unreadCount > 0 && (
               <Button
                 onClick={markAllAsRead}
                 variant="outline"
-                className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
+                className="bg-white border-gray-200 hover:bg-gray-50 h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
-                <CheckIcon className="w-3 h-3 mr-1.5" />
-                Mark All Read
+                <CheckIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+                <span className="hidden sm:inline">Mark All Read</span>
+                <span className="sm:hidden">Mark All</span>
               </Button>
             )}
+            <Button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              variant="outline"
+              className="sm:hidden bg-white border-gray-200 hover:bg-gray-50 h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
+            >
+              <FunnelIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+              Filters
+            </Button>
           </div>
         </div>
 
@@ -571,72 +719,94 @@ export default function NotificationsPage() {
         {loading ? (
           <StatsSkeleton />
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            <StatCard
-              title="Total Notifications"
-              value={stats.totalNotifications.toString()}
-              icon={BellIcon}
-              iconColor="text-blue-600"
-              bgColor="bg-blue-50"
-            />
-            <StatCard
-              title="Unread"
-              value={stats.unreadCount.toString()}
-              icon={EyeSlashIcon}
-              iconColor="text-orange-600"
-              bgColor="bg-orange-50"
-            />
-            <StatCard
-              title="Today"
-              value={stats.todayCount.toString()}
-              icon={BellIcon}
-              iconColor="text-green-600"
-              bgColor="bg-green-50"
-            />
-            <StatCard
-              title="Critical"
-              value={stats.criticalCount.toString()}
-              icon={ExclamationTriangleIcon}
-              iconColor="text-red-600"
-              bgColor="bg-red-50"
-            />
-          </motion.div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+            {[
+              {
+                title: "All Messages",
+                value: stats.totalNotifications.toString(),
+                icon: BellIcon,
+                iconColor: "text-blue-600",
+                bgColor: "bg-blue-50",
+                delay: 0.1,
+              },
+              {
+                title: "Unread",
+                value: stats.unreadCount.toString(),
+                icon: EyeSlashIcon,
+                iconColor: "text-orange-600",
+                bgColor: "bg-orange-50",
+                delay: 0.2,
+              },
+              {
+                title: "Today",
+                value: stats.todayCount.toString(),
+                icon: BellIcon,
+                iconColor: "text-green-600",
+                bgColor: "bg-green-50",
+                delay: 0.3,
+              },
+              {
+                title: "Critical",
+                value: stats.criticalCount.toString(),
+                icon: ExclamationTriangleIcon,
+                iconColor: "text-red-600",
+                bgColor: "bg-red-50",
+                delay: 0.4,
+              },
+            ].map((card, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  duration: 0.4,
+                  delay: card.delay,
+                  type: "spring",
+                  stiffness: 100,
+                  damping: 15,
+                }}
+              >
+                <StatCard
+                  title={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                  iconColor={card.iconColor}
+                  bgColor={card.bgColor}
+                />
+              </motion.div>
+            ))}
+          </div>
         )}
 
-        {/* Filters */}
-        <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* Filters - Desktop - Now 4 columns */}
+        <Card className="border-0 shadow-sm bg-white hidden sm:block">
+          <CardContent className="p-2 sm:p-4">
+            <form onSubmit={handleSearch} className="space-y-2 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="search"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Search Notifications
                   </Label>
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     <Input
                       id="search"
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm"
+                      className="pl-8 sm:pl-10 h-7 sm:h-9 text-[11px] sm:text-sm"
                       placeholder="Search notifications..."
                     />
                   </div>
                 </div>
 
                 {/* Type Filter */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-gray-700">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-[9px] sm:text-xs font-medium text-gray-700">
                     Type
                   </Label>
                   <Select
@@ -645,7 +815,7 @@ export default function NotificationsPage() {
                       setTypeFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
@@ -668,8 +838,8 @@ export default function NotificationsPage() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-gray-700">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-[9px] sm:text-xs font-medium text-gray-700">
                     Status
                   </Label>
                   <Select
@@ -678,7 +848,7 @@ export default function NotificationsPage() {
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -690,8 +860,8 @@ export default function NotificationsPage() {
                 </div>
 
                 {/* Severity Filter */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-gray-700">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-[9px] sm:text-xs font-medium text-gray-700">
                     Priority
                   </Label>
                   <Select
@@ -700,7 +870,7 @@ export default function NotificationsPage() {
                       setSeverityFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Priorities" />
                     </SelectTrigger>
                     <SelectContent>
@@ -711,59 +881,166 @@ export default function NotificationsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Clear & Apply */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-gray-700">
-                    Actions
-                  </Label>
-                  <div className="flex space-x-2">
-                    {(searchTerm ||
-                      typeFilter ||
-                      statusFilter ||
-                      severityFilter) && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={clearFilters}
-                        className="h-9 px-3 text-xs cursor-pointer"
-                      >
-                        <XMarkIcon className="w-3 h-3" />
-                      </Button>
-                    )}
-                    <Button
-                      type="submit"
-                      className="bg-slate-900 hover:bg-slate-800 text-white h-9 px-3 text-xs cursor-pointer"
-                    >
-                      <FunnelIcon className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
               </div>
 
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">
+              <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-gray-100">
+                <p className="text-[9px] sm:text-xs text-gray-600">
                   {totalCount} notifications found
                 </p>
+                <div className="flex space-x-1 sm:space-x-2">
+                  {(searchTerm ||
+                    typeFilter ||
+                    statusFilter ||
+                    severityFilter) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearFilters}
+                      className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
+                    >
+                      <XMarkIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </div>
             </form>
           </CardContent>
         </Card>
+
+        {/* Mobile Filters */}
+        {showMobileFilters && (
+          <Card className="border-0 shadow-sm bg-white sm:hidden">
+            <CardContent className="p-3">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-medium text-gray-900">
+                    Filters
+                  </h3>
+                  <Button
+                    onClick={() => setShowMobileFilters(false)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 cursor-pointer"
+                  >
+                    <XMarkIcon className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleSearch} className="space-y-3">
+                  {/* Mobile Search */}
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-medium text-gray-700">
+                      Search
+                    </Label>
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                      <Input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8 h-7 text-[11px]"
+                        placeholder="Search notifications..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobile Type Filter */}
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-medium text-gray-700">
+                      Type
+                    </Label>
+                    <Select
+                      value={typeFilter || "all"}
+                      onValueChange={(value) =>
+                        setTypeFilter(value === "all" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger className="h-7 text-[11px]">
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="ORDER_CONFIRMED">
+                          Order Updates
+                        </SelectItem>
+                        <SelectItem value="PAYMENT_PROCESSED">
+                          Payments
+                        </SelectItem>
+                        <SelectItem value="WISHLIST_ITEM_BACK_IN_STOCK">
+                          Wishlist
+                        </SelectItem>
+                        <SelectItem value="PROMOTIONAL_OFFER">
+                          Promotions
+                        </SelectItem>
+                        <SelectItem value="ACCOUNT_SECURITY">
+                          Security
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mobile Status Filter */}
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-medium text-gray-700">
+                      Status
+                    </Label>
+                    <Select
+                      value={statusFilter || "all"}
+                      onValueChange={(value) =>
+                        setStatusFilter(value === "all" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger className="h-7 text-[11px]">
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="unread">Unread</SelectItem>
+                        <SelectItem value="read">Read</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mobile Actions */}
+                  <div className="flex space-x-2 pt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={clearFilters}
+                      className="flex-1 h-7 text-[10px] cursor-pointer"
+                    >
+                      Clear All
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-7 text-[10px] cursor-pointer"
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notifications List */}
         {loading ? (
           <NotificationsSkeleton />
         ) : error ? (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-12 text-center">
-              <XCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <CardContent className="p-4 sm:p-8 sm:p-12 text-center">
+              <XCircleIcon className="w-8 h-8 sm:w-10 sm:h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-[11px] sm:text-sm font-semibold text-gray-900 mb-1">
                 Error Loading Notifications
               </h3>
-              <p className="text-xs text-gray-500 mb-4">{error}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mb-3 sm:mb-4">
+                {error}
+              </p>
               <Button
                 onClick={() => loadNotifications()}
-                className="bg-slate-900 hover:bg-slate-800 text-white text-xs cursor-pointer"
+                className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] sm:text-xs h-7 sm:h-8 px-3 sm:px-4 cursor-pointer"
               >
                 Try Again
               </Button>
@@ -771,12 +1048,12 @@ export default function NotificationsPage() {
           </Card>
         ) : !notifications || notifications.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-12 text-center">
-              <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <CardContent className="p-4 sm:p-8 sm:p-12 text-center">
+              <BellIcon className="w-8 h-8 sm:w-10 sm:h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-[11px] sm:text-sm font-semibold text-gray-900 mb-1">
                 No notifications found
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 {statusFilter === "unread"
                   ? "No unread notifications found"
                   : "You don't have any notifications yet"}
@@ -791,7 +1068,7 @@ export default function NotificationsPage() {
                   <motion.div
                     key={notification.id}
                     whileHover={{ x: 2 }}
-                    className={`flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer ${
+                    className={`flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 sm:p-4 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer ${
                       !notification.isRead
                         ? "bg-blue-50/30"
                         : "hover:bg-gray-50/50"
@@ -801,58 +1078,59 @@ export default function NotificationsPage() {
                     <NotificationIcon type={notification.type} />
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                      <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
+                        <h3 className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
                           {notification.title}
                         </h3>
                         {!notification.isRead && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                      <p className="text-[9px] sm:text-sm text-gray-600 line-clamp-2 mb-1 sm:mb-2">
                         {notification.message}
                       </p>
 
                       {/* Order/Product info if available */}
                       {notification.order && (
-                        <div className="flex items-center space-x-2 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
-                          <div className="p-1 bg-gray-200 rounded">
-                            <ShoppingCartIcon className="w-3 h-3 text-gray-600" />
+                        <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1 sm:mb-2 p-1.5 sm:p-2 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="p-0.5 sm:p-1 bg-gray-200 rounded flex-shrink-0">
+                            <ShoppingCartIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600" />
                           </div>
-                          <div className="text-xs">
-                            <span className="font-medium text-gray-700">
+                          <div className="text-[8px] sm:text-xs min-w-0">
+                            <span className="font-medium text-gray-700 block truncate">
                               Order #
                               {notification.order.id.slice(-8).toUpperCase()}
                             </span>
                             {notification.order.productName && (
-                              <span className="text-gray-500 ml-2">
-                                • {notification.order.productName}
+                              <span className="text-gray-500 block truncate">
+                                {notification.order.productName}
                               </span>
                             )}
                           </div>
                         </div>
                       )}
 
-                      <div className="flex items-center space-x-2 text-xs text-gray-500 mt-2">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-[8px] sm:text-xs text-gray-500">
                         <span>{formatDate(notification.createdAt)}</span>
                         <span>•</span>
-                        <span className="capitalize">
+                        <span className="capitalize truncate">
                           {notification.type.replace(/_/g, " ").toLowerCase()}
                         </span>
                         <SeverityBadge severity={notification.severity} />
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0">
                       {notification.actionUrl && (
-                        <Button variant="ghost" size="sm" asChild>
+                        <Button variant="ghost" size="sm">
                           <Link
                             href={notification.actionUrl}
-                            className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer"
+                            className="text-blue-600 hover:text-blue-700 text-[8px] sm:text-xs cursor-pointer px-1.5 sm:px-2 h-5 sm:h-6"
                             onClick={(e) => {
                               e.stopPropagation();
-                              !notification.isRead &&
+                              if (!notification.isRead) {
                                 markAsRead(notification.id);
+                              }
                             }}
                           >
                             View
@@ -865,10 +1143,10 @@ export default function NotificationsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 cursor-pointer"
+                            className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <EllipsisVerticalIcon className="h-4 w-4" />
+                            <EllipsisVerticalIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -903,40 +1181,45 @@ export default function NotificationsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-700">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[9px] sm:text-xs text-gray-700 text-center sm:text-left">
               Showing {Math.max(1, (currentPage - 1) * 20 + 1)} to{" "}
               {Math.min(currentPage * 20, totalCount)} of {totalCount}{" "}
               notifications
             </p>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </Button>
 
-              <div className="flex space-x-1">
-                {paginationNumbers.map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={`w-8 h-8 text-xs cursor-pointer ${
-                      currentPage === pageNumber
-                        ? "bg-slate-900 hover:bg-slate-800 text-white"
-                        : ""
-                    }`}
-                  >
-                    {pageNumber}
-                  </Button>
-                ))}
+              <div className="flex space-x-0.5 sm:space-x-1">
+                {paginationNumbers
+                  .slice(0, window.innerWidth < 640 ? 3 : 5)
+                  .map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        currentPage === pageNumber ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-6 h-6 sm:w-8 sm:h-8 text-[9px] sm:text-xs cursor-pointer ${
+                        currentPage === pageNumber
+                          ? "bg-slate-900 hover:bg-slate-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  ))}
               </div>
 
               <Button
@@ -946,7 +1229,7 @@ export default function NotificationsPage() {
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
                 Next
               </Button>

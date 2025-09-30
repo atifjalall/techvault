@@ -104,32 +104,38 @@ function StatCard({
       transition={{ duration: 0.3 }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-600">{title}</p>
-              <p className="text-xl font-bold text-gray-900">{value}</p>
-              <div className="flex items-center space-x-1">
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[9px] sm:text-xs font-medium text-gray-600">
+                {title}
+              </p>
+              <p className="text-sm sm:text-xl font-bold text-gray-900">
+                {value}
+              </p>
+              <div className="flex items-center space-x-0.5 sm:space-x-1">
                 {isPositive ? (
-                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-2 w-2 sm:h-3 sm:w-3 text-green-500" />
                 ) : (
-                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-2 w-2 sm:h-3 sm:w-3 text-red-500" />
                 )}
                 <span
-                  className={`text-xs font-medium ${
+                  className={`text-[8px] sm:text-xs font-medium ${
                     isPositive ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {isPositive ? "+" : ""}
                   {change.toFixed(1)}%
                 </span>
-                <span className="text-xs text-gray-500">vs last week</span>
+                <span className="text-[8px] sm:text-xs text-gray-500 hidden sm:inline">
+                  vs last week
+                </span>
               </div>
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-6 h-6 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -166,9 +172,9 @@ function NotificationIcon({ type }: { type: string }) {
 
   return (
     <div
-      className={`w-8 h-8 ${config.bg} rounded-lg flex items-center justify-center`}
+      className={`w-6 h-6 sm:w-8 sm:h-8 ${config.bg} rounded-lg flex items-center justify-center`}
     >
-      <IconComponent className={`h-4 w-4 ${config.color}`} />
+      <IconComponent className={`h-3 w-3 sm:h-4 sm:w-4 ${config.color}`} />
     </div>
   );
 }
@@ -194,7 +200,7 @@ function SeverityBadge({ severity }: { severity: string }) {
   if (!config) return null;
 
   return (
-    <Badge className={`text-xs px-2 py-0.5 ${config.className}`}>
+    <Badge className={`text-xs px-2 py-0.5 h-5 ${config.className}`}>
       {config.label}
     </Badge>
   );
@@ -203,17 +209,17 @@ function SeverityBadge({ severity }: { severity: string }) {
 // Loading Skeletons
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-24" />
+              <div className="space-y-1 sm:space-y-2">
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-12 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-20 sm:w-24" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg" />
             </div>
           </CardContent>
         </Card>
@@ -230,17 +236,17 @@ function NotificationsSkeleton() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0"
+              className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-4 border-b border-gray-100 last:border-b-0"
             >
-              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg" />
               <div className="flex-1 space-y-1">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 sm:h-4 w-3/4" />
+                <Skeleton className="h-2 sm:h-3 w-full" />
+                <Skeleton className="h-2 sm:h-3 w-1/2" />
               </div>
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-8 w-8" />
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <Skeleton className="h-4 sm:h-5 w-12 sm:w-16" />
+                <Skeleton className="h-6 w-6 sm:h-8 sm:w-8" />
               </div>
             </div>
           ))}
@@ -473,24 +479,27 @@ export default function VendorNotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 space-y-6">
+      <div className="p-2 sm:p-6 space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-sm sm:text-xl font-bold text-gray-900">
+              Notifications
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600">
               Stay updated on orders, stock levels, and system alerts
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             {stats.unreadCount > 0 && (
               <Button
                 onClick={markAllAsRead}
                 variant="outline"
-                className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
+                className="bg-white border-gray-200 hover:bg-gray-50 h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
-                <CheckIcon className="w-3 h-3 mr-1.5" />
-                Mark All Read
+                <CheckIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+                <span className="hidden sm:inline">Mark All Read</span>
+                <span className="sm:hidden">Mark All</span>
               </Button>
             )}
           </div>
@@ -504,7 +513,7 @@ export default function VendorNotificationsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
           >
             <StatCard
               title="Total Notifications"
@@ -543,35 +552,35 @@ export default function VendorNotificationsPage() {
 
         {/* Filters */}
         <Card className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <CardContent className="p-2 sm:p-4">
+            <form onSubmit={handleSearch} className="space-y-2 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="search"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Search Notifications
                   </Label>
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     <Input
                       id="search"
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9 text-sm"
+                      className="pl-8 sm:pl-10 h-7 sm:h-9 text-[11px] sm:text-sm"
                       placeholder="Search notifications..."
                     />
                   </div>
                 </div>
 
                 {/* Type Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="type"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Type
                   </Label>
@@ -581,7 +590,7 @@ export default function VendorNotificationsPage() {
                       setTypeFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
@@ -600,10 +609,10 @@ export default function VendorNotificationsPage() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="status"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Status
                   </Label>
@@ -613,7 +622,7 @@ export default function VendorNotificationsPage() {
                       setStatusFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -625,10 +634,10 @@ export default function VendorNotificationsPage() {
                 </div>
 
                 {/* Severity Filter */}
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="severity"
-                    className="text-xs font-medium text-gray-700"
+                    className="text-[9px] sm:text-xs font-medium text-gray-700"
                   >
                     Severity
                   </Label>
@@ -638,7 +647,7 @@ export default function VendorNotificationsPage() {
                       setSeverityFilter(value === "all" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-7 sm:h-9 text-[11px] sm:text-sm">
                       <SelectValue placeholder="All Severities" />
                     </SelectTrigger>
                     <SelectContent>
@@ -651,11 +660,11 @@ export default function VendorNotificationsPage() {
                 </div>
 
                 {/* Clear & Apply */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-gray-700">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-[9px] sm:text-xs font-medium text-gray-700">
                     Actions
                   </Label>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1 sm:space-x-2">
                     {(searchTerm ||
                       typeFilter ||
                       statusFilter ||
@@ -664,23 +673,23 @@ export default function VendorNotificationsPage() {
                         type="button"
                         variant="ghost"
                         onClick={clearFilters}
-                        className="h-9 px-3 text-xs cursor-pointer"
+                        className="h-7 sm:h-9 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
                       >
-                        <XMarkIcon className="w-3 h-3" />
+                        <XMarkIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </Button>
                     )}
                     <Button
                       type="submit"
-                      className="bg-slate-900 hover:bg-slate-800 text-white h-9 px-3 text-xs cursor-pointer"
+                      className="bg-slate-900 hover:bg-slate-800 text-white h-7 sm:h-9 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
                     >
-                      <FunnelIcon className="w-3 h-3" />
+                      <FunnelIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">
+              <div className="pt-2 sm:pt-3 border-t border-gray-100">
+                <p className="text-[9px] sm:text-xs text-gray-600">
                   {totalCount} notifications found
                 </p>
               </div>
@@ -693,12 +702,12 @@ export default function VendorNotificationsPage() {
           <NotificationsSkeleton />
         ) : !notifications || notifications.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-12 text-center">
-              <BellIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            <CardContent className="p-6 sm:p-12 text-center">
+              <BellIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-[11px] sm:text-sm font-semibold text-gray-900 mb-1">
                 No notifications found
               </h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 Notifications will appear here when you have new orders, stock
                 updates, or system alerts
               </p>
@@ -712,7 +721,7 @@ export default function VendorNotificationsPage() {
                   <motion.div
                     key={notification.id}
                     whileHover={{ x: 2 }}
-                    className={`flex items-center space-x-3 p-4 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer ${
+                    className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-4 border-b border-gray-100 last:border-b-0 transition-colors cursor-pointer ${
                       !notification.isRead
                         ? "bg-blue-50/30"
                         : "hover:bg-gray-50/50"
@@ -721,21 +730,21 @@ export default function VendorNotificationsPage() {
                     <NotificationIcon type={notification.type} />
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                      <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
+                        <h3 className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
                           {notification.type
                             .replace(/_/g, " ")
                             .toLowerCase()
                             .replace(/\b\w/g, (l) => l.toUpperCase())}
                         </h3>
                         {!notification.isRead && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-1">
+                      <p className="text-[9px] sm:text-sm text-gray-600 line-clamp-2 mb-1">
                         {notification.message}
                       </p>
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1 sm:space-x-2 text-[8px] sm:text-xs text-gray-500">
                         <span>{getTimeAgo(notification.createdAt)}</span>
                         <span>•</span>
                         <span className="capitalize">
@@ -745,16 +754,17 @@ export default function VendorNotificationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                       {notification.actionUrl && (
                         <Button variant="ghost" size="sm" asChild>
                           <Link
                             href={notification.actionUrl}
-                            className="text-blue-600 hover:text-blue-700 text-xs cursor-pointer"
-                            onClick={() =>
-                              !notification.isRead &&
-                              markAsRead(notification.id)
-                            }
+                            className="text-blue-600 hover:text-blue-700 text-[8px] sm:text-xs cursor-pointer px-1.5 sm:px-2 h-5 sm:h-6"
+                            onClick={() => {
+                              if (!notification.isRead) {
+                                markAsRead(notification.id);
+                              }
+                            }}
                           >
                             View
                           </Link>
@@ -766,9 +776,9 @@ export default function VendorNotificationsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 cursor-pointer"
+                            className="h-6 w-6 sm:h-8 sm:w-8 p-0 cursor-pointer"
                           >
-                            <EllipsisVerticalIcon className="h-4 w-4" />
+                            <EllipsisVerticalIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -801,40 +811,45 @@ export default function VendorNotificationsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-700">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[9px] sm:text-xs text-gray-700 text-center sm:text-left">
               Showing {Math.max(1, (currentPage - 1) * 15 + 1)} to{" "}
               {Math.min(currentPage * 15, totalCount)} of {totalCount}{" "}
               notifications
             </p>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </Button>
 
-              <div className="flex space-x-1">
-                {paginationNumbers.map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={`w-8 h-8 text-xs cursor-pointer ${
-                      currentPage === pageNumber
-                        ? "bg-slate-900 hover:bg-slate-800 text-white"
-                        : ""
-                    }`}
-                  >
-                    {pageNumber}
-                  </Button>
-                ))}
+              <div className="flex space-x-0.5 sm:space-x-1">
+                {paginationNumbers
+                  .slice(0, window.innerWidth < 640 ? 3 : 7)
+                  .map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      variant={
+                        currentPage === pageNumber ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={`w-6 h-6 sm:w-8 sm:h-8 text-[9px] sm:text-xs cursor-pointer ${
+                        currentPage === pageNumber
+                          ? "bg-slate-900 hover:bg-slate-800 text-white"
+                          : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  ))}
               </div>
 
               <Button
@@ -844,7 +859,7 @@ export default function VendorNotificationsPage() {
                   setCurrentPage(Math.min(totalPages, currentPage + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="h-8 px-3 text-xs cursor-pointer"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs cursor-pointer"
               >
                 Next
               </Button>
