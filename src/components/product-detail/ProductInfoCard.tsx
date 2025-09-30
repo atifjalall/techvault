@@ -66,7 +66,7 @@ export default function ProductInfoCard({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 lg:space-y-4">
       {/* Brand, Name, and Rating */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -74,26 +74,26 @@ export default function ProductInfoCard({
         transition={{ duration: 0.3 }}
       >
         {product.brand && (
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <p className="text-[10px] lg:text-xs font-medium text-slate-500 uppercase tracking-wide">
             {product.brand.name}
           </p>
         )}
-        <h1 className="text-2xl font-semibold text-slate-900 mt-1 leading-tight">
+        <h1 className="text-lg lg:text-2xl font-semibold text-slate-900 mt-1 leading-tight">
           {product.name}
         </h1>
         {product.modelNumber && (
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[10px] lg:text-xs text-slate-500 mt-1">
             Model: {product.modelNumber}
           </p>
         )}
 
         {/* Rating */}
-        <div className="flex items-center space-x-2 mt-2">
-          <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1 lg:space-x-2 mt-1 lg:mt-2">
+          <div className="flex items-center space-x-0.5 lg:space-x-1">
             {[...Array(5)].map((_, i) => (
               <StarIconSolid
                 key={i}
-                className={`w-4 h-4 ${
+                className={`w-3 h-3 lg:w-4 lg:h-4 ${
                   i < Math.floor(product.avgRating || 0)
                     ? "text-yellow-400"
                     : "text-slate-300"
@@ -101,7 +101,7 @@ export default function ProductInfoCard({
               />
             ))}
           </div>
-          <span className="text-sm text-slate-600">
+          <span className="text-[10px] lg:text-sm text-slate-600">
             {product.reviewCount > 0
               ? `${product.avgRating.toFixed(1)} (${product.reviewCount} reviews)`
               : "No reviews yet"}
@@ -109,8 +109,10 @@ export default function ProductInfoCard({
         </div>
 
         {/* Vendor Info */}
-        <div className="mt-3">
-          <span className="text-sm text-slate-600">Sold by: </span>
+        <div className="mt-2 lg:mt-3">
+          <span className="text-[10px] lg:text-sm text-slate-600">
+            Sold by:{" "}
+          </span>
           {product.vendor.storeSlug ? (
             <a
               href={`/store/${product.vendor.storeSlug}`}
@@ -133,8 +135,8 @@ export default function ProductInfoCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-slate-900">
+        <div className="flex items-center space-x-1 lg:space-x-2">
+          <span className="text-lg lg:text-2xl font-bold text-slate-900">
             {selectedVariant
               ? formatPrice(selectedVariant.price)
               : product.maxPrice && product.maxPrice !== product.basePrice
@@ -142,17 +144,17 @@ export default function ProductInfoCard({
                 : formatPrice(product.basePrice)}
           </span>
           {selectedVariant?.comparePrice && (
-            <span className="text-lg text-slate-500 line-through">
+            <span className="text-sm lg:text-lg text-slate-500 line-through">
               {formatPrice(selectedVariant.comparePrice)}
             </span>
           )}
           {selectedVariant && selectedVariant.discountPercentage > 0 && (
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+            <span className="text-[10px] lg:text-xs font-medium text-green-600 bg-green-50 px-1.5 lg:px-2 py-0.5 lg:py-1 rounded-full">
               Save {selectedVariant.discountPercentage}%
             </span>
           )}
         </div>
-        <p className="text-xs text-slate-600">
+        <p className="text-[10px] lg:text-xs text-slate-600">
           Tax included.{" "}
           {product.deliveryDays && `Delivery in ${product.deliveryDays} days.`}
         </p>
@@ -161,18 +163,20 @@ export default function ProductInfoCard({
       {/* Stock Status - Only show when out of stock */}
       {selectedVariant && !selectedVariant.inStock && (
         <motion.div
-          className="bg-red-50 border border-red-200 rounded-lg p-3"
+          className="bg-red-50 border border-red-200 rounded-lg p-2 lg:p-3"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
         >
-          <p className="text-sm font-medium text-red-600">Out of stock</p>
+          <p className="text-[10px] lg:text-sm font-medium text-red-600">
+            Out of stock
+          </p>
         </motion.div>
       )}
 
       {/* Variant Selection */}
       <motion.div
-        className="space-y-4 pt-2"
+        className="space-y-2 lg:space-y-4 pt-1 lg:pt-2"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.4 }}
@@ -189,7 +193,7 @@ export default function ProductInfoCard({
       {/* Description */}
       {product.description && (
         <motion.div
-          className="text-sm text-slate-600 leading-relaxed"
+          className="text-[10px] lg:text-sm text-slate-600 leading-relaxed"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.45 }}
@@ -201,44 +205,46 @@ export default function ProductInfoCard({
       {/* Quantity and Add to Cart - Only show when variant is selected */}
       {selectedVariant?.inStock && (
         <motion.div
-          className="space-y-3 pt-2"
+          className="space-y-2 lg:space-y-3 pt-1 lg:pt-2"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.55 }}
         >
-          <div className="flex items-center space-x-3">
-            <label className="text-sm font-medium text-slate-700">Qty:</label>
+          <div className="flex items-center space-x-2 lg:space-x-3">
+            <label className="text-[10px] lg:text-sm font-medium text-slate-700">
+              Qty:
+            </label>
             <div className="flex items-center border border-slate-300 rounded-lg">
               <motion.button
                 onClick={() => onQuantityChange("decrease")}
                 disabled={quantity <= 1}
-                className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg cursor-pointer"
+                className="p-1.5 lg:p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg cursor-pointer"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <MinusIcon className="w-3 h-3" />
+                <MinusIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
               </motion.button>
-              <span className="px-3 py-2 text-sm font-medium text-slate-900 min-w-[3rem] text-center">
+              <span className="px-2 lg:px-3 py-1.5 lg:py-2 text-[10px] lg:text-sm font-medium text-slate-900 min-w-[2rem] lg:min-w-[3rem] text-center">
                 {quantity}
               </span>
               <motion.button
                 onClick={() => onQuantityChange("increase")}
                 disabled={quantity >= (selectedVariant?.stock || 0)}
-                className="p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg cursor-pointer"
+                className="p-1.5 lg:p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg cursor-pointer"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <PlusIcon className="w-3 h-3" />
+                <PlusIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3" />
               </motion.button>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3">
+          <div className="flex space-x-2 lg:space-x-3">
             <motion.button
               onClick={handleAddToCartClick}
               disabled={!selectedVariant?.inStock || isAddingToCart}
-              className="flex-1 bg-black text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
+              className="flex-1 bg-black text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg text-[10px] lg:text-sm font-medium hover:bg-gray-900 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center space-x-1 lg:space-x-2 cursor-pointer"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
@@ -271,7 +277,7 @@ export default function ProductInfoCard({
             <motion.button
               onClick={handleWishlistClick}
               disabled={!selectedVariant && product.variants.length > 0}
-              className={`p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer ${
+              className={`p-2 lg:p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer ${
                 !selectedVariant && product.variants.length > 0
                   ? "opacity-50 cursor-not-allowed"
                   : ""
@@ -287,18 +293,18 @@ export default function ProductInfoCard({
               }
             >
               {isWishlisted ? (
-                <HeartIconSolid className="w-4 h-4 text-red-500" />
+                <HeartIconSolid className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
               ) : (
-                <HeartIcon className="w-4 h-4" />
+                <HeartIcon className="w-3 h-3 lg:w-4 lg:h-4" />
               )}
             </motion.button>
 
             <motion.button
-              className="p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer"
+              className="p-2 lg:p-2.5 border border-slate-300 rounded-lg hover:border-slate-400 transition-colors cursor-pointer"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <ShareIcon className="w-4 h-4" />
+              <ShareIcon className="w-3 h-3 lg:w-4 lg:h-4" />
             </motion.button>
           </div>
         </motion.div>
@@ -307,15 +313,15 @@ export default function ProductInfoCard({
       {/* Message when no variant selected */}
       {!selectedVariant && product.variants.length > 0 && (
         <motion.div
-          className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center"
+          className="bg-blue-50 border border-blue-200 rounded-lg p-3 lg:p-4 text-center"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.55 }}
         >
-          <p className="text-sm text-blue-700 font-medium">
+          <p className="text-[10px] lg:text-sm text-blue-700 font-medium">
             Please select a variant to add to cart
           </p>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="text-[10px] lg:text-xs text-blue-600 mt-1">
             Choose from available options above
           </p>
         </motion.div>
@@ -323,18 +329,22 @@ export default function ProductInfoCard({
 
       {/* Features */}
       <motion.div
-        className="grid grid-cols-3 gap-3 py-4 border-t border-slate-200"
+        className="grid grid-cols-3 gap-2 lg:gap-3 py-3 lg:py-4 border-t border-slate-200"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.6 }}
       >
         <div className="text-center">
-          <TruckIcon className="w-5 h-5 mx-auto text-slate-600 mb-1" />
-          <p className="text-xs font-medium text-slate-900">Free Shipping</p>
-          <p className="text-xs text-slate-500">Orders over €50</p>
+          <TruckIcon className="w-4 h-4 lg:w-5 lg:h-5 mx-auto text-slate-600 mb-1" />
+          <p className="text-[10px] lg:text-xs font-medium text-slate-900">
+            Free Shipping
+          </p>
+          <p className="text-[8px] lg:text-xs text-slate-500">
+            Orders over €50
+          </p>
         </div>
         <div className="text-center">
-          <ArrowPathIcon className="w-5 h-5 mx-auto text-slate-600 mb-1" />
+          <ArrowPathIcon className="w-4 h-4 lg:w-5 lg:h-5 mx-auto text-slate-600 mb-1" />
           <p className="text-xs font-medium text-slate-900">
             {product.returnable ? "30-Day Returns" : "Non-Returnable"}
           </p>

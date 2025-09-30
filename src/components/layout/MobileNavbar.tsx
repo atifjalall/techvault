@@ -141,7 +141,7 @@ function MobileCategoriesList({
   );
 }
 
-// Smart Badge Component
+// Smart Badge Component - Updated positioning
 interface SmartBadgeProps {
   count: number;
   isLoading?: boolean;
@@ -150,7 +150,7 @@ interface SmartBadgeProps {
 function SmartBadge({ count, isLoading = false }: SmartBadgeProps) {
   if (isLoading) {
     return (
-      <span className="absolute -top-0 -right-0 bg-gray-300 text-transparent text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium animate-pulse">
+      <span className="absolute -top-1 -right-1 bg-gray-300 text-transparent text-xs rounded-full h-3 w-3 flex items-center justify-center font-medium animate-pulse">
         0
       </span>
     );
@@ -159,7 +159,7 @@ function SmartBadge({ count, isLoading = false }: SmartBadgeProps) {
   if (count === 0) return null;
 
   return (
-    <span className="absolute -top-0 -right-0 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-3 w-3 flex items-center justify-center font-medium text-[10px] leading-none">
       {count > 9 ? "9+" : count}
     </span>
   );
@@ -176,31 +176,36 @@ function MobileSearchBar({ isVisible }: { isVisible: boolean }) {
     }
   };
 
-  if (!isVisible) return null;
-
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="border-t border-white/40 px-4 py-3 bg-white/90 backdrop-blur-md"
+      initial={false}
+      animate={{
+        height: isVisible ? 72 : 0,
+        opacity: isVisible ? 1 : 0,
+      }}
+      transition={{
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1], // Custom easing for smooth motion
+      }}
+      className="overflow-hidden border-t border-white/40 bg-white/90 backdrop-blur-md"
     >
-      <form onSubmit={handleSubmit}>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-500" />
+      <div className="px-4 py-3">
+        <form onSubmit={handleSubmit}>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-500" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-12 pr-4 py-3 text-sm bg-white border border-gray-300 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm"
+              placeholder="Search for products, brands, categories..."
+              autoFocus={isVisible}
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-12 pr-4 py-3 text-sm bg-white border border-gray-300 rounded-xl leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm"
-            placeholder="Search for products, brands, categories..."
-            autoFocus
-          />
-        </div>
-      </form>
+        </form>
+      </div>
     </motion.div>
   );
 }

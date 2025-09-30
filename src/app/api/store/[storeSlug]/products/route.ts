@@ -161,7 +161,7 @@ export async function GET(
         product.reviews.length > 0
           ? product.reviews.reduce((sum, review) => sum + review.rating, 0) /
             product.reviews.length
-          : 0;
+          : null;
 
       // Determine pricing
       let price = Number(product.basePrice || 0);
@@ -209,8 +209,7 @@ export async function GET(
         originalPrice,
         image: product.images[0] || "/placeholder-product.jpg",
         images: product.images,
-        rating: Number(avgRating.toFixed(1)),
-        reviewCount: product._count.reviews,
+        rating: avgRating ? Number(avgRating.toFixed(1)) : null,       reviewCount: product._count.reviews,
         stock: totalStock,
         category: product.category.name,
         isNew,

@@ -139,8 +139,6 @@ export default function ReviewsSection({
 
     setIsSubmittingReport(true);
     try {
-      // You can create a report API endpoint later
-      // For now, just simulate the submission
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setReportModalOpen(false);
@@ -166,31 +164,33 @@ export default function ReviewsSection({
 
   return (
     <motion.div
-      className="w-full space-y-8"
+      className="w-full space-y-4 lg:space-y-8"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
       transition={{ duration: 0.2 }}
     >
       {/* Review Summary - Restructured Layout */}
-      <div className="bg-slate-50 rounded-xl p-6 w-full">
-        <div className="flex items-center justify-between w-full">
+      <div className="bg-slate-50 rounded-xl p-3 lg:p-6 w-full">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full space-y-3 lg:space-y-0">
           {/* Left Side - Title, Rating, and Total Count */}
           <div className="flex flex-col items-start">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">
+            <h3 className="text-sm lg:text-lg font-medium text-slate-900 mb-2 lg:mb-4">
               Ratings & Reviews
             </h3>
-            <div className="flex items-baseline space-x-2 mb-2">
-              <span className="text-4xl font-bold text-slate-900">
+            <div className="flex items-baseline space-x-1 lg:space-x-2 mb-1 lg:mb-2">
+              <span className="text-2xl lg:text-4xl font-bold text-slate-900">
                 {reviewCount > 0 ? avgRating.toFixed(1) : "0.0"}
               </span>
-              <span className="text-sm text-slate-600">out of 5</span>
+              <span className="text-[10px] lg:text-sm text-slate-600">
+                out of 5
+              </span>
             </div>
-            <div className="flex space-x-1 mb-2">
+            <div className="flex space-x-0.5 lg:space-x-1 mb-1 lg:mb-2">
               {[...Array(5)].map((_, i) => (
                 <StarIconSolid
                   key={i}
-                  className={`w-4 h-4 ${
+                  className={`w-3 h-3 lg:w-4 lg:h-4 ${
                     i < Math.floor(avgRating)
                       ? "text-yellow-400"
                       : "text-slate-300"
@@ -198,34 +198,39 @@ export default function ReviewsSection({
                 />
               ))}
             </div>
-            <div className="text-sm text-slate-600">
+            <div className="text-[10px] lg:text-sm text-slate-600">
               {reviewCount.toLocaleString()} Ratings
             </div>
           </div>
 
           {/* Right Side - Rating Distribution Bars */}
-          <div className="flex-1 max-w-2xl ml-8">
+          <div className="flex-1 max-w-2xl lg:ml-8">
             {[5, 4, 3, 2, 1].map((rating) => {
               const count = reviews.filter((r) => r.rating === rating).length;
               const percentage =
                 reviewCount > 0 ? (count / reviewCount) * 100 : 0;
 
               return (
-                <div key={rating} className="flex items-center text-sm mb-2">
+                <div
+                  key={rating}
+                  className="flex items-center text-[10px] lg:text-sm mb-1 lg:mb-2"
+                >
                   {/* Stars */}
-                  <div className="flex items-center justify-end w-16">
-                    {[...Array(rating)].map((_, starIndex) => (
-                      <StarIconSolid
-                        key={starIndex}
-                        className="w-3 h-3 text-yellow-400"
-                      />
-                    ))}
+                  <div className="flex items-center justify-end w-16 lg:w-20">
+                    <div className="flex items-center space-x-0.5">
+                      {[...Array(rating)].map((_, starIndex) => (
+                        <StarIconSolid
+                          key={starIndex}
+                          className="w-2.5 h-2.5 lg:w-3 lg:h-3 text-yellow-400 flex-shrink-0"
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="flex-1 min-w-[320px] bg-slate-200 rounded-full h-2 mx-3">
+                  <div className="flex-1 min-w-[120px] lg:min-w-[320px] bg-slate-200 rounded-full h-1.5 lg:h-2 mx-2 lg:mx-3">
                     <motion.div
-                      className="bg-slate-400 h-2 rounded-full"
+                      className="bg-slate-400 h-1.5 lg:h-2 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${percentage}%` }}
                       transition={{ duration: 0.5, delay: (5 - rating) * 0.1 }}
@@ -241,18 +246,18 @@ export default function ReviewsSection({
       {/* Write Review Section */}
       {session?.user && (
         <motion.div
-          className="bg-white border border-slate-200 rounded-xl p-6 w-full"
+          className="bg-white border border-slate-200 rounded-xl p-3 lg:p-6 w-full"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <h4 className="text-base font-medium text-slate-900 mb-4">
+          <h4 className="text-[10px] lg:text-base font-medium text-slate-900 mb-2 lg:mb-4">
             Write a Review
           </h4>
 
           {/* Interactive Rating Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+          <div className="mb-2 lg:mb-4">
+            <label className="block text-[10px] lg:text-sm font-medium text-slate-700 mb-1 lg:mb-2">
               Your Rating
             </label>
             <div className="flex space-x-1">
@@ -280,19 +285,19 @@ export default function ReviewsSection({
           </div>
 
           {/* Review Text */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+          <div className="mb-2 lg:mb-4">
+            <label className="block text-[10px] lg:text-sm font-medium text-slate-700 mb-1 lg:mb-2">
               Your Review (Optional)
             </label>
             <textarea
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               placeholder="Share your thoughts about this product..."
-              rows={4}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none text-sm"
+              rows={3}
+              className="w-full px-2 lg:px-3 py-1.5 lg:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none text-[10px] lg:text-sm"
               maxLength={500}
             />
-            <div className="text-right text-xs text-slate-500 mt-1">
+            <div className="text-right text-[8px] lg:text-xs text-slate-500 mt-1">
               {reviewText.length}/500 characters
             </div>
           </div>
@@ -303,7 +308,7 @@ export default function ReviewsSection({
             disabled={reviewRating === 0 || isSubmittingReview}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            className="flex items-center space-x-2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center space-x-1 lg:space-x-2 bg-slate-900 text-white px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-[10px] lg:text-sm font-medium hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer"
           >
             {isSubmittingReview ? (
               <div className="flex space-x-1">
@@ -335,32 +340,32 @@ export default function ReviewsSection({
 
       {/* Existing Reviews */}
       {reviews.length > 0 ? (
-        <div className="space-y-6 w-full">
+        <div className="space-y-3 lg:space-y-6 w-full">
           {reviews.slice(0, 10).map((review, index) => (
             <motion.div
               key={review.id}
-              className="bg-white border border-slate-200 rounded-xl p-6 w-full"
+              className="bg-white border border-slate-200 rounded-xl p-3 lg:p-6 w-full"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-                    <span className="text-slate-600 font-medium text-sm">
+              <div className="flex items-start justify-between mb-2 lg:mb-3">
+                <div className="flex items-center space-x-2 lg:space-x-3">
+                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                    <span className="text-slate-600 font-medium text-[10px] lg:text-sm">
                       {(review.user.name || "A").charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-slate-900">
+                    <div className="flex items-center space-x-1 lg:space-x-2">
+                      <span className="text-[10px] lg:text-sm font-medium text-slate-900">
                         {review.user.name || "Anonymous"}
                       </span>
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-0.5 lg:space-x-1">
                         {[...Array(5)].map((_, i) => (
                           <StarIconSolid
                             key={i}
-                            className={`w-3 h-3 ${
+                            className={`w-2.5 h-2.5 lg:w-3 lg:h-3 ${
                               i < review.rating
                                 ? "text-yellow-400"
                                 : "text-slate-300"
@@ -369,7 +374,7 @@ export default function ReviewsSection({
                         ))}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-[8px] lg:text-xs text-slate-500">
                       {new Date(review.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
@@ -434,7 +439,7 @@ export default function ReviewsSection({
                 )}
               </div>
               {review.comment && (
-                <p className="text-sm text-slate-700 leading-relaxed">
+                <p className="text-[10px] lg:text-sm text-slate-700 leading-relaxed">
                   {review.comment}
                 </p>
               )}
@@ -442,9 +447,9 @@ export default function ReviewsSection({
           ))}
 
           {reviews.length > 10 && (
-            <div className="text-center pt-6">
+            <div className="text-center pt-3 lg:pt-6">
               <motion.button
-                className="text-sm text-slate-600 hover:text-slate-900 font-medium cursor-pointer"
+                className="text-[10px] lg:text-sm text-slate-600 hover:text-slate-900 font-medium cursor-pointer"
                 whileHover={{ scale: 1.02 }}
               >
                 View all {reviewCount} reviews →
@@ -453,14 +458,14 @@ export default function ReviewsSection({
           )}
         </div>
       ) : (
-        <div className="bg-slate-50 rounded-xl p-8 text-center w-full">
-          <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <StarIcon className="w-8 h-8 text-slate-400" />
+        <div className="bg-slate-50 rounded-xl p-4 lg:p-8 text-center w-full">
+          <div className="w-12 h-12 lg:w-16 lg:h-16 bg-slate-200 rounded-full mx-auto mb-3 lg:mb-4 flex items-center justify-center">
+            <StarIcon className="w-6 h-6 lg:w-8 lg:h-8 text-slate-400" />
           </div>
-          <h4 className="text-base font-medium text-slate-900 mb-2">
+          <h4 className="text-sm lg:text-base font-medium text-slate-900 mb-2">
             No reviews yet
           </h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <p className="text-[10px] lg:text-sm text-slate-600 mb-3 lg:mb-4">
             Be the first to share your thoughts about this product.
           </p>
         </div>

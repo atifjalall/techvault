@@ -124,7 +124,7 @@ interface InsightsData {
   }>;
 }
 
-// Compact Stats Card Component - matching dashboard style
+// Mobile-responsive Stats Card Component with ultra-compact design
 function StatCard({
   title,
   value,
@@ -162,36 +162,40 @@ function StatCard({
       transition={{ duration: 0.3 }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-600">{title}</p>
-              <p className="text-xl font-bold text-gray-900">
+            <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-gray-600 truncate">
+                {title}
+              </p>
+              <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
                 {formatValue(value)}
               </p>
               {growth !== undefined && (
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-0.5 sm:space-x-1">
                   {isPositive ? (
-                    <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                    <ArrowTrendingUpIcon className="h-2 w-2 sm:h-3 sm:w-3 text-green-500 flex-shrink-0" />
                   ) : (
-                    <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                    <ArrowTrendingDownIcon className="h-2 w-2 sm:h-3 sm:w-3 text-red-500 flex-shrink-0" />
                   )}
                   <span
-                    className={`text-xs font-medium ${
+                    className={`text-[9px] sm:text-xs font-medium ${
                       isPositive ? "text-green-600" : "text-red-600"
                     }`}
                   >
                     {isPositive ? "+" : ""}
                     {growth.toFixed(1)}%
                   </span>
-                  <span className="text-xs text-gray-500">vs last month</span>
+                  <span className="text-[8px] sm:text-xs text-gray-500 hidden sm:inline">
+                    vs last month
+                  </span>
                 </div>
               )}
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-7 h-7 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-0`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -302,20 +306,20 @@ function RecommendationCard({
   );
 }
 
-// Professional Loading Skeletons - matching dashboard style
+// Mobile-responsive Loading Skeletons
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-32" />
+              <div className="space-y-1 sm:space-y-2 flex-1">
+                <Skeleton className="h-2 sm:h-3 w-14 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-10 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-32" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -327,14 +331,14 @@ function StatsSkeleton() {
 function ChartSkeleton() {
   return (
     <Card className="border-0 shadow-sm bg-white">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2 sm:pb-3">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-3 sm:h-4 w-20 sm:w-28" />
+          <Skeleton className="h-5 sm:h-6 w-16 sm:w-20" />
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <Skeleton className="h-[220px] w-full" />
+        <Skeleton className="h-[140px] sm:h-[220px] w-full" />
       </CardContent>
     </Card>
   );
@@ -343,27 +347,27 @@ function ChartSkeleton() {
 function TableSkeleton() {
   return (
     <Card className="border-0 shadow-sm bg-white">
-      <CardHeader className="pb-3">
-        <Skeleton className="h-4 w-32" />
+      <CardHeader className="pb-2 sm:pb-3">
+        <Skeleton className="h-3 sm:h-4 w-24 sm:w-32" />
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-1.5 sm:p-2 bg-gray-50 rounded-lg"
             >
-              <div className="flex items-center space-x-2">
-                <Skeleton className="w-4 h-4" />
-                <Skeleton className="w-6 h-6 rounded-md" />
-                <div className="space-y-1">
-                  <Skeleton className="h-3 w-32" />
-                  <Skeleton className="h-3 w-20" />
+              <div className="flex items-center space-x-1.5 sm:space-x-2 flex-1">
+                <Skeleton className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Skeleton className="w-5 h-5 sm:w-6 sm:h-6 rounded-md" />
+                <div className="space-y-0.5 sm:space-y-1 flex-1">
+                  <Skeleton className="h-2.5 sm:h-3 w-20 sm:w-32" />
+                  <Skeleton className="h-2 sm:h-3 w-14 sm:w-20" />
                 </div>
               </div>
-              <div className="text-right space-y-1">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-12" />
+              <div className="text-right space-y-0.5 sm:space-y-1">
+                <Skeleton className="h-2.5 sm:h-3 w-12 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-8 sm:w-12" />
               </div>
             </div>
           ))}
@@ -537,40 +541,53 @@ export default function VendorInsightsDashboard() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="p-6 space-y-6">
-        {/* Header - matching dashboard style */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Insights</h1>
-            <p className="text-sm text-gray-600">
+      <div className="p-2 sm:p-6 space-y-3 sm:space-y-6">
+        {/* Mobile-optimized Header */}
+        <div className="flex items-start sm:items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-xl font-bold text-gray-900">
+              Insights
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600 truncate">
               Analytics and performance metrics for your store
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-24 h-7 bg-white border-gray-200 text-xs cursor-pointer">
+              <SelectTrigger className="w-16 sm:w-24 h-6 sm:h-7 bg-white border-gray-200 text-[10px] sm:text-xs cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7d">7 days</SelectItem>
-                <SelectItem value="30d">30 days</SelectItem>
-                <SelectItem value="90d">3 months</SelectItem>
-                <SelectItem value="1y">1 year</SelectItem>
+                <SelectItem value="7d" className="text-[10px] sm:text-xs">
+                  7 days
+                </SelectItem>
+                <SelectItem value="30d" className="text-[10px] sm:text-xs">
+                  30 days
+                </SelectItem>
+                <SelectItem value="90d" className="text-[10px] sm:text-xs">
+                  3 months
+                </SelectItem>
+                <SelectItem value="1y" className="text-[10px] sm:text-xs">
+                  1 year
+                </SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" className="h-7 px-3 text-xs cursor-pointer">
-              <ArrowDownTrayIcon className="w-3 h-3 mr-1.5" />
-              Export
+            <Button
+              size="sm"
+              className="h-6 sm:h-7 px-2 sm:px-3 text-[10px] sm:text-xs cursor-pointer"
+            >
+              <ArrowDownTrayIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Export</span>
             </Button>
           </div>
         </div>
 
-        {/* Stats Grid - compact style matching dashboard */}
+        {/* Mobile-optimized Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
         >
           <StatCard
             title="Total Revenue"
@@ -744,57 +761,57 @@ export default function VendorInsightsDashboard() {
           </div>
         </div>
 
-        {/* Top Products and Performance */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        {/* Mobile-optimized Top Products and Performance */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-6">
           {/* Top Products */}
           <div className="xl:col-span-3">
             <Card className="border-0 shadow-sm bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+              <CardHeader className="pb-2 sm:pb-3">
+                <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                   Top Products
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 {data.topProducts.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {data.topProducts.map((product, index) => (
                       <motion.div
                         key={product.id}
                         whileHover={{ x: 2 }}
-                        className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center justify-between p-1.5 sm:p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                       >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1.5 sm:space-x-2 flex-1 min-w-0">
                           <Badge
                             variant="secondary"
-                            className="text-xs font-bold w-5 h-4 rounded text-center p-0 flex items-center justify-center"
+                            className="text-[9px] sm:text-xs font-bold w-5 h-4 sm:w-6 sm:h-5 rounded text-center px-1 py-0.5 flex items-center justify-center flex-shrink-0"
                           >
                             {index + 1}
                           </Badge>
-                          <div className="relative">
+                          <div className="relative flex-shrink-0">
                             <Image
                               src={product.image}
                               alt={product.name}
-                              width={24}
-                              height={24}
-                              className="rounded-md object-cover"
+                              width={20}
+                              height={20}
+                              className="w-5 h-5 sm:w-6 sm:h-6 rounded-md object-cover"
                             />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 truncate max-w-48">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
                               {product.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-[8px] sm:text-xs text-gray-500 truncate">
                               {product.orders} orders • {product.stock} in stock
                             </p>
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                             {formatPrice(product.revenue)}
                           </p>
                           <div
-                            className={`flex items-center justify-end text-xs ${
+                            className={`flex items-center justify-end text-[9px] sm:text-xs ${
                               product.growth > 0
                                 ? "text-green-600"
                                 : "text-red-600"
@@ -827,13 +844,13 @@ export default function VendorInsightsDashboard() {
           {/* Performance Metrics */}
           <div>
             <Card className="border-0 shadow-sm bg-white h-full">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+              <CardHeader className="pb-2 sm:pb-3">
+                <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                   Performance
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {[
                     {
                       label: "Page Views",
@@ -864,15 +881,15 @@ export default function VendorInsightsDashboard() {
                   ].map((metric) => (
                     <div
                       key={metric.label}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-1.5 sm:p-2 bg-gray-50 rounded-lg"
                     >
-                      <div className="flex items-center space-x-2">
-                        <metric.icon className="w-3 h-3 text-gray-600" />
-                        <span className="text-xs font-medium text-gray-700">
+                      <div className="flex items-center space-x-1.5 sm:space-x-2 flex-1 min-w-0">
+                        <metric.icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600 flex-shrink-0" />
+                        <span className="text-[9px] sm:text-xs font-medium text-gray-700 truncate">
                           {metric.label}
                         </span>
                       </div>
-                      <span className="text-xs font-semibold text-gray-900">
+                      <span className="text-[9px] sm:text-xs font-semibold text-gray-900 flex-shrink-0">
                         {metric.value}
                       </span>
                     </div>
@@ -883,33 +900,33 @@ export default function VendorInsightsDashboard() {
           </div>
         </div>
 
-        {/* Geographic and Device Data */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Mobile-optimized Geographic and Device Data */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
           {/* Geographic Distribution */}
           <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                 Sales by Country
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {data.geographicData.map((country) => (
                   <div
                     key={country.country}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-1.5 sm:p-2 bg-gray-50 rounded-lg"
                   >
-                    <div className="flex items-center space-x-2">
-                      <MapPinIcon className="w-3 h-3 text-gray-600" />
-                      <span className="text-sm font-medium text-gray-900">
+                    <div className="flex items-center space-x-1.5 sm:space-x-2 flex-1 min-w-0">
+                      <MapPinIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-600 flex-shrink-0" />
+                      <span className="text-[10px] sm:text-sm font-medium text-gray-900 truncate">
                         {country.country}
                       </span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900">
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                         {formatPrice(country.revenue)}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[8px] sm:text-xs text-gray-500">
                         {country.orders} orders ({country.percentage}%)
                       </p>
                     </div>
@@ -921,36 +938,32 @@ export default function VendorInsightsDashboard() {
 
           {/* Device Analytics */}
           <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                 Traffic by Device
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <ResponsiveContainer width="100%" height={160}>
+              <ResponsiveContainer width="100%" height={100}>
                 <BarChart data={data.deviceData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis
                     dataKey="device"
                     stroke="#64748b"
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
+                    fontSize={8}
+                    tick={{ fontSize: 8 }}
                   />
-                  <YAxis
-                    stroke="#64748b"
-                    fontSize={10}
-                    tick={{ fontSize: 10 }}
-                  />
+                  <YAxis stroke="#64748b" fontSize={8} tick={{ fontSize: 8 }} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
                     dataKey="visitors"
                     fill="#3b82f6"
-                    radius={[3, 3, 0, 0]}
+                    radius={[2, 2, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
 
-              <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                 {data.deviceData.map((device) => {
                   const IconComponent =
                     device.device === "Desktop"
@@ -962,13 +975,13 @@ export default function VendorInsightsDashboard() {
                   return (
                     <div
                       key={device.device}
-                      className="text-center p-2 bg-gray-50 rounded-lg"
+                      className="text-center p-1.5 sm:p-2 bg-gray-50 rounded-lg"
                     >
-                      <IconComponent className="w-4 h-4 text-gray-600 mx-auto mb-1" />
-                      <p className="text-xs font-medium text-gray-900">
+                      <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 mx-auto mb-0.5 sm:mb-1" />
+                      <p className="text-[9px] sm:text-xs font-medium text-gray-900">
                         {device.device}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[8px] sm:text-xs text-gray-500">
                         {device.conversion.toFixed(1)}% conv.
                       </p>
                     </div>
@@ -979,7 +992,7 @@ export default function VendorInsightsDashboard() {
           </Card>
         </div>
 
-        {/* Recommendations */}
+        {/* Mobile-optimized Recommendations */}
         {data.recommendations.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -987,13 +1000,13 @@ export default function VendorInsightsDashboard() {
             transition={{ duration: 0.3, delay: 0.4 }}
           >
             <Card className="border-0 shadow-sm bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+              <CardHeader className="pb-2 sm:pb-3">
+                <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                   Recommendations
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {data.recommendations.map((recommendation, index) => (
                     <RecommendationCard
                       key={index}

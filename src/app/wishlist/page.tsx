@@ -55,14 +55,14 @@ function SimpleDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-left shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm cursor-pointer"
+        className="relative w-full bg-white border border-gray-200 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-left shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-xs lg:text-sm cursor-pointer h-8 lg:h-10"
       >
         <span className="block truncate">
           {selectedOption?.label || placeholder}
         </span>
-        <span className="absolute inset-y-0 right-0 flex items-center pr-2">
+        <span className="absolute inset-y-0 right-0 flex items-center pr-1.5 lg:pr-2">
           <ChevronUpDownIcon
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+            className={`h-3 lg:h-4 w-3 lg:w-4 text-gray-400 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
@@ -84,11 +84,11 @@ function SimpleDropdown({
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className="relative w-full px-3 py-2 text-left text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 flex items-center justify-between cursor-pointer"
+                className="relative w-full px-2 lg:px-3 py-1.5 lg:py-2 text-left text-xs lg:text-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50 transition-colors duration-150 flex items-center justify-between cursor-pointer"
               >
                 <span className="block truncate">{option.label}</span>
                 {value === option.value && (
-                  <CheckIcon className="h-4 w-4 text-gray-900" />
+                  <CheckIcon className="h-3 lg:h-4 w-3 lg:w-4 text-gray-900" />
                 )}
               </button>
             ))}
@@ -104,40 +104,61 @@ function WishlistSkeleton() {
   return (
     <div className="space-y-4">
       {/* Breadcrumb Skeleton */}
-      <div className="w-full pt-5 pb-4">
-        <div className="flex items-center space-x-2 ml-2">
-          <Skeleton className="h-4 w-12" />
-          <Skeleton className="h-4 w-1" />
-          <Skeleton className="h-4 w-20" />
+      <div className="w-full pt-3 lg:pt-5 pb-2 lg:pb-4">
+        <div className="flex items-center space-x-1.5 lg:space-x-2 ml-1 lg:ml-2">
+          <Skeleton className="h-3 lg:h-4 w-10 lg:w-12" />
+          <Skeleton className="h-3 lg:h-4 w-0.5 lg:w-1" />
+          <Skeleton className="h-3 lg:h-4 w-16 lg:w-20" />
         </div>
       </div>
 
       {/* Header Skeleton */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 lg:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 lg:gap-4">
           <div>
-            <Skeleton className="h-6 w-32 mb-2" /> {/* My Wishlist */}
-            <Skeleton className="h-4 w-20" /> {/* X items saved */}
+            <Skeleton className="h-5 lg:h-6 w-28 lg:w-32 mb-1.5 lg:mb-2" />{" "}
+            {/* My Wishlist */}
+            <Skeleton className="h-3 lg:h-4 w-16 lg:w-20" />{" "}
+            {/* X items saved */}
           </div>
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-9 w-32" /> {/* Add All to Cart button */}
+          <div className="flex items-center gap-2 lg:gap-3">
+            <Skeleton className="h-8 lg:h-9 w-28 lg:w-32" />{" "}
+            {/* Add All to Cart button */}
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Skeleton */}
+      <div className="bg-white rounded-xl border border-gray-200 p-3 lg:p-4 mb-4 lg:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
+          {/* Category Filter Skeleton */}
+          <div className="flex items-center gap-1.5 lg:gap-2">
+            <Skeleton className="h-3 lg:h-4 w-3 lg:w-4 animate-pulse" />
+            <Skeleton className="h-3 lg:h-4 w-14 lg:w-16 animate-pulse" />
+            <Skeleton className="h-8 lg:h-9 w-40 lg:w-52 rounded-lg animate-pulse" />
+          </div>
+
+          {/* Sort Filter Skeleton */}
+          <div className="flex items-center gap-1.5 lg:gap-2">
+            <Skeleton className="h-3 lg:h-4 w-10 lg:w-12 animate-pulse" />
+            <Skeleton className="h-8 lg:h-9 w-36 lg:w-48 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
 
       {/* Products Grid Skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
         {[...Array(4)].map((_, index) => (
           <div
             key={index}
             className="bg-white rounded-xl border border-gray-200 overflow-hidden"
           >
             <div className="aspect-square bg-gray-200 animate-pulse"></div>
-            <div className="p-4 space-y-3">
-              <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-              <div className="h-3 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-              <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+            <div className="p-2 lg:p-4 space-y-2 lg:space-y-3">
+              <div className="h-2.5 lg:h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+              <div className="h-3 lg:h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-2.5 lg:h-3 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+              <div className="h-4 lg:h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
             </div>
           </div>
         ))}
@@ -312,24 +333,24 @@ export default function WishlistPage() {
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="max-w-2xl mx-auto px-3 lg:px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HeartIcon className="w-10 h-10 text-gray-400" />
+            <div className="w-16 lg:w-20 h-16 lg:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+              <HeartIcon className="w-8 lg:w-10 h-8 lg:h-10 text-gray-400" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-1.5 lg:mb-2">
               Sign in to view your wishlist
             </h1>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-xs lg:text-sm text-gray-500 mb-4 lg:mb-6">
               Create an account or sign in to save items you love for later.
             </p>
             <Link
               href="/signin"
-              className="inline-flex items-center px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+              className="inline-flex items-center px-4 lg:px-6 py-2.5 lg:py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer text-sm lg:text-base"
             >
               Sign In
             </Link>
@@ -361,22 +382,24 @@ export default function WishlistPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="max-w-2xl mx-auto px-3 sm:px-6 lg:px-8 py-16 lg:py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HeartIcon className="w-10 h-10 text-red-500" />
+            <div className="w-16 lg:w-20 h-16 lg:h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+              <HeartIcon className="w-8 lg:w-10 h-8 lg:h-10 text-red-500" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-1.5 lg:mb-2">
               Error loading wishlist
             </h1>
-            <p className="text-sm text-gray-500 mb-6">{error}</p>
+            <p className="text-xs lg:text-sm text-gray-500 mb-4 lg:mb-6">
+              {error}
+            </p>
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+              className="inline-flex items-center px-4 lg:px-6 py-2.5 lg:py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer text-sm lg:text-base"
             >
               Try Again
             </button>
@@ -391,24 +414,24 @@ export default function WishlistPage() {
   if (wishlistItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="max-w-2xl mx-auto px-3 lg:px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HeartIcon className="w-10 h-10 text-gray-400" />
+            <div className="w-16 lg:w-20 h-16 lg:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 lg:mb-6">
+              <HeartIcon className="w-8 lg:w-10 h-8 lg:h-10 text-gray-400" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-1.5 lg:mb-2">
               Your wishlist is empty
             </h1>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-xs lg:text-sm text-gray-500 mb-4 lg:mb-6">
               Save items you love for later by clicking the heart icon.
             </p>
             <Link
               href="/products"
-              className="inline-flex items-center px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+              className="inline-flex items-center px-4 lg:px-6 py-2.5 lg:py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer text-sm lg:text-base"
             >
               Start Shopping
             </Link>
@@ -422,8 +445,8 @@ export default function WishlistPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
       {/* Header with Breadcrumb */}
-      <div className="pt-8 px-4 pb-4">
-        <div className="container mx-auto px-4">
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -452,30 +475,32 @@ export default function WishlistPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="container mx-auto px-4 py-4 space-y-4"
+        className="container mx-auto px-3 lg:px-4 py-3 lg:py-4 space-y-3 lg:space-y-4"
       >
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 lg:gap-4">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">My Wishlist</h1>
-              <p className="text-gray-500 mt-1 text-xs">
+              <h1 className="text-base lg:text-lg font-bold text-gray-900">
+                My Wishlist
+              </h1>
+              <p className="text-gray-500 mt-0.5 lg:mt-1 text-[10px] lg:text-xs">
                 {wishlistItems.length}{" "}
                 {wishlistItems.length === 1 ? "item" : "items"} saved
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 lg:gap-3">
               {wishlistItems.some((item) => item.inStock) && (
                 <button
                   onClick={moveAllToCart}
                   disabled={cartLoading === "all"}
-                  className="inline-flex items-center px-3 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="inline-flex items-center px-2.5 lg:px-3 py-1.5 lg:py-2 bg-black text-white rounded-lg text-xs lg:text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {cartLoading === "all" ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-3 lg:w-4 h-3 lg:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5 lg:mr-2" />
                   ) : (
-                    <ShoppingBagIcon className="w-4 h-4 mr-2" />
+                    <ShoppingBagIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-1.5 lg:mr-2" />
                   )}
                   Add All to Cart
                 </button>
@@ -486,32 +511,32 @@ export default function WishlistPage() {
 
         {/* Filters and Sorting */}
         {wishlistItems.length > 1 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 lg:p-4 mb-4 lg:mb-6">
+            <div className="flex flex-col sm:flex-row gap-3 lg:gap-4">
               {/* Category Filter */}
-              <div className="flex items-center gap-2">
-                <FunnelIcon className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-1.5 lg:gap-2">
+                <FunnelIcon className="w-3 lg:w-4 h-3 lg:h-4 text-gray-500" />
+                <span className="text-xs lg:text-sm font-medium text-gray-700">
                   Category:
                 </span>
                 <SimpleDropdown
                   options={categoryOptions}
                   value={selectedCategory}
                   onChange={setSelectedCategory}
-                  className="w-52"
+                  className="w-40 lg:w-52"
                 />
               </div>
 
               {/* Sort */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-1.5 lg:gap-2">
+                <span className="text-xs lg:text-sm font-medium text-gray-700">
                   Sort by:
                 </span>
                 <SimpleDropdown
                   options={sortOptions}
                   value={sortBy}
                   onChange={setSortBy}
-                  className="w-48"
+                  className="w-36 lg:w-48"
                 />
               </div>
             </div>
@@ -519,7 +544,7 @@ export default function WishlistPage() {
         )}
 
         {/* Wishlist Items Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
           <AnimatePresence>
             {filteredItems.map((item) => (
               <motion.div
@@ -564,12 +589,12 @@ export default function WishlistPage() {
 
         {/* Empty State for Filtered Results */}
         {filteredItems.length === 0 && wishlistItems.length > 0 && (
-          <div className="text-center py-12">
-            <FunnelIcon className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-base font-medium text-gray-900 mb-2">
+          <div className="text-center py-8 lg:py-12">
+            <FunnelIcon className="w-8 lg:w-10 h-8 lg:h-10 text-gray-400 mx-auto mb-2 lg:mb-3" />
+            <h3 className="text-sm lg:text-base font-medium text-gray-900 mb-1.5 lg:mb-2">
               No items match your filters
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
               Try adjusting your category or sort preferences.
             </p>
             <button
@@ -577,7 +602,7 @@ export default function WishlistPage() {
                 setSelectedCategory("all");
                 setSortBy("newest");
               }}
-              className="text-sm text-black font-medium hover:text-gray-700 transition-colors cursor-pointer"
+              className="text-xs lg:text-sm text-black font-medium hover:text-gray-700 transition-colors cursor-pointer"
             >
               Clear Filters
             </button>

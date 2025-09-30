@@ -8,7 +8,7 @@ import {
   ChevronRightIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -237,9 +237,9 @@ export default function ProductFormSteps({
           <SubmissionSkeleton />
         ) : (
           <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-3">
+            <CardContent className="p-2 lg:p-3">
               <div className="flex items-center justify-between">
-                {/* Previous Button */}
+                {/* Previous Button - Mobile Optimized */}
                 <motion.div
                   whileHover={{ scale: currentStep === 1 ? 1 : 1.02 }}
                   whileTap={{ scale: currentStep === 1 ? 1 : 0.98 }}
@@ -249,26 +249,27 @@ export default function ProductFormSteps({
                     onClick={prevStep}
                     disabled={currentStep === 1}
                     size="sm"
-                    className={`cursor-pointer transition-colors ${
+                    className={`cursor-pointer transition-colors h-7 lg:h-8 px-2 lg:px-3 text-[10px] lg:text-xs ${
                       currentStep === 1
                         ? "opacity-40 cursor-not-allowed"
                         : "hover:bg-gray-50"
                     }`}
                   >
-                    <ChevronLeftIcon className="w-3 h-3 mr-1" />
-                    Previous
+                    <ChevronLeftIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-1" />
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
                 </motion.div>
 
-                {/* Clean Progress Dots */}
-                <div className="flex space-x-1.5">
+                {/* Clean Progress Dots - Mobile Optimized */}
+                <div className="flex space-x-1 lg:space-x-1.5">
                   {[1, 2, 3, 4].map((step) => (
                     <motion.button
                       key={step}
                       onClick={() => setCurrentStep(step)}
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.9 }}
-                      className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                      className={`w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-full transition-all cursor-pointer ${
                         currentStep >= step
                           ? "bg-blue-600"
                           : currentStep === step - 1
@@ -279,7 +280,7 @@ export default function ProductFormSteps({
                   ))}
                 </div>
 
-                {/* Next/Submit Button */}
+                {/* Next/Submit Button - Mobile Optimized */}
                 {currentStep < 4 ? (
                   <motion.div
                     whileHover={{ scale: 1.02 }}
@@ -288,10 +289,11 @@ export default function ProductFormSteps({
                     <Button
                       onClick={nextStep}
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 !text-white"
+                      className="bg-blue-600 hover:bg-blue-700 !text-white h-7 lg:h-8 px-2 lg:px-3 text-[10px] lg:text-xs"
                     >
-                      Next
-                      <ChevronRightIcon className="w-3 h-3 ml-1 !text-white" />
+                      <span className="hidden sm:inline">Next</span>
+                      <span className="sm:hidden">Next</span>
+                      <ChevronRightIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3 ml-1 !text-white" />
                     </Button>
                   </motion.div>
                 ) : (
@@ -303,21 +305,25 @@ export default function ProductFormSteps({
                       onClick={onSubmit}
                       disabled={isSubmitting}
                       size="sm"
-                      className={`cursor-pointer ${
+                      className={`cursor-pointer h-7 lg:h-8 px-2 lg:px-3 text-[10px] lg:text-xs ${
                         isSubmitting
                           ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-green-600 hover:bg-green-700"
+                          : "bg-gry-600 hover:bg-grey-700"
                       }`}
                     >
                       {isSubmitting ? (
                         <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
-                          Creating...
+                          <div className="w-2.5 h-2.5 lg:w-3 lg:h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                          <span className="hidden sm:inline">Creating...</span>
+                          <span className="sm:hidden">Creating</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircleIcon className="w-3 h-3 mr-1" />
-                          Create Product
+                          <CheckCircleIcon className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-1" />
+                          <span className="hidden sm:inline">
+                            Create Product
+                          </span>
+                          <span className="sm:hidden">Create</span>
                         </>
                       )}
                     </Button>
@@ -325,7 +331,7 @@ export default function ProductFormSteps({
                 )}
               </div>
 
-              {/* Compact Error Summary */}
+              {/* Compact Error Summary - Mobile Optimized */}
               <AnimatePresence>
                 {Object.keys(errors).length > 0 && (
                   <motion.div
@@ -335,8 +341,8 @@ export default function ProductFormSteps({
                     transition={{ duration: 0.2 }}
                     className="mt-2 pt-2 border-t border-gray-100"
                   >
-                    <div className="bg-red-50 rounded-md p-2">
-                      <p className="text-xs font-medium text-red-800 mb-1">
+                    <div className="bg-red-50 rounded-md p-1.5 lg:p-2">
+                      <p className="text-[10px] lg:text-xs font-medium text-red-800 mb-1">
                         Please fix {Object.keys(errors).length} issue
                         {Object.keys(errors).length > 1 ? "s" : ""}:
                       </p>
@@ -344,12 +350,15 @@ export default function ProductFormSteps({
                         {Object.entries(errors)
                           .slice(0, 2)
                           .map(([key, message]) => (
-                            <p key={key} className="text-xs text-red-600">
+                            <p
+                              key={key}
+                              className="text-[9px] lg:text-xs text-red-600"
+                            >
                               • {message}
                             </p>
                           ))}
                         {Object.keys(errors).length > 2 && (
-                          <p className="text-xs text-red-500">
+                          <p className="text-[9px] lg:text-xs text-red-500">
                             + {Object.keys(errors).length - 2} more
                           </p>
                         )}

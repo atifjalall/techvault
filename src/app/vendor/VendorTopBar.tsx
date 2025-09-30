@@ -10,20 +10,16 @@ import {
   ChevronDownIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  UserIcon,
-  HomeIcon,
   Bars3Icon,
-  XMarkIcon,
   CheckIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   ShoppingBagIcon,
   ClockIcon,
-  CurrencyEuroIcon,
 } from "@heroicons/react/24/outline";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/buttonSidebar";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -363,22 +359,22 @@ export default function VendorTopBar({
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-12">
+      <div className="px-2 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-10 lg:h-12">
           {/* Left section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 lg:space-x-4">
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden p-1.5 hover:bg-gray-100 cursor-pointer"
+              className="lg:hidden p-1 hover:bg-gray-100 cursor-pointer"
               onClick={onMobileMenuToggle}
             >
-              <Bars3Icon className="h-4 w-4" />
+              <Bars3Icon className="h-3 w-3 lg:h-4 lg:w-4" />
             </Button>
 
-            {/* Breadcrumbs */}
-            <nav className="hidden sm:flex items-center space-x-1 text-xs">
+            {/* Breadcrumbs - Mobile ultra-compact */}
+            <nav className="hidden lg:flex items-center space-x-1 text-xs">
               {finalBreadcrumbs.map((crumb, index) => (
                 <div
                   key={`${crumb.name}-${index}`}
@@ -403,14 +399,31 @@ export default function VendorTopBar({
               ))}
             </nav>
 
-            {/* Page title for mobile */}
-            <div className="sm:hidden">
-              <h1 className="text-sm font-semibold text-gray-900">
-                {title ||
-                  finalBreadcrumbs[finalBreadcrumbs.length - 1]?.name ||
-                  "Dashboard"}
-              </h1>
-            </div>
+            {/* Mobile breadcrumbs - Ultra compact */}
+            <nav className="flex lg:hidden items-center space-x-1 text-[10px]">
+              {finalBreadcrumbs.slice(-2).map((crumb, index) => (
+                <div
+                  key={`${crumb.name}-${index}`}
+                  className="flex items-center"
+                >
+                  {index > 0 && (
+                    <ChevronDownIcon className="h-2 w-2 text-gray-400 mx-1 rotate-[-90deg]" />
+                  )}
+                  {crumb.href ? (
+                    <Link
+                      href={crumb.href}
+                      className="text-gray-500 hover:text-gray-900 transition-colors cursor-pointer truncate max-w-20"
+                    >
+                      {crumb.name}
+                    </Link>
+                  ) : (
+                    <span className="text-gray-900 font-medium truncate max-w-20">
+                      {crumb.name}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </nav>
           </div>
 
           {/* Right section */}
@@ -421,41 +434,35 @@ export default function VendorTopBar({
               onOpenChange={setNotificationOpen}
             >
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="relative p-1.5 hover:bg-gray-100 rounded-md cursor-pointer"
-                >
-                  <BellIcon className="h-4 w-4 text-gray-600" />
+                <button className="relative inline-flex items-center justify-center p-1.5 lg:p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-colors">
+                  <BellIcon className="h-4 w-4 lg:h-6 lg:w-6 text-gray-600" />
                   {unreadCount > 0 && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1"
+                      className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] lg:h-5 lg:min-w-[20px] px-1 lg:px-1.5 bg-red-500 text-white text-[8px] lg:text-[11px] font-bold flex items-center justify-center rounded-full shadow-md"
                     >
-                      <Badge className="h-4 w-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </Badge>
+                      {unreadCount > 9 ? "9+" : unreadCount}
                     </motion.div>
                   )}
-                </Button>
+                </button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 align="end"
-                className="w-80 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0 max-h-96 overflow-hidden"
+                className="w-72 lg:w-80 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0 max-h-80 lg:max-h-96 overflow-hidden"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                  <div className="flex items-center space-x-2">
-                    <BellIcon className="h-4 w-4 text-gray-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">
+                <div className="flex items-center justify-between p-2 lg:p-3 border-b border-gray-100">
+                  <div className="flex items-center space-x-1.5 lg:space-x-2">
+                    <BellIcon className="h-4 w-4 lg:h-5 lg:w-5 text-gray-600" />
+                    <h3 className="text-xs lg:text-sm font-semibold text-gray-900">
                       Notifications
                     </h3>
                     {unreadCount > 0 && (
-                      <Badge className="bg-red-100 text-red-800 text-xs">
+                      <span className="inline-flex items-center px-1.5 lg:px-2 py-0.5 bg-red-100 text-red-800 text-[8px] lg:text-[10px] font-medium rounded-md h-5">
                         {unreadCount} new
-                      </Badge>
+                      </span>
                     )}
                   </div>
                   {unreadCount > 0 && (
@@ -463,7 +470,7 @@ export default function VendorTopBar({
                       variant="ghost"
                       size="sm"
                       onClick={markAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-700 p-1 cursor-pointer"
+                      className="text-[8px] lg:text-xs text-blue-600 hover:text-blue-700 p-1 cursor-pointer"
                     >
                       Mark all read
                     </Button>
@@ -471,7 +478,7 @@ export default function VendorTopBar({
                 </div>
 
                 {/* Notifications List */}
-                <div className="max-h-72 overflow-y-auto">
+                <div className="max-h-60 lg:max-h-72 overflow-y-auto">
                   {isLoadingNotifications ? (
                     // Skeleton loading - safe array creation
                     Array.from({ length: 3 }).map((_, i) => (
@@ -511,7 +518,7 @@ export default function VendorTopBar({
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className={`px-3 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          className={`px-2 lg:px-3 py-2 lg:py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
                             !notification.isRead ? "bg-blue-50" : ""
                           } ${
                             notification.severity === "CRITICAL"
@@ -531,8 +538,8 @@ export default function VendorTopBar({
                             }
                           }}
                         >
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                          <div className="flex items-start space-x-2 lg:space-x-3">
+                            <div className="flex-shrink-0 w-6 h-6 lg:w-8 lg:h-8 bg-gray-100 rounded-full flex items-center justify-center">
                               {getNotificationIcon(
                                 notification.type,
                                 notification.severity
@@ -541,7 +548,7 @@ export default function VendorTopBar({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <p
-                                  className={`text-xs font-medium ${
+                                  className={`text-[10px] lg:text-xs font-medium ${
                                     !notification.isRead
                                       ? "text-gray-900"
                                       : "text-gray-700"
@@ -549,15 +556,15 @@ export default function VendorTopBar({
                                 >
                                   {getNotificationTitle(notification.type)}
                                 </p>
-                                <p className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                                <p className="text-[8px] lg:text-xs text-gray-400 flex-shrink-0 ml-1 lg:ml-2">
                                   {formatTimeAgo(notification.createdAt)}
                                 </p>
                               </div>
-                              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                              <p className="text-[9px] lg:text-xs text-gray-600 mt-0.5 lg:mt-1 leading-relaxed">
                                 {notification.message}
                               </p>
                               {notification.severity === "CRITICAL" && (
-                                <Badge className="mt-1 bg-red-100 text-red-800 text-xs">
+                                <Badge className="mt-1 bg-red-100 text-red-800 text-[8px] lg:text-xs h-5">
                                   Urgent
                                 </Badge>
                               )}
@@ -574,11 +581,11 @@ export default function VendorTopBar({
 
                 {/* Footer */}
                 {notifications.length > 0 && (
-                  <div className="p-2 border-t border-gray-100 bg-gray-50">
+                  <div className="p-1.5 lg:p-2 border-t border-gray-100 bg-gray-50">
                     <Link
                       href="/vendor/notifications"
                       onClick={() => setNotificationOpen(false)}
-                      className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer py-1"
+                      className="block text-center text-[10px] lg:text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer py-1"
                     >
                       View all notifications →
                     </Link>
@@ -592,53 +599,53 @@ export default function VendorTopBar({
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                  className="flex items-center space-x-1 lg:space-x-2 px-1.5 lg:px-2 py-1 lg:py-1.5 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                 >
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="h-5 w-5 lg:h-6 lg:w-6">
                     <AvatarImage
                       src={session?.user?.image || ""}
                       alt={session?.user?.name || ""}
                     />
-                    <AvatarFallback className="bg-black text-white text-xs">
+                    <AvatarFallback className="bg-black text-white text-[8px] lg:text-xs">
                       {getUserInitials(session?.user?.name || "V")}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="hidden md:block text-left">
+                  <div className="hidden lg:block text-left">
                     <p className="text-xs font-medium text-gray-900 max-w-16 truncate">
                       {session?.user?.name?.split(" ")[0] || "Vendor"}
                     </p>
                     <p className="text-xs text-gray-500">Vendor</p>
                   </div>
-                  <ChevronDownIcon className="h-3 w-3 text-gray-400" />
+                  <ChevronDownIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-gray-400" />
                 </Button>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 align="end"
-                className="w-56 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1"
+                className="w-48 lg:w-56 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-0.5 lg:p-1"
               >
                 {/* User info header */}
-                <DropdownMenuLabel className="p-2 border-b border-gray-100">
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8">
+                <DropdownMenuLabel className="p-1.5 lg:p-2 border-b border-gray-100">
+                  <div className="flex items-center space-x-1.5 lg:space-x-2">
+                    <Avatar className="h-6 w-6 lg:h-8 lg:w-8">
                       <AvatarImage
                         src={session?.user?.image || ""}
                         alt={session?.user?.name || ""}
                       />
-                      <AvatarFallback className="bg-black text-white">
+                      <AvatarFallback className="bg-black text-white text-[8px] lg:text-xs">
                         {getUserInitials(session?.user?.name || "V")}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 truncate">
+                      <p className="text-[10px] lg:text-xs font-semibold text-gray-900 truncate">
                         {session?.user?.name || "Vendor"}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-[8px] lg:text-xs text-gray-500 truncate">
                         {session?.user?.email}
                       </p>
                       <Badge
                         variant="secondary"
-                        className="mt-1 text-xs bg-green-100 text-green-800"
+                        className="mt-0.5 lg:mt-1 text-[8px] lg:text-xs bg-green-100 text-green-800 h-5"
                       >
                         Vendor Account
                       </Badge>
@@ -647,27 +654,27 @@ export default function VendorTopBar({
                 </DropdownMenuLabel>
 
                 {/* Quick actions */}
-                <div className="p-1">
+                <div className="p-0.5 lg:p-1">
                   <DropdownMenuItem asChild>
                     <Link
                       href="/vendor/settings"
-                      className="flex items-center px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
+                      className="flex items-center px-1.5 lg:px-2 py-1 lg:py-1.5 text-[10px] lg:text-xs text-gray-700 hover:bg-gray-50 rounded-md cursor-pointer"
                     >
-                      <Cog6ToothIcon className="h-3 w-3 mr-2 text-gray-400" />
+                      <Cog6ToothIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 mr-1.5 lg:mr-2 text-gray-400" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
                 </div>
 
-                <DropdownMenuSeparator className="mx-1 my-1" />
+                <DropdownMenuSeparator className="mx-0.5 lg:mx-1 my-0.5 lg:my-1" />
 
                 {/* Sign out */}
-                <div className="p-1">
+                <div className="p-0.5 lg:p-1">
                   <DropdownMenuItem
                     onClick={handleSignOut}
-                    className="flex items-center px-2 py-1.5 text-xs text-red-700 hover:bg-red-50 rounded-md cursor-pointer"
+                    className="flex items-center px-1.5 lg:px-2 py-1 lg:py-1.5 text-[10px] lg:text-xs text-red-700 hover:bg-red-50 rounded-md cursor-pointer"
                   >
-                    <ArrowRightOnRectangleIcon className="h-3 w-3 mr-2 text-red-500" />
+                    <ArrowRightOnRectangleIcon className="h-2.5 w-2.5 lg:h-3 lg:w-3 mr-1.5 lg:mr-2 text-red-500" />
                     Sign out
                   </DropdownMenuItem>
                 </div>

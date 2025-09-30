@@ -20,7 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 // UI Components
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,35 +81,41 @@ function StatCard({
       transition={{ duration: 0.3 }}
     >
       <Card className="border-0 shadow-sm bg-white">
-        <CardContent className="p-4">
+        <CardContent className="p-2 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
+            <div className="space-y-0.5 sm:space-y-1">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-gray-600">{title}</p>
+                <p className="text-[9px] sm:text-xs font-medium text-gray-600">
+                  {title}
+                </p>
                 {action}
               </div>
-              <p className="text-xl font-bold text-gray-900">{value}</p>
-              <div className="flex items-center space-x-1">
+              <p className="text-sm sm:text-xl font-bold text-gray-900">
+                {value}
+              </p>
+              <div className="flex items-center space-x-0.5 sm:space-x-1">
                 {isPositive ? (
-                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-2 w-2 sm:h-3 sm:w-3 text-green-500" />
                 ) : (
-                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-500" />
+                  <ArrowTrendingDownIcon className="h-2 w-2 sm:h-3 sm:w-3 text-red-500" />
                 )}
                 <span
-                  className={`text-xs font-medium ${
+                  className={`text-[8px] sm:text-xs font-medium ${
                     isPositive ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {isPositive ? "+" : ""}
                   {change.toFixed(1)}%
                 </span>
-                <span className="text-xs text-gray-500">vs last month</span>
+                <span className="text-[8px] sm:text-xs text-gray-500 hidden sm:inline">
+                  vs last month
+                </span>
               </div>
             </div>
             <div
-              className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}
+              className={`w-6 h-6 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center`}
             >
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+              <Icon className={`h-3 w-3 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           </div>
         </CardContent>
@@ -144,9 +150,9 @@ function TransactionIcon({ type }: { type: string }) {
 
   return (
     <div
-      className={`w-8 h-8 ${config.bg} rounded-lg flex items-center justify-center`}
+      className={`w-6 h-6 sm:w-8 sm:h-8 ${config.bg} rounded-lg flex items-center justify-center`}
     >
-      <IconComponent className={`h-4 w-4 ${config.color}`} />
+      <IconComponent className={`h-3 w-3 sm:h-4 sm:w-4 ${config.color}`} />
     </div>
   );
 }
@@ -189,17 +195,17 @@ function StatusBadge({ status }: { status: string }) {
 // Loading Skeletons - matching dashboard style
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Card key={i} className="border-0 shadow-sm bg-white">
-          <CardContent className="p-4">
+          <CardContent className="p-2 sm:p-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-3 w-32" />
+              <div className="space-y-1 sm:space-y-2">
+                <Skeleton className="h-2 sm:h-3 w-16 sm:w-20" />
+                <Skeleton className="h-4 sm:h-6 w-12 sm:w-16" />
+                <Skeleton className="h-2 sm:h-3 w-20 sm:w-32" />
               </div>
-              <Skeleton className="w-10 h-10 rounded-lg" />
+              <Skeleton className="w-6 h-6 sm:w-10 sm:h-10 rounded-lg" />
             </div>
           </CardContent>
         </Card>
@@ -342,12 +348,14 @@ export default function VendorWalletPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-        <div className="p-6 space-y-6">
+        <div className="p-2 sm:p-6 space-y-2 sm:space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Wallet</h1>
-              <p className="text-sm text-gray-600">
+              <h1 className="text-sm sm:text-xl font-bold text-gray-900">
+                Wallet
+              </h1>
+              <p className="text-[10px] sm:text-sm text-gray-600">
                 Manage your earnings and payouts
               </p>
             </div>
@@ -384,16 +392,18 @@ export default function VendorWalletPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-        <div className="p-6">
-          <div className="text-center py-32">
-            <BanknotesIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="p-2 sm:p-6">
+          <div className="text-center py-16 sm:py-32">
+            <BanknotesIcon className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-sm sm:text-xl font-semibold text-gray-900 mb-2">
               Unable to load wallet
             </h3>
-            <p className="text-gray-500 mb-6">{error}</p>
+            <p className="text-[11px] sm:text-base text-gray-500 mb-6">
+              {error}
+            </p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+              className="bg-slate-900 hover:bg-slate-800 text-white cursor-pointer h-8 sm:h-10 px-3 sm:px-4 text-[11px] sm:text-sm"
             >
               Try Again
             </Button>
@@ -416,25 +426,31 @@ export default function VendorWalletPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
-      <div className="p-6 space-y-6">
+      <div className="p-2 sm:p-6 space-y-2 sm:space-y-6">
         {/* Header - matching dashboard style */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Wallet</h1>
-            <p className="text-sm text-gray-600">
+            <h1 className="text-sm sm:text-xl font-bold text-gray-900">
+              Wallet
+            </h1>
+            <p className="text-[10px] sm:text-sm text-gray-600">
               Manage your earnings and payouts
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button
               variant="outline"
               asChild
-              className="bg-white border-gray-200 hover:bg-gray-50 h-8 px-3 text-xs cursor-pointer"
+              className="bg-white border-gray-200 hover:bg-gray-50 h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs cursor-pointer"
             ></Button>
 
-            <Button variant="active" className="text-blue-700">
-              <CurrencyEuroIcon className="text-current h-4 w-4 mr-1.5" />
-              Request Payout
+            <Button
+              variant="active"
+              className="text-blue-700 h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
+            >
+              <CurrencyEuroIcon className="text-current h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Request Payout</span>
+              <span className="sm:hidden">Payout</span>
             </Button>
           </div>
         </div>
@@ -444,7 +460,7 @@ export default function VendorWalletPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
         >
           <StatCard
             title="Available Balance"
@@ -505,23 +521,27 @@ export default function VendorWalletPage() {
           transition={{ duration: 0.3, delay: 0.1 }}
         >
           <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+                <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                   Payout Schedule
                 </CardTitle>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 sm:h-8 px-2 sm:px-3 text-[9px] sm:text-xs"
+                >
                   Manage
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">
+                  <p className="text-[9px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">
                     Next Payout
                   </p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                     {new Date(data.payoutInfo.nextPayout).toLocaleDateString(
                       "en-US",
                       {
@@ -533,26 +553,26 @@ export default function VendorWalletPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">
+                  <p className="text-[9px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">
                     Frequency
                   </p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                     {data.payoutInfo.frequency}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">
+                  <p className="text-[9px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">
                     Method
                   </p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                     {data.payoutInfo.method}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">
+                  <p className="text-[9px] sm:text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">
                     Account
                   </p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
                     {data.payoutInfo.account}
                   </p>
                 </div>
@@ -568,41 +588,47 @@ export default function VendorWalletPage() {
           transition={{ duration: 0.3, delay: 0.2 }}
         >
           <Card className="border-0 shadow-sm bg-white">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-gray-900">
+                <CardTitle className="text-[11px] sm:text-sm font-semibold text-gray-900">
                   Recent Transactions
                 </CardTitle>
                 <Link
                   href="/vendor/wallet/transactions"
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                  className="text-[9px] sm:text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                 >
                   View all
                 </Link>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-3">
+              <div className="space-y-1.5 sm:space-y-3">
                 {data.recentTransactions.length === 0 ? (
-                  <div className="text-center py-6">
-                    <BanknotesIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-gray-500">No transactions yet</p>
+                  <div className="text-center py-4 sm:py-6">
+                    <BanknotesIcon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-[10px] sm:text-xs text-gray-500">
+                      No transactions yet
+                    </p>
                   </div>
                 ) : (
                   data.recentTransactions.slice(0, 5).map((transaction) => (
                     <motion.div
                       key={transaction.id}
                       whileHover={{ x: 2 }}
-                      className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                     >
-                      <div className="flex items-center space-x-3">
-                        <TransactionIcon type={transaction.type} />
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div
+                          className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center`}
+                        >
+                          <TransactionIcon type={transaction.type} />
+                        </div>
                         <div>
-                          <p className="text-xs font-medium text-gray-900">
+                          <p className="text-[9px] sm:text-xs font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none">
                             {transaction.description}
                           </p>
-                          <div className="flex items-center space-x-2 mt-0.5">
-                            <p className="text-xs text-gray-500 capitalize">
+                          <div className="flex items-center space-x-1 sm:space-x-2 mt-0.5">
+                            <p className="text-[8px] sm:text-xs text-gray-500 capitalize">
                               {transaction.type}
                             </p>
                             <StatusBadge status={transaction.status} />
@@ -611,7 +637,7 @@ export default function VendorWalletPage() {
                       </div>
                       <div className="text-right">
                         <p
-                          className={`text-sm font-semibold ${
+                          className={`text-[10px] sm:text-sm font-semibold ${
                             transaction.amount > 0
                               ? "text-green-600"
                               : "text-gray-900"
@@ -620,7 +646,7 @@ export default function VendorWalletPage() {
                           {transaction.amount > 0 ? "+" : ""}
                           {formatPrice(Math.abs(transaction.amount))}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-[8px] sm:text-xs text-gray-500">
                           {new Date(transaction.date).toLocaleDateString(
                             "en-US",
                             {

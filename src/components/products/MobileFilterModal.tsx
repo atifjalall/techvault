@@ -35,6 +35,7 @@ interface FilterState {
   minRating: number;
   onlyOnSale: boolean;
   onlyInStock: boolean;
+  onlyNewArrivals: boolean;
 }
 
 interface MobileFilterModalProps {
@@ -230,6 +231,20 @@ export function MobileFilterModal({
                     />
                     <span className="ml-2 text-sm text-slate-700">
                       In Stock Only
+                    </span>
+                  </label>
+
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.onlyNewArrivals}
+                      onChange={(e) =>
+                        onFilterChange("onlyNewArrivals", e.target.checked)
+                      }
+                      className="h-4 w-4 text-slate-900 focus:ring-slate-900 border-slate-300 rounded cursor-pointer"
+                    />
+                    <span className="ml-2 text-sm text-slate-700">
+                      New Arrivals Only
                     </span>
                   </label>
                 </div>

@@ -19,7 +19,7 @@ import {
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/Button1";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -53,7 +53,7 @@ interface DashboardData {
   }>;
 }
 
-// Clean Mobile Stat Card
+// Ultra-compact Mobile Stat Card
 function MobileStatCard({
   title,
   value,
@@ -72,21 +72,21 @@ function MobileStatCard({
   const isPositive = change >= 0;
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 h-full">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white rounded-lg p-2 shadow-sm border border-gray-100 h-full">
+      <div className="flex items-start justify-between mb-2">
         <div
-          className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+          className={`w-7 h-7 ${bgColor} rounded-md flex items-center justify-center flex-shrink-0`}
         >
-          <Icon className={`h-5 w-5 ${iconColor}`} />
+          <Icon className={`h-3 w-3 ${iconColor}`} />
         </div>
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5">
           {isPositive ? (
-            <ArrowTrendingUpIcon className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+            <ArrowTrendingUpIcon className="w-2 h-2 text-emerald-500 flex-shrink-0" />
           ) : (
-            <ArrowTrendingDownIcon className="w-3 h-3 text-red-500 flex-shrink-0" />
+            <ArrowTrendingDownIcon className="w-2 h-2 text-red-500 flex-shrink-0" />
           )}
           <span
-            className={`text-xs font-semibold ${
+            className={`text-[9px] font-semibold ${
               isPositive ? "text-emerald-600" : "text-red-600"
             }`}
           >
@@ -95,11 +95,13 @@ function MobileStatCard({
           </span>
         </div>
       </div>
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-gray-500 leading-tight">
+      <div className="space-y-0.5">
+        <p className="text-[10px] font-medium text-gray-500 leading-tight truncate">
           {title}
         </p>
-        <p className="text-xl font-bold text-gray-900 leading-tight">{value}</p>
+        <p className="text-base font-bold text-gray-900 leading-tight truncate">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -226,58 +228,60 @@ function MobileRecentOrders({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-      <div className="px-4 py-3 border-b border-gray-100">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+      <div className="px-2 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Recent Orders</h3>
+          <h3 className="text-[10px] font-semibold text-gray-900">
+            Recent Orders
+          </h3>
           <Link
             href="/vendor/orders"
-            className="text-xs text-blue-600 font-medium cursor-pointer"
+            className="text-[8px] text-blue-600 font-medium cursor-pointer"
           >
             View all
           </Link>
         </div>
       </div>
-      <div className="p-4">
+      <div className="p-2">
         {!orders || orders.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-3">
-              <ShoppingBagIcon className="h-6 w-6 text-blue-600" />
+          <div className="text-center py-3">
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+              <ShoppingBagIcon className="h-4 w-4 text-blue-600" />
             </div>
-            <p className="text-sm font-medium text-gray-900 mb-1">
+            <p className="text-[10px] font-medium text-gray-900 mb-0.5">
               No orders yet
             </p>
-            <p className="text-xs text-gray-500">Orders will appear here</p>
+            <p className="text-[8px] text-gray-500">Orders will appear here</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {orders.slice(0, 3).map((order) => (
               <motion.div
                 key={order.id}
                 whileHover={{ backgroundColor: "#f8fafc" }}
-                className="p-3 rounded-lg border border-gray-100 cursor-pointer"
+                className="p-2 rounded-md border border-gray-100 cursor-pointer"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-semibold text-gray-900">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-[10px] font-semibold text-gray-900">
                       #{order.orderNumber || "Unknown"}
                     </span>
                     <Badge
                       variant={getOrderStatusBadgeVariant(order.status)}
-                      size="sm"
+                      className="text-[8px] px-1.5 py-0.5 h-4"
                       icon="auto"
                     >
                       {order.status || "Unknown"}
                     </Badge>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">
+                  <span className="text-[11px] font-bold text-gray-900">
                     €{(order.total || 0).toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-600 mb-1">
+                <p className="text-[10px] text-gray-600 mb-0.5 truncate">
                   {order.customerName || "Unknown Customer"}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-[8px] text-gray-400">
                   {formatOrderDate(order.createdAt)}
                 </p>
               </motion.div>
@@ -434,7 +438,7 @@ function DesktopRecentOrders({
   );
 }
 
-// Clean Mobile Quick Actions
+// Ultra-compact Mobile Quick Actions
 function MobileQuickActions() {
   const actions = [
     {
@@ -468,7 +472,7 @@ function MobileQuickActions() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-4 gap-2">
       {actions.map((action, index) => (
         <motion.div
           key={action.name}
@@ -480,14 +484,14 @@ function MobileQuickActions() {
         >
           <Link
             href={action.href}
-            className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow h-full min-h-[80px]"
+            className="flex flex-col items-center justify-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow h-full min-h-[60px]"
           >
             <div
-              className={`w-10 h-10 ${action.bg} rounded-lg flex items-center justify-center mb-2 flex-shrink-0`}
+              className={`w-7 h-7 ${action.bg} rounded-md flex items-center justify-center mb-1 flex-shrink-0`}
             >
-              <action.icon className={`h-5 w-5 ${action.color}`} />
+              <action.icon className={`h-3 w-3 ${action.color}`} />
             </div>
-            <span className="text-xs font-semibold text-gray-900 text-center leading-tight">
+            <span className="text-[10px] font-semibold text-gray-900 text-center leading-tight">
               {action.name}
             </span>
           </Link>
@@ -708,15 +712,15 @@ function MobileStatsSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 h-[120px]"
+          className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 h-[100px]"
         >
-          <div className="flex items-start justify-between mb-4">
-            <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
-            <Skeleton className="h-3 w-12" />
+          <div className="flex items-start justify-between mb-3">
+            <Skeleton className="w-8 h-8 rounded-md flex-shrink-0" />
+            <Skeleton className="h-3 w-10" />
           </div>
-          <div className="space-y-1">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-5 w-16" />
+          <div className="space-y-0.5">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-5 w-14" />
           </div>
         </div>
       ))}
@@ -834,23 +838,30 @@ export default function VendorDashboard() {
   return (
     <div>
       {/* MOBILE LAYOUT */}
-      <div className="lg:hidden p-4 space-y-4 bg-gray-50 min-h-screen">
-        {/* Mobile Header */}
+      <div className="lg:hidden p-2 space-y-2.5 bg-gray-50 min-h-screen">
+        {/* Ultra-compact Mobile Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between"
         >
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Dashboard</h1>
-            <p className="text-xs text-gray-600">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-bold text-gray-900 truncate">
+              Dashboard
+            </h1>
+            <p className="text-[9px] text-gray-600 truncate">
               Welcome back, {session?.user?.name?.split(" ")[0] || "Vendor"}
             </p>
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button asChild size="sm" variant="active">
+            <Button
+              asChild
+              size="sm"
+              variant="active"
+              className="h-7 px-2 text-[10px] ml-2 flex-shrink-0"
+            >
               <Link href="/vendor/products/add">
-                <PlusIcon className="h-4 w-4 mr-1" />
+                <PlusIcon className="h-3 w-3 mr-1" />
                 Add
               </Link>
             </Button>
@@ -865,7 +876,7 @@ export default function VendorDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="grid grid-cols-2 gap-3"
+            className="grid grid-cols-2 gap-2"
           >
             <MobileStatCard
               title="Total Revenue"
@@ -931,30 +942,30 @@ export default function VendorDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-100"
+              className="bg-white rounded-lg shadow-sm border border-gray-100"
             >
-              <div className="py-12 text-center px-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <CubeIcon className="h-8 w-8 text-blue-600" />
+              <div className="py-6 text-center px-2">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                  <CubeIcon className="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-2">
+                <h3 className="text-[11px] font-bold text-gray-900 mb-1">
                   Start Building Your Store
                 </h3>
-                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                <p className="text-[9px] text-gray-600 mb-3 leading-relaxed">
                   Create your first product to start selling on TechVault
                   marketplace.
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Button
                       asChild
-                      className="cursor-pointer bg-blue-600 hover:bg-blue-700 shadow-sm w-full"
+                      className="cursor-pointer bg-blue-600 hover:bg-blue-700 shadow-sm w-full h-7 text-[10px]"
                     >
                       <Link href="/vendor/products/add">
-                        <PlusIcon className="h-4 w-4 mr-2" />
+                        <PlusIcon className="h-3 w-3 mr-1" />
                         Add Your First Product
                       </Link>
                     </Button>
@@ -966,7 +977,7 @@ export default function VendorDashboard() {
                     <Button
                       variant="outline"
                       asChild
-                      className="cursor-pointer border-blue-200 text-blue-700 hover:bg-blue-50 w-full"
+                      className="cursor-pointer border-blue-200 text-blue-700 hover:bg-blue-50 w-full h-7 text-[10px]"
                     >
                       <Link href="/vendor/help/getting-started">
                         Getting Started Guide

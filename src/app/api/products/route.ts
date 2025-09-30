@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get("maxPrice");
     const onlyOnSale = searchParams.get("onlyOnSale") === "true";
     const onlyInStock = searchParams.get("onlyInStock") === "true";
+    const onlyNewArrival = searchParams.get("newArrival") === "true";
 
     console.log("🔍 API Filter params:", {
       page,
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
       maxPrice,
       onlyOnSale,
       onlyInStock,
+      onlyNewArrival,
     });
 
     // Build where clause
@@ -129,6 +131,11 @@ export async function GET(request: NextRequest) {
           stock: { gt: 0 },
         },
       };
+    }
+
+    // New arrival filter
+    if (onlyNewArrival) {
+      where.newArrival = true;
     }
 
     // Build orderBy
