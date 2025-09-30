@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, code, newPassword } = body;
 
-    console.log("🔐 Password reset request for:", email);
+    console.log("🔍 Reset password request for:", email);
 
+    // Validation
     if (!email || !code || !newPassword) {
       return NextResponse.json(
         { error: "Email, code, and new password are required" },
@@ -16,81 +17,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate code format (6 digits)
+    if (!/^\d{6}$/.test(code)) {
+      return NextResponse.json(
+        { error: "Invalid code format. Code must be 6 digits." },
+        { status: 400 }
+      );
+    }
+
     // Validate password strength
-    if (newPassword.length < 8) {
+    if (newPassword.length < 6) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters long" },
+        { error: "Password must be at least 6 characters long" },
         { status: 400 }
       );
     }
 
-    // Check password strength (same as signup)
-    let score = 0;
-    if (/[A-Z]/.test(newPassword)) score++;
-    if (/[a-z]/.test(newPassword)) score++;
-    if (/\d/.test(newPassword)) score++;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) score++;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    if (score < 3) {
-      return NextResponse.json(
-        {
-          error:
-            "Password is too weak. Must contain uppercase, lowercase, number, and special character",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Find user with valid reset token
+    // Find user with this email and reset token
     const user = await db.user.findFirst({
       where: {
-        email: email.toLowerCase(),
-        resetToken: code,
-        resetTokenExpiry: {
-          gt: new Date(),
-        },
+        email: normalizedEmail,
+        resetToken: code.trim(),
+      },
+      select: {
+        id: true,
+        email: true,
+        resetToken: true,
+        resetTokenExpiry: true,
       },
     });
 
     if (!user) {
-      console.log("❌ Invalid or expired reset code for:", email);
+      console.log("❌ Invalid code or email");
       return NextResponse.json(
         { error: "Invalid or expired reset code" },
         { status: 400 }
       );
     }
 
-    console.log("✅ Valid reset token found for user:", user.id);
+    // Check if code has expired
+    if (!user.resetTokenExpiry || new Date() > user.resetTokenExpiry) {
+      console.log("❌ Reset code expired");
+
+      // Clear expired token
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
+      });
+
+      return NextResponse.json(
+        { error: "Reset code has expired. Please request a new one." },
+        { status: 400 }
+      );
+    }
 
     // Hash new password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     // Update password and clear reset token
-    const updatedUser = await db.user.update({
+    await db.user.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,
         resetToken: null,
         resetTokenExpiry: null,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
+        lastPasswordChange: new Date(),
       },
     });
 
-    console.log("🔑 Password updated successfully for user:", updatedUser.id);
+    console.log("✅ Password reset successfully for:", user.email);
 
-    // Return user data for automatic login
     return NextResponse.json(
       {
-        message: "Password reset successfully",
-        user: updatedUser,
-        autoLogin: true,
+        message:
+          "Password reset successfully! You can now sign in with your new password.",
+        success: true,
       },
       { status: 200 }
     );

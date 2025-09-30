@@ -46,9 +46,6 @@ model User {
   phone             String?
   bio               String?
   isVerified        Boolean   @default(false)
-  verificationToken String?
-  resetToken        String?
-  resetTokenExpiry  DateTime?
   
   twoFactorEnabled    Boolean   @default(false)
   phoneVerified       Boolean   @default(false)
@@ -75,6 +72,10 @@ model User {
   transactions   Transaction[]
   vendorSettings VendorSettings?
   notifications  Notification[]  @relation("UserNotifications")
+
+verificationToken String?   @unique
+resetToken        String?   @unique
+resetTokenExpiry  DateTime?
   
   savedPaymentMethods SavedPaymentMethod[]
 }

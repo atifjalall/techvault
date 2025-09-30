@@ -840,6 +840,68 @@ export default function ProfilePage() {
           </Card>
         </motion.div>
 
+        {/* Email Verification Banner */}
+        {!profileData.emailVerified && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="p-3 lg:p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start flex-1">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-900 mb-1">
+                        Email Verification Required
+                      </p>
+                      <p className="text-xs text-amber-700">
+                        Please verify your email address.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        setSaving(true);
+                        const response = await fetch(
+                          "/api/auth/resend-verification",
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: profileData.email }),
+                          }
+                        );
+
+                        if (response.ok) {
+                          showSuccess(
+                            "Verification email sent! Please check your inbox."
+                          );
+                        } else {
+                          showError(
+                            "Failed to send verification email. Please try again."
+                          );
+                        }
+                      } catch (error) {
+                        showError("Something went wrong. Please try again.");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    variant="default"
+                    size="sm"
+                    disabled={saving}
+                    className="cursor-pointer ml-4 flex-shrink-0"
+                  >
+                    {saving ? "Sending..." : "Verify Email"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Success/Error Messages */}
         <AnimatePresence>
           {successMessage && (

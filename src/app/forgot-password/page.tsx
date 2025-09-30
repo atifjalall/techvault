@@ -27,9 +27,7 @@ interface PasswordStrength {
   color: string;
 }
 
-// -----------------------------
-// Loading Component
-// -----------------------------
+// Loading Component (unchanged)
 function LoadingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
@@ -39,7 +37,6 @@ function LoadingPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        {/* Header Skeleton */}
         <div className="text-center mb-8">
           <Skeleton className="h-8 w-32 mx-auto mb-2" />
           <motion.div
@@ -52,15 +49,12 @@ function LoadingPage() {
           </motion.div>
         </div>
 
-        {/* Main Form Container Skeleton */}
         <div className="backdrop-blur-xl bg-white/70 rounded-2xl shadow-xl border border-white/50 p-6">
-          {/* Back Button Skeleton */}
           <div className="flex items-center mb-4">
             <Skeleton className="w-3.5 h-3.5 mr-1.5" />
             <Skeleton className="h-3 w-20" />
           </div>
 
-          {/* Progress Bar Skeleton */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <Skeleton className="h-3 w-20" />
@@ -76,26 +70,22 @@ function LoadingPage() {
             </div>
           </div>
 
-          {/* Step Content Skeleton - Email Step */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.4 }}
           >
-            {/* Title and Description */}
             <Skeleton className="h-6 w-36 mb-1" />
             <div className="mb-4">
               <Skeleton className="h-4 w-full mb-1" />
               <Skeleton className="h-4 w-3/4" />
             </div>
 
-            {/* Email Form */}
             <div className="space-y-4">
               <div>
                 <Skeleton className="h-4 w-24 mb-1.5" />
                 <div className="relative">
                   <Skeleton className="w-full h-10 rounded-xl" />
-                  {/* Email icon placeholder */}
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     <Skeleton className="w-4 h-4" />
                   </div>
@@ -109,7 +99,6 @@ function LoadingPage() {
           </motion.div>
         </div>
 
-        {/* Help Text Skeleton */}
         <div className="text-center mt-6">
           <div className="flex items-center justify-center space-x-1">
             <Skeleton className="h-4 w-32" />
@@ -148,13 +137,14 @@ export default function ForgotPasswordPage() {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Redirect authenticated users away from forgot password page
+  // Redirect authenticated users
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       router.replace("/");
     }
   }, [status, session, router]);
 
+  // Timer countdown
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -169,24 +159,19 @@ export default function ForgotPasswordPage() {
     };
   }, [timer]);
 
-  // Don't render if user is already authenticated
   if (status === "loading") {
     return <LoadingPage />;
   }
 
   if (status === "authenticated") {
-    return null; // Don't render anything while redirecting
+    return null;
   }
 
-  // Toast notification function
   const showToastNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
-    const timer = setTimeout(() => setShowToast(false), 3000);
-    return () => clearTimeout(timer);
+    setTimeout(() => setShowToast(false), 3000);
   };
-
-  // Timer countdown effect
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -243,7 +228,6 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    // Validate email format
     if (!email.trim()) {
       setError("Email is required");
       return;
@@ -270,10 +254,9 @@ export default function ForgotPasswordPage() {
       }
 
       setCurrentStep("verification");
-      setTimer(60);
+      setTimer(900); // 15 minutes
       showToastNotification("Reset code sent to your email!");
 
-      // Auto-focus first input
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
@@ -285,10 +268,8 @@ export default function ForgotPasswordPage() {
   };
 
   const handleCodeChange = (index: number, value: string) => {
-    // Only allow numbers
     if (!/^\d*$/.test(value)) return;
-
-    if (value.length > 1) return; // Only allow single digits
+    if (value.length > 1) return;
 
     const newCode = [...verificationCode];
     newCode[index] = value;
@@ -296,19 +277,16 @@ export default function ForgotPasswordPage() {
     setCodeError(false);
     setError(null);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all fields are filled
     if (newCode.every((digit) => digit) && newCode.join("").length === 6) {
       handleCodeVerification(newCode.join(""));
     }
   };
 
   const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
-    // Prevent non-numeric characters
     if (
       e.key !== "Backspace" &&
       e.key !== "Delete" &&
@@ -353,7 +331,6 @@ export default function ForgotPasswordPage() {
     } catch (error) {
       setError(error instanceof Error ? error.message : "Invalid code");
       setCodeError(true);
-      // Clear and reset inputs with animation
       setTimeout(() => {
         setVerificationCode(["", "", "", "", "", ""]);
         setCodeError(false);
@@ -368,7 +345,6 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    // Validate passwords
     if (!newPassword) {
       setError("Password is required");
       return;
@@ -408,47 +384,29 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error || "Failed to reset password");
       }
 
-      console.log("✅ Password reset successful, auto-login:", data.autoLogin);
+      showToastNotification("Password reset successfully! Signing you in...");
 
-      if (data.autoLogin && data.user) {
-        // Auto-login the user with new password
-        showToastNotification("Password reset successfully! Signing you in...");
+      setTimeout(async () => {
+        try {
+          const result = await signIn("credentials", {
+            email: email.trim(),
+            password: newPassword,
+            redirect: false,
+          });
 
-        // Wait 1 second to show the toast, then sign in
-        setTimeout(async () => {
-          try {
-            const result = await signIn("credentials", {
-              email: email.trim(),
-              password: newPassword,
-              redirect: false,
-            });
-
-            if (result?.ok) {
-              // Successful login - redirect to home
-              window.location.href = "/";
-            } else {
-              // Fallback to signin page if auto-login fails
-              router.push(
-                "/signin?message=Password reset successfully! Please sign in with your new password."
-              );
-            }
-          } catch (error) {
-            console.error("Auto-login failed:", error);
-            // Fallback to signin page
+          if (result?.ok) {
+            window.location.href = "/";
+          } else {
             router.push(
-              "/signin?message=Password reset successfully! Please sign in with your new password."
+              "/signin?message=Password reset successfully! Please sign in."
             );
           }
-        }, 1500);
-      } else {
-        // Fallback if auto-login not supported
-        showToastNotification("Password reset successfully!");
-        setTimeout(() => {
+        } catch {
           router.push(
-            "/signin?message=Password reset successfully! Please sign in with your new password."
+            "/signin?message=Password reset successfully! Please sign in."
           );
-        }, 2000);
-      }
+        }
+      }, 1500);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Something went wrong");
     } finally {
@@ -470,15 +428,22 @@ export default function ForgotPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle rate limiting
+        if (data.cooldown) {
+          throw new Error(
+            `Please wait ${data.waitTime} seconds before requesting a new code.`
+          );
+        }
+        if (data.rateLimited) {
+          throw new Error(data.error);
+        }
         throw new Error(data.error || "Failed to resend code");
       }
 
-      setTimer(600); // Reset to 10 minutes
+      setTimer(900); // Reset to 15 minutes
       setVerificationCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-      showToastNotification(
-        "If an account exists, a new reset code has been sent!"
-      );
+      showToastNotification("New reset code sent to your email!");
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Failed to resend code"
@@ -488,7 +453,6 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // Linear Progress Bar Component
   const ProgressBar = () => {
     const progress = getStepProgress(currentStep);
 
@@ -654,10 +618,9 @@ export default function ForgotPasswordPage() {
                 </p>
 
                 <div className="space-y-4">
-                  {/* Code Input Boxes */}
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-3">
-                      Verification Code (Test: 111111)
+                      Verification Code
                     </label>
                     <div className="flex justify-center space-x-2 mb-3">
                       {verificationCode.map((digit, index) => (
@@ -691,12 +654,23 @@ export default function ForgotPasswordPage() {
                   {/* Timer/Resend */}
                   <div className="text-center">
                     {timer > 0 ? (
-                      <p className="text-xs text-slate-600">
-                        Resend code in{" "}
-                        <span className="font-mono font-semibold text-slate-900">
-                          {formatTime(timer)}
-                        </span>
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-xs text-slate-600">
+                          Code expires in{" "}
+                          <span className="font-mono font-semibold text-slate-900">
+                            {formatTime(timer)}
+                          </span>
+                        </p>
+                        {timer > 780 && ( // Less than 2 minutes elapsed (900 - 120 = 780)
+                          <p className="text-xs text-slate-500">
+                            You can resend in{" "}
+                            {Math.ceil(
+                              900 - timer < 120 ? 120 - (900 - timer) : 0
+                            )}{" "}
+                            seconds
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -748,48 +722,7 @@ export default function ForgotPasswordPage() {
                         required
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        onCopy={(e) => {
-                          // Prevent copying password content for security
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onCut={(e) => {
-                          // Prevent cutting password content for security
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onPaste={() => {
-                          // Allow pasting for better UX with password managers
-                          // This is standard practice and improves usability
-                        }}
-                        onContextMenu={(e) => {
-                          // Disable right-click context menu on password field
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onDragStart={(e) => {
-                          // Prevent dragging password content
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onKeyDown={(e) => {
-                          // Prevent Ctrl+A (Select All) when password is hidden
-                          if (
-                            !showPassword &&
-                            (e.ctrlKey || e.metaKey) &&
-                            e.key === "a"
-                          ) {
-                            e.preventDefault();
-                            return false;
-                          }
-                        }}
-                        spellCheck={false}
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        data-lpignore="true"
-                        className={`w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
-                          showPassword ? "" : "select-none"
-                        }`}
+                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
                         placeholder="Enter new password"
                       />
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -873,48 +806,7 @@ export default function ForgotPasswordPage() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        onCopy={(e) => {
-                          // Prevent copying password content for security
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onCut={(e) => {
-                          // Prevent cutting password content for security
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onPaste={() => {
-                          // Allow pasting for better UX with password managers
-                          // This is standard practice and improves usability
-                        }}
-                        onContextMenu={(e) => {
-                          // Disable right-click context menu on password field
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onDragStart={(e) => {
-                          // Prevent dragging password content
-                          e.preventDefault();
-                          return false;
-                        }}
-                        onKeyDown={(e) => {
-                          // Prevent Ctrl+A (Select All) when password is hidden
-                          if (
-                            !showConfirmPassword &&
-                            (e.ctrlKey || e.metaKey) &&
-                            e.key === "a"
-                          ) {
-                            e.preventDefault();
-                            return false;
-                          }
-                        }}
-                        spellCheck={false}
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        data-lpignore="true"
-                        className={`w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200 ${
-                          showConfirmPassword ? "" : "select-none"
-                        }`}
+                        className="w-full pl-10 pr-10 py-2 border border-slate-300/70 placeholder-slate-400 text-sm text-slate-900 rounded-xl bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-transparent transition-all duration-200"
                         placeholder="Confirm new password"
                       />
                       <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
