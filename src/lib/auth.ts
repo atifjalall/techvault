@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -32,7 +33,8 @@ export const authOptions: NextAuthOptions = {
               name: true,
               image: true,
               password: true,
-              role: true, // Include role in the query
+              role: true,
+              isVerified: true,
             },
           });
 
@@ -50,7 +52,8 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             image: user.image,
-            role: user.role, // Include role in return
+            role: user.role,
+            isVerified: user.isVerified,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -79,13 +82,12 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account }) {
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         token.id = (user as any).id;
         token.email = user.email ?? undefined;
         token.name = user.name ?? undefined;
         token.image = user.image ?? undefined;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        token.role = (user as any).role ?? "CUSTOMER"; // Add role to token
+        token.role = (user as any).role ?? "CUSTOMER";
+        token.isVerified = (user as any).isVerified ?? false; // Add type assertion and default
       }
 
       // Handle Google OAuth
@@ -95,7 +97,8 @@ export const authOptions: NextAuthOptions = {
             where: { email: user.email! },
             select: {
               id: true,
-              role: true, // Get role for existing user
+              role: true,
+              isVerified: true, // ADD THIS - fetch isVerified too
             },
           });
 
@@ -106,29 +109,35 @@ export const authOptions: NextAuthOptions = {
                 name: user.name,
                 image: user.image,
                 isVerified: true,
-                role: "CUSTOMER", // Default role for new Google users
+                role: "CUSTOMER",
               },
             });
             token.id = newUser.id;
             token.role = newUser.role;
+            token.isVerified = newUser.isVerified; // ADD THIS
           } else {
             token.id = existingUser.id;
-            token.role = existingUser.role; // Set role from existing user
+            token.role = existingUser.role;
+            token.isVerified = existingUser.isVerified; // ADD THIS
           }
         } catch (error) {
           console.error("Google auth error:", error);
         }
       }
 
-      // Always fetch fresh role data for existing tokens (optional, for role updates)
+      // Always fetch fresh data for existing tokens
       if (token.id && !user) {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true },
+            select: {
+              role: true,
+              isVerified: true, // ADD THIS - fetch isVerified on token refresh
+            },
           });
           if (dbUser) {
             token.role = dbUser.role;
+            token.isVerified = dbUser.isVerified; // ADD THIS
           }
         } catch (error) {
           console.error("Role fetch error:", error);
@@ -144,13 +153,14 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.image = token.image as string;
+        session.user.isVerified = token.isVerified as boolean; // ADD type assertion
 
         // Ensure only valid role values are assigned
         const role = token.role;
         if (role === "CUSTOMER" || role === "VENDOR" || role === "ADMIN") {
           session.user.role = role;
         } else {
-          session.user.role = "CUSTOMER"; // fallback default
+          session.user.role = "CUSTOMER";
         }
       }
       return session;

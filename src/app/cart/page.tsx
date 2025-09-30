@@ -241,6 +241,12 @@ export default function CartPage() {
   const [processingWishlist, setProcessingWishlist] = useState<Set<string>>(
     new Set()
   );
+  const isEmailVerified = session?.user?.isVerified ?? true;
+
+  // Add this temporarily to debug
+  console.log("Session user:", session?.user);
+  console.log("isVerified value:", session?.user?.isVerified);
+  console.log("isEmailVerified:", isEmailVerified);
 
   // Use the correct wishlist checking for cart items with your current hook
   const isCartItemInWishlist = useCallback(
@@ -288,11 +294,9 @@ export default function CartPage() {
     if (session) {
       fetchCart();
     } else if (status === "unauthenticated") {
-      // Only set to not loading when we're definitely unauthenticated
       setCartData({ items: [], count: 0, subtotal: 0 });
       setLoading(false);
     }
-    // Keep loading true if session is still loading
   }, [session, status]);
 
   // Listen for cart update events from other components
@@ -1090,16 +1094,39 @@ export default function CartPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <button
-                    onClick={handleCheckout}
-                    disabled={inStockItems.length === 0}
-                    className="w-full bg-gray-900 text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-gray-800 transition-colors mb-2 lg:mb-3 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {inStockItems.length === 0
-                      ? "No items available"
-                      : "Proceed to Checkout"}
-                  </button>
+                  {!isEmailVerified ? (
+                    <button
+                      onClick={() => router.push("/profile")}
+                      className="w-full bg-amber-500 text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-amber-600 transition-colors mb-2 lg:mb-3 shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <ExclamationTriangleIcon className="w-3.5 lg:w-4 h-3.5 lg:h-4" />
+                      Verify Your Account
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleCheckout}
+                      disabled={inStockItems.length === 0}
+                      className="w-full bg-gray-900 text-white py-2 lg:py-2.5 px-3 lg:px-4 rounded-lg text-xs lg:text-sm font-medium hover:bg-gray-800 transition-colors mb-2 lg:mb-3 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {inStockItems.length === 0
+                        ? "No items available"
+                        : "Proceed to Checkout"}
+                    </button>
+                  )}
                 </motion.div>
+
+                {/* Email verification notice */}
+                {!isEmailVerified && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg"
+                  >
+                    <p className="text-[10px] lg:text-xs text-amber-800 text-center">
+                      Please verify your email to complete checkout
+                    </p>
+                  </motion.div>
+                )}
 
                 {/* Trust Indicators */}
                 <motion.div

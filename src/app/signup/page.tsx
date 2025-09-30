@@ -229,7 +229,6 @@ export default function SignUpPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -400,7 +399,7 @@ export default function SignUpPage() {
     setErrors({});
 
     try {
-      // Step 1: Create the account
+      // Create the account
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -418,7 +417,7 @@ export default function SignUpPage() {
         throw new Error(data.error || "Signup failed");
       }
 
-      // Step 2: Automatically sign in the user
+      // Auto-login after signup (regardless of verification)
       const signInResult = await signIn("credentials", {
         email: formData.email.trim(),
         password: formData.password,
@@ -426,19 +425,12 @@ export default function SignUpPage() {
       });
 
       if (signInResult?.error) {
-        // Account was created but signin failed, redirect to signin page
-        router.push(
-          "/signin?message=Account created successfully! Please sign in."
-        );
+        router.push("/signin?message=Account created! Please sign in.");
         return;
       }
 
-      // Step 3: Show success and redirect to homepage
-      setSubmitSuccess(true);
-
-      setTimeout(() => {
-        router.push("/"); // Redirect to homepage instead of signin
-      }, 2000);
+      // Redirect to home
+      router.push("/");
     } catch (error) {
       console.error("Signup error:", error);
       setErrors({
@@ -466,51 +458,6 @@ export default function SignUpPage() {
       setIsGoogleLoading(false);
     }
   };
-
-  // Success animation
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-sm w-full text-center"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <CheckIcon className="w-8 h-8 text-white" />
-          </motion.div>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-xl font-semibold text-slate-900 mb-2"
-          >
-            Account Created!
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-sm text-slate-600 mb-6"
-          >
-            Redirecting you to sign in...
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="w-6 h-6 border-2 border-slate-300 border-t-emerald-500 rounded-full animate-spin mx-auto"
-          />
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
