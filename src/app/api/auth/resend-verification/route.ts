@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Find user
+    // Find user - INCLUDE ACCOUNTS to check for OAuth
     const user = await db.user.findUnique({
       where: { email: email.trim().toLowerCase() },
       select: {
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
         name: true,
         emailVerified: true,
         isVerified: true,
+        accounts: true, // ADD THIS
       },
     });
 
@@ -38,8 +39,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if already verified
-    if (user.emailVerified || user.isVerified) {
+    // Check if user has OAuth account (Google, etc.)
+    const hasOAuthAccount = user.accounts.length > 0;
+
+    // Check if already verified (either through email verification OR OAuth)
+    if (user.emailVerified || user.isVerified || hasOAuthAccount) {
       return NextResponse.json(
         { error: "This account is already verified" },
         { status: 400 }
