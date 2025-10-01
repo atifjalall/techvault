@@ -497,6 +497,44 @@ export default function ProfilePage() {
     }
   }, [session]);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!session?.user) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch("/api/profile");
+
+        if (!response.ok) {
+          throw new Error("Failed to load profile");
+        }
+
+        const result = await response.json();
+        if (result.success) {
+          setProfileData(result.profile);
+
+          // ADD THIS DEBUG LOG
+          console.log("Profile loaded:", {
+            email: result.profile.email,
+            emailVerified: result.profile.emailVerified,
+            showBanner: !result.profile.emailVerified,
+          });
+        } else {
+          throw new Error("Failed to load profile data");
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        setError("Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      loadProfile();
+    }
+  }, [session]);
+
   // Don't render content for vendors
   if (session?.user?.role === "VENDOR") {
     return null;
@@ -874,13 +912,17 @@ export default function ProfilePage() {
                           }
                         );
 
+                        const result = await response.json();
+
                         if (response.ok) {
                           showSuccess(
-                            "Verification email sent! Please check your inbox."
+                            result.message ||
+                              "Verification email sent! Please check your inbox."
                           );
                         } else {
                           showError(
-                            "Failed to send verification email. Please try again."
+                            result.error ||
+                              "Failed to send verification email. Please try again."
                           );
                         }
                       } catch (error) {

@@ -1,10 +1,11 @@
 "use client";
 
-import type { Metadata } from "next";
+// import type { Metadata } from "next";
 import { Montserrat, Inter } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import Navbar from "@/components/layout/Navbar";
+import TitleManager from "@/components/layout/TitleManager";
 import { usePathname } from "next/navigation";
 
 // Montserrat for headings - elegant and modern
@@ -44,6 +45,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!shouldHideNavbar && <Navbar />}
+      <TitleManager />
       {children}
     </>
   );

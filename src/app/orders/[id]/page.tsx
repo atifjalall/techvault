@@ -7,7 +7,6 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeftIcon,
   TruckIcon,
   MapPinIcon,
   CalendarDaysIcon,
@@ -19,6 +18,16 @@ import {
   CheckCircleIcon,
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { motion } from "framer-motion";
 
 // UI Components
 import Button from "@/components/ui/userButton";
@@ -341,6 +350,14 @@ function ProductDisplay({ item }: { item: OrderItem }) {
 function OrderDetailSkeleton() {
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Breadcrumb Skeleton */}
+      <div className="flex items-center space-x-1 lg:space-x-2">
+        <Skeleton className="h-3 lg:h-4 w-8 lg:w-12" />
+        <Skeleton className="h-3 lg:h-4 w-1" />
+        <Skeleton className="h-3 lg:h-4 w-12 lg:w-20" />
+        <Skeleton className="h-3 lg:h-4 w-1" />
+        <Skeleton className="h-3 lg:h-4 w-16 lg:w-24" />
+      </div>
       {/* Header Skeleton */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 sm:p-6">
@@ -360,13 +377,25 @@ function OrderDetailSkeleton() {
                   <Skeleton className="h-6 w-32" />
                   <div className="space-y-4">
                     {[1, 2, 3].map((j) => (
-                      <div key={j} className="flex space-x-3 sm:space-x-4">
-                        <Skeleton className="h-12 w-12 sm:h-16 sm:w-16" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-4 w-1/2" />
+                      <div
+                        key={j}
+                        className="flex items-center space-x-2 lg:space-x-3 p-2 lg:p-0"
+                      >
+                        {/* Image - matches ProductDisplay w-8 lg:w-12 h-8 lg:h-12 */}
+                        <Skeleton className="h-8 w-8 lg:h-12 lg:w-12 rounded-lg" />
+
+                        {/* Text block: title, vendor/variant, quantity */}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Skeleton className="h-4 w-3/5 lg:w-2/3" />
+                          <Skeleton className="h-3 w-1/2 lg:w-1/3" />
+                          <Skeleton className="h-3 w-24 lg:w-28" />
                         </div>
-                        <Skeleton className="h-4 w-16" />
+
+                        {/* Price block: total and per-item */}
+                        <div className="flex-shrink-0 text-right space-y-1">
+                          <Skeleton className="h-4 w-16 lg:w-20" />
+                          <Skeleton className="h-3 w-12 lg:w-14" />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -516,8 +545,10 @@ export default function OrderDetailPage({
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
-          <OrderDetailSkeleton />
+        <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+          <div className="container mx-auto px-2 lg:px-4">
+            <OrderDetailSkeleton />
+          </div>
         </div>
         <Footer />
       </div>
@@ -541,11 +572,6 @@ export default function OrderDetailPage({
               The order you&apos;re looking for doesn&apos;t exist or you
               don&apos;t have access to it.
             </p>
-            <Link href="/orders">
-              <Button className="bg-gray-900 hover:bg-gray-800 text-white">
-                Back to Orders
-              </Button>
-            </Link>
           </div>
         </div>
         <Footer />
@@ -562,6 +588,47 @@ export default function OrderDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList className="text-[10px] lg:text-sm">
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href="/"
+                      className="cursor-pointer text-[10px] lg:text-sm hover:text-slate-900"
+                    >
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href="/orders"
+                      className="cursor-pointer text-[10px] lg:text-sm hover:text-slate-900"
+                    >
+                      Orders
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="text-[10px] lg:text-sm" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-[10px] lg:text-sm font-medium">
+                    {orderData.orderNumber}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
       <div className="container mx-auto px-2 lg:px-4 py-2 lg:py-6 space-y-2 lg:space-y-6">
         {/* Header */}
         <Card
@@ -571,15 +638,6 @@ export default function OrderDetailPage({
         >
           <CardContent className="p-3 lg:p-6">
             <div className="space-y-2 lg:space-y-4">
-              {/* Back Button */}
-              <Link
-                href="/orders"
-                className="inline-flex items-center text-xs lg:text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
-              >
-                <ArrowLeftIcon className="w-3 lg:w-4 h-3 lg:h-4 mr-0.5 lg:mr-1" />
-                Back to Orders
-              </Link>
-
               {/* Cancelled Order Warning */}
               {orderData.status === "CANCELLED" && (
                 <div className="bg-red-100 border border-red-200 rounded-lg p-2 lg:p-4">

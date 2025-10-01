@@ -220,6 +220,7 @@ export async function GET() {
         bio: true,
         emailVerified: true,
         phoneVerified: true,
+        isVerified: true, // ADD THIS - the actual verification field
         businessAddress: true,
         createdAt: true,
         updatedAt: true,
@@ -257,7 +258,8 @@ export async function GET() {
       bio: user.bio || "",
       address,
       joinedAt: user.createdAt.toISOString(),
-      emailVerified: !!user.emailVerified,
+      // FIX: Use isVerified which is true for OAuth users
+      emailVerified: user.isVerified || !!user.emailVerified,
       phoneVerified: user.phoneVerified,
     };
 
