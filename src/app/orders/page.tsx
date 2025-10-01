@@ -45,6 +45,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Footer from "@/components/layout/Footer";
 import { formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { motion } from "framer-motion";
 
 // Updated interface with variant support
 interface OrderItem {
@@ -334,6 +343,14 @@ function OrdersPageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="space-y-4 sm:space-y-6">
+        {/* Breadcrumb Skeleton */}
+        <div className="w-full pt-3 lg:pt-5 pb-2 lg:pb-4">
+          <div className="flex items-center space-x-1.5 lg:space-x-2 ml-1 lg:ml-2">
+            <Skeleton className="h-3 lg:h-4 w-10 lg:w-12" />
+            <Skeleton className="h-3 lg:h-4 w-0.5 lg:w-1" />
+            <Skeleton className="h-3 lg:h-4 w-16 lg:w-20" />
+          </div>
+        </div>
         {/* Header Skeleton */}
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 sm:p-6">
@@ -525,6 +542,32 @@ export default function CustomerOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header with Breadcrumb */}
+      <div className="pt-4 lg:pt-8 px-2 lg:px-4 pb-2 lg:pb-4">
+        <div className="container mx-auto px-2 lg:px-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/" className="cursor-pointer">
+                      Home
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Orders</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </motion.div>
+        </div>
+      </div>
       <div className="container mx-auto px-2 lg:px-4 py-2 lg:py-6 space-y-2 lg:space-y-6">
         {/* Header */}
         <Card className="border-0 shadow-sm">
